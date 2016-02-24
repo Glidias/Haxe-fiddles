@@ -1,0 +1,40 @@
+CLASSES_WITH_STATIC_EVENT_DISPATCHER_METHODS = Ticker
+
+EVENT_DISPATCHER_METHODS =                          addEventListener
+EVENT_DISPATCHER_METHODS = EVENT_DISPATCHER_METHODS|addTickEventListener
+EVENT_DISPATCHER_METHODS = EVENT_DISPATCHER_METHODS|dispatchEvent
+EVENT_DISPATCHER_METHODS = EVENT_DISPATCHER_METHODS|hasEventListener
+EVENT_DISPATCHER_METHODS = EVENT_DISPATCHER_METHODS|off
+EVENT_DISPATCHER_METHODS = EVENT_DISPATCHER_METHODS|on
+EVENT_DISPATCHER_METHODS = EVENT_DISPATCHER_METHODS|removeAllEventListeners
+EVENT_DISPATCHER_METHODS = EVENT_DISPATCHER_METHODS|removeEventListener
+EVENT_DISPATCHER_METHODS = EVENT_DISPATCHER_METHODS|willTrigger
+
+METHODS_RETURN_INT =                    getChildIndex
+METHODS_RETURN_INT = METHODS_RETURN_INT|getNumChildren
+METHODS_RETURN_INT = METHODS_RETURN_INT|getNumFrames
+
+VARS_INT =          index
+VARS_INT = VARS_INT|mode
+VARS_INT = VARS_INT|cacheID
+VARS_INT = VARS_INT|id
+VARS_INT = VARS_INT|numChildren
+
+FUNCTION_AND_ARG_DELIMITER = [^\n]*[(,]\s*
+
+ANY = (?:(?:[\n]|[^\n])+?)
+
+/(extern\s+class\s+(?:CLASSES_WITH_STATIC_EVENT_DISPATCHER_METHODS)(?:ANY)\n\s*)((?:inline\s+)?function\s+(?:EVENT_DISPATCHER_METHODS|(?:add|remove)[A-Z][A-Za-z0-9_]+EventListener))/$1static $2/mr
+/(function\s+(?:METHODS_RETURN_INT)\s*[(][^)]*[)]\s*:\s*)Float/$1Int/
+/\b((?:VARS_INT)\s*:\s*)Float\b/$1Int/
+
+/function getObjectsUnderPoint\(x:Float, y:Float, mode:Int\) : Array<Dynamic>/function getObjectsUnderPoint(x:Float, y:Float, mode:Int=0) : Array<DisplayObject>/
+/function getObjectUnderPoint\(x:Float, y:Float, mode:Int\)/function getObjectUnderPoint(x:Float, y:Float, mode:Int=0)/
+/var cacheCanvas : Dynamic;/var cacheCanvas : js.html.CanvasElement;/
+/static var beginCmd : Graphics.BeginPath;/static var beginCmd : Dynamic;/
+/(function quadraticCurveTo(?:[\n]|[^\n])+?function )quadraticCurveTo/$1curveTo/m
+/(function extend(?:ANY)function )extend/$1pad/m
+/(extern class Stage extends Container\s*{ANY\b)(var hitArea)/$1\/\/$2/
+/function decompose\(target/function decompose(?target/
+
+/(getNumFrames(?:FUNCTION_AND_ARG_DELIMITER))(animation)/$1?$2/
