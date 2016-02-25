@@ -19,8 +19,8 @@ class Main
 
 class ArcSplit {
 	public var next:ArcSplit;
-	public var angle:Float;  // the angle origin of arc
-	public var arc:Float;  // clockwise half-arc magnitude
+	public var from:Float;  // the angle origin of arc
+	public var to:Float;  // clockwise half-arc magnitude
 	private static inline var PI_2:Float = 3.1415926535897932384626433832795 * 2;
 	private static inline var PI:Float = 3.1415926535897932384626433832795;
 	private static inline var RAD_TO_DEG:Float = 57.295779513082320876798154814105;// (180 / Math.PI);
@@ -30,28 +30,33 @@ class ArcSplit {
 	}
 	
 	public function asDefault():ArcSplit {
-		angle = 0;
-		arc = PI;
+		from = 0;
+		to = PI_2;
 		return this;
 	}
 	
 	public function toString():String {
-		return "[ArcSplit " + angle+", " + arc + "]";
+		return "[ArcSplit " + getPreviewApprox(from)+"->" + getPreviewApprox(to) + "]";
+	}
+	inline function getDegApprox(val:Float):Float {
+		return Math.round(val * RAD_TO_DEG);
+	}
+	inline function getPreviewApprox(val:Float):Float {
+		return getDegApprox(val);
 	}
 	
-	function setFromTo(fromArc:Float, toArc:Float):Void {
-		arc =  (toArc - fromArc) * .5;
-		angle = fromArc + arc;
+	inline function setFromTo(fromAng:Float, toAng:Float):Void {
+		from = fromAng;
+		to = toAng;
 	}
 	
-	public function splitBy(splitAng:Float, splitArc:Float):ArcSplit {
+	public function splitBy(splitLowLimit:Float, splitHighLimit:Float):ArcSplit {
 		var newSplit:ArcSplit = null;
-		var lowLimit:Float = angle-arc;
-		var highLimit:Float = angle + arc;
-		var splitLowLimit:Float = splitAng - splitArc;
-		var splitHighLimit:Float = splitAng + splitArc;
+		var lowLimit:Float = from;
+		var highLimit:Float = to;
+
 		if (splitLowLimit <= lowLimit && splitHighLimit >= highLimit) {  // split entire length of arcSplit, no more!
-			//trace("NO MORE");
+			trace("Truncate:: Split till no more.");
 			return null;
 		}
 		
@@ -60,27 +65,47 @@ class ArcSplit {
 			newSplit.setFromTo(lowLimit, splitLowLimit);
 			newSplit.next = new ArcSplit();
 			newSplit.next.setFromTo(splitHighLimit, highLimit);
-			
-			//trace("SPLIT:"+lowLimit*RAD_TO_DEG + ", "+splitLowLimit*RAD_TO_DEG);
-			
+			//trace("SPLIT:"+newSplit + ", "+newSplit.next);
 		}
 		else if (splitLowLimit <= lowLimit) {  // split for highlimit region remaining
 			newSplit = new ArcSplit();
 			newSplit.setFromTo(splitHighLimit, highLimit);
-			//trace("subtract");
+			//trace("subtract from low:"+newSplit);
+		
 			
 		}
 		else {  // split for lowlimit region remaining
 			newSplit = new ArcSplit();
 			newSplit.setFromTo(lowLimit, splitLowLimit);
-			//trace("subtract");
+			//trace("subtract from high:"+newSplit);
 		}
 		
 		
 		return newSplit;
 	}
 	
-	public function performSplitting(splitAng:Float, splitArc:Float):ArcSplit {
+	public function performSplitting(arcMinAng:Float, arcMaxAng:Float):ArcSplit {
+		var headS:ArcSplit = this;
+		if (arcMinAng < 0) {
+			if (arcMaxAng >= 0) {
+				headS = headS.performSplitting2(PI_2 + arcMinAng, PI_2);
+				if (headS != null) headS = headS.performSplitting2(0, arcMaxAng);
+				//	trace("Performing second split:"+headS + ", "+(arcMinAng+PI_2) + ", "+PI_2);
+				
+			}
+			else {
+				headS = headS.performSplitting2(PI_2 + arcMinAng, PI_2 + arcMaxAng);
+			}	
+		}
+		else {
+			headS = headS.performSplitting2( arcMinAng, (arcMaxAng <= 0 ? PI_2 + arcMaxAng : arcMaxAng) );
+		}
+		
+		return headS;
+		
+	}
+	
+	function performSplitting2(arcMinAng:Float, arcMaxAng:Float):ArcSplit {
 		var headS:ArcSplit = this;
 		var s:ArcSplit  = this;
 		var lastS:ArcSplit = null;
@@ -88,7 +113,9 @@ class ArcSplit {
 		{
 			var nextS:ArcSplit = s.next;
 			
-			var checkS:ArcSplit = s.splitBy(splitAng, splitArc);
+			
+			
+			var checkS:ArcSplit = s.splitBy(arcMinAng, arcMaxAng);
 			if (checkS != null) { // replace
 				s.next = null;
 				
@@ -99,11 +126,10 @@ class ArcSplit {
 					headS = checkS;
 				}
 				
-				
 				if (checkS.next != null) {
 					s = checkS.next; 
 					checkS.next.next = nextS;
-					
+				//	trace("Pointing to next:"+(headS == checkS));
 				}
 				else {
 					s = checkS;
@@ -114,7 +140,7 @@ class ArcSplit {
 			else {  // shift 
 				s.next = null;
 				headS = nextS;
-			//	trace("SHift");
+		
 			}
 			
 			lastS = s;
@@ -193,8 +219,8 @@ class TestExp {
 		
 		addCircle(20, 20, SIZE * .5, "#000000");
 		addCircle(50, 20, SIZE * .5, "#000000");
-		//addCircle(70, 20, SIZE * .5, "#000000");
-	//	addCircle(90, 20, SIZE * .5, "#000000");
+		addCircle(70, 20, SIZE * .5, "#000000");
+		addCircle(90, 20, SIZE * .5, "#000000");
 		drawExposedArcs();
 	}
 	
@@ -272,32 +298,33 @@ class TestExp {
 	}
 		
 	function drawExposedArcs() {
+		var c1:createjs.Shape;
+		var a:ArcSplit;
+		var baseAng:Float;
+		var arc:ArcSplit;
 		var len:Int = circles.length;
 		var g = arcs.graphics;
 		g.clear();
 		
 		
 		for (i in 0...len) {
-			 circlesSplits[i] = null;
+			 circlesSplits[i] = new ArcSplit().asDefault();
 		}
 		
-		for (i in 0...len) {
-			var c1 = circles[i];
+		for (i in 0...1) {
+			c1 = circles[i];
 			g.beginStroke("#555555");
 			g.drawCircle(c1.x, c1.y, SIZE2);
 			g.endStroke();
 			
 			
-			
-			for (k in i...len ) {
+			var upp = i + 1;
+			for (k in upp...len ) {
 				var c2 = circles[k];
 				var ang;
 				ang = getIntersectionArc(c1.x, c1.y, SIZE2, c2.x, c2.y, SIZE2);
-				if (ang > 0) {
-					//trace( Math.atan2(c2.y - c1.y, c2.x-c1.x)*RAD_TO_DEG  );
-					//
-					
-					//g.beginLinearGradientStroke
+				if (ang != 0) {
+
 					var x;
 					var y;
 					var nx = offsetX / cDist;
@@ -321,25 +348,57 @@ class TestExp {
 					g.lineTo(x + ny*aDist*.5, y - nx*aDist*.5 );
 					g.endStroke();
 					
-					var arc:ArcSplit = circlesSplits[i];
-					if (arc == null)  arc = circlesSplits[i] = new ArcSplit().asDefault();
-					//arc.splitBy(circles);
-				//	trace( Math.atan2(offsetY, offsetX), ang, 0, PI_2*.5); 
-					circlesSplits[i] =arc = arc.performSplitting( Math.atan2(offsetY, offsetX), ang);
-				//	trace(circlesSplits[i].getCount());
-					var a:ArcSplit = arc;
-					while (a != null) {
-						g.beginStroke("#ff0000");
-						g.arc(c1.x, c1.y, SIZE2, a.angle-a.arc, a.angle+a.arc, false);
-						g.endStroke();
-						a = a.next;
-					}
+					arc = circlesSplits[i];
+					baseAng = Math.atan2(offsetY, offsetX);
+					circlesSplits[i] = arc = arc.performSplitting(baseAng-ang , baseAng+ang);
+					a = arc;
 					
+					
+					/*
 					ang = getIntersectionArc(c2.x, c2.y, SIZE2, c1.x, c1.y, SIZE2);
+					arc = circlesSplits[k];
+					baseAng = Math.atan2(offsetY, offsetX);
+					circlesSplits[k] = arc = arc.performSplitting(baseAng-ang , baseAng+ang);
+					a = arc;
+					
+					nx *= -1;
+					ny *= -1;
+					
+					// line to to chord's midpt from circle center
+					g.beginStroke("#555555");
+					g.moveTo(c2.x, c2.y);
+					g.lineTo(x=c2.x+nx*xDist,  y=c2.y+ny*xDist);
+					g.endStroke();
+					
+					// chord pt1
+					g.beginStroke("#555555");
+					g.moveTo(x,y);
+					g.lineTo(x - ny*aDist*.5, y + nx*aDist*.5 );
+					g.endStroke();
+					
+					// chord pt2
+					g.beginStroke("#555555");
+					g.moveTo(x,y);
+					g.lineTo(x + ny*aDist*.5, y - nx*aDist*.5 );
+					g.endStroke();
+					*/
+					
 				}
-				
-				
-				
+
+			}
+			
+			for (i in 0...1 ) { 
+				c1 = circles[i];
+				arc = circlesSplits[i];
+				a = arc;
+			trace(a.getCount());
+				while ( a != null) {
+					g.beginStroke("#ff0000");
+					g.arc(c1.x, c1.y, SIZE2, a.from, a.to, false);
+					g.endStroke();
+					trace(a.toString());
+					a = a.next;
+				}	
 			}
 		}
 		

@@ -15,13 +15,13 @@ ArcSplit.prototype = {
 		}
 		return count;
 	}
-	,performSplitting: function(splitAng,splitArc) {
+	,performSplitting2: function(arcMinAng,arcMaxAng) {
 		var headS = this;
 		var s = this;
 		var lastS = null;
 		while(s != null) {
 			var nextS = s.next;
-			var checkS = s.splitBy(splitAng,splitArc);
+			var checkS = s.splitBy(arcMinAng,arcMaxAng);
 			if(checkS != null) {
 				s.next = null;
 				if(lastS != null) lastS.next = checkS; else headS = checkS;
@@ -41,37 +41,57 @@ ArcSplit.prototype = {
 		}
 		return headS;
 	}
-	,splitBy: function(splitAng,splitArc) {
+	,performSplitting: function(arcMinAng,arcMaxAng) {
+		var headS = this;
+		if(arcMinAng < 0) {
+			if(arcMaxAng >= 0) {
+				headS = headS.performSplitting2(3.1415926535897932384626433832795 * 2 + arcMinAng,3.1415926535897932384626433832795 * 2);
+				if(headS != null) headS = headS.performSplitting2(0,arcMaxAng);
+			} else headS = headS.performSplitting2(3.1415926535897932384626433832795 * 2 + arcMinAng,3.1415926535897932384626433832795 * 2 + arcMaxAng);
+		} else headS = headS.performSplitting2(arcMinAng,arcMaxAng <= 0?3.1415926535897932384626433832795 * 2 + arcMaxAng:arcMaxAng);
+		return headS;
+	}
+	,splitBy: function(splitLowLimit,splitHighLimit) {
 		var newSplit = null;
-		var lowLimit = this.angle - this.arc;
-		var highLimit = this.angle + this.arc;
-		var splitLowLimit = splitAng - splitArc;
-		var splitHighLimit = splitAng + splitArc;
-		if(splitLowLimit <= lowLimit && splitHighLimit >= highLimit) return null;
+		var lowLimit = this.from;
+		var highLimit = this.to;
+		if(splitLowLimit <= lowLimit && splitHighLimit >= highLimit) {
+			console.log("Truncate:: Split till no more.");
+			return null;
+		}
 		if(splitLowLimit > lowLimit && splitHighLimit < highLimit) {
 			newSplit = new ArcSplit();
-			newSplit.setFromTo(lowLimit,splitLowLimit);
+			newSplit.from = lowLimit;
+			newSplit.to = splitLowLimit;
 			newSplit.next = new ArcSplit();
 			newSplit.next.setFromTo(splitHighLimit,highLimit);
 		} else if(splitLowLimit <= lowLimit) {
 			newSplit = new ArcSplit();
-			newSplit.setFromTo(splitHighLimit,highLimit);
+			newSplit.from = splitHighLimit;
+			newSplit.to = highLimit;
 		} else {
 			newSplit = new ArcSplit();
-			newSplit.setFromTo(lowLimit,splitLowLimit);
+			newSplit.from = lowLimit;
+			newSplit.to = splitLowLimit;
 		}
 		return newSplit;
 	}
-	,setFromTo: function(fromArc,toArc) {
-		this.arc = (toArc - fromArc) * .5;
-		this.angle = fromArc + this.arc;
+	,setFromTo: function(fromAng,toAng) {
+		this.from = fromAng;
+		this.to = toAng;
+	}
+	,getPreviewApprox: function(val) {
+		return Math.round(val * 57.295779513082320876798154814105);
+	}
+	,getDegApprox: function(val) {
+		return Math.round(val * 57.295779513082320876798154814105);
 	}
 	,toString: function() {
-		return "[ArcSplit " + this.angle + ", " + this.arc + "]";
+		return "[ArcSplit " + Math.round(this.from * 57.295779513082320876798154814105) + "->" + Math.round(this.to * 57.295779513082320876798154814105) + "]";
 	}
 	,asDefault: function() {
-		this.angle = 0;
-		this.arc = 3.1415926535897932384626433832795;
+		this.from = 0;
+		this.to = 3.1415926535897932384626433832795 * 2;
 		return this;
 	}
 }
@@ -91,6 +111,8 @@ var TestExp = function() {
 	js.Browser.window.requestAnimationFrame($bind(this,this.requestFrame));
 	this.addCircle(20,20,8.,"#000000");
 	this.addCircle(50,20,8.,"#000000");
+	this.addCircle(70,20,8.,"#000000");
+	this.addCircle(90,20,8.,"#000000");
 	this.drawExposedArcs();
 };
 TestExp.prototype = {
@@ -105,28 +127,33 @@ TestExp.prototype = {
 		return true;
 	}
 	,drawExposedArcs: function() {
+		var c1;
+		var a;
+		var baseAng;
+		var arc;
 		var len = this.circles.length;
 		var g = this.arcs.graphics;
 		g.clear();
 		var _g = 0;
 		while(_g < len) {
 			var i = _g++;
-			this.circlesSplits[i] = null;
+			this.circlesSplits[i] = new ArcSplit().asDefault();
 		}
 		var _g = 0;
-		while(_g < len) {
+		while(_g < 1) {
 			var i = _g++;
-			var c1 = this.circles[i];
+			c1 = this.circles[i];
 			g.beginStroke("#555555");
 			g.drawCircle(c1.x,c1.y,38);
 			g.endStroke();
-			var _g1 = i;
+			var upp = i + 1;
+			var _g1 = upp;
 			while(_g1 < len) {
 				var k = _g1++;
 				var c2 = this.circles[k];
 				var ang;
 				ang = this.getIntersectionArc(c1.x,c1.y,38,c2.x,c2.y,38);
-				if(ang > 0) {
+				if(ang != 0) {
 					var x;
 					var y;
 					var nx = this.offsetX / this.cDist;
@@ -143,17 +170,25 @@ TestExp.prototype = {
 					g.moveTo(x,y);
 					g.lineTo(x + ny * this.aDist * .5,y - nx * this.aDist * .5);
 					g.endStroke();
-					var arc = this.circlesSplits[i];
-					if(arc == null) arc = this.circlesSplits[i] = new ArcSplit().asDefault();
-					this.circlesSplits[i] = arc = arc.performSplitting(Math.atan2(this.offsetY,this.offsetX),ang);
-					var a = arc;
-					while(a != null) {
-						g.beginStroke("#ff0000");
-						g.arc(c1.x,c1.y,38,a.angle - a.arc,a.angle + a.arc,false);
-						g.endStroke();
-						a = a.next;
-					}
-					ang = this.getIntersectionArc(c2.x,c2.y,38,c1.x,c1.y,38);
+					arc = this.circlesSplits[i];
+					baseAng = Math.atan2(this.offsetY,this.offsetX);
+					this.circlesSplits[i] = arc = arc.performSplitting(baseAng - ang,baseAng + ang);
+					a = arc;
+				}
+			}
+			var _g1 = 0;
+			while(_g1 < 1) {
+				var i1 = _g1++;
+				c1 = this.circles[i1];
+				arc = this.circlesSplits[i1];
+				a = arc;
+				console.log(a.getCount());
+				while(a != null) {
+					g.beginStroke("#ff0000");
+					g.arc(c1.x,c1.y,38,a.from,a.to,false);
+					g.endStroke();
+					console.log(a.toString());
+					a = a.next;
 				}
 			}
 		}
