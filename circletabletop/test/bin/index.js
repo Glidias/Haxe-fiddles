@@ -55,6 +55,7 @@ ArcSplit.prototype = {
 		var newSplit = null;
 		var lowLimit = this.from;
 		var highLimit = this.to;
+		if(splitLowLimit > highLimit || splitHighLimit < lowLimit) return this;
 		if(splitLowLimit <= lowLimit && splitHighLimit >= highLimit) {
 			console.log("Truncate:: Split till no more.");
 			return null;
@@ -134,17 +135,19 @@ TestExp.prototype = {
 		var len = this.circles.length;
 		var g = this.arcs.graphics;
 		g.clear();
+		var limit;
 		var _g = 0;
 		while(_g < len) {
 			var i = _g++;
 			this.circlesSplits[i] = new ArcSplit().asDefault();
 		}
+		limit = 1;
 		var _g = 0;
-		while(_g < 1) {
+		while(_g < limit) {
 			var i = _g++;
 			c1 = this.circles[i];
 			g.beginStroke("#555555");
-			g.drawCircle(c1.x,c1.y,38);
+			g.drawCircle(c1.x,c1.y,32);
 			g.endStroke();
 			var upp = i + 1;
 			var _g1 = upp;
@@ -152,7 +155,7 @@ TestExp.prototype = {
 				var k = _g1++;
 				var c2 = this.circles[k];
 				var ang;
-				ang = this.getIntersectionArc(c1.x,c1.y,38,c2.x,c2.y,38);
+				ang = this.getIntersectionArc(c1.x,c1.y,32,c2.x,c2.y,32);
 				if(ang != 0) {
 					var x;
 					var y;
@@ -177,15 +180,15 @@ TestExp.prototype = {
 				}
 			}
 			var _g1 = 0;
-			while(_g1 < 1) {
+			while(_g1 < limit) {
 				var i1 = _g1++;
 				c1 = this.circles[i1];
 				arc = this.circlesSplits[i1];
 				a = arc;
-				console.log(a.getCount());
+				if(a != null) console.log(a.getCount());
 				while(a != null) {
 					g.beginStroke("#ff0000");
-					g.arc(c1.x,c1.y,38,a.from,a.to,false);
+					g.arc(c1.x,c1.y,32,a.from,a.to,false);
 					g.endStroke();
 					console.log(a.toString());
 					a = a.next;
@@ -258,10 +261,11 @@ ArcSplit.PI_2 = 3.1415926535897932384626433832795 * 2;
 ArcSplit.PI = 3.1415926535897932384626433832795;
 ArcSplit.RAD_TO_DEG = 57.295779513082320876798154814105;
 TestExp.SIZE = 16;
-TestExp.SIZE2 = 38;
+TestExp.SIZE2 = 32;
 TestExp.RAD_TO_DEG = 57.295779513082320876798154814105;
 TestExp.PI_2 = 3.1415926535897932384626433832795 * 2;
 TestExp.PI = 3.1415926535897932384626433832795;
+TestExp.TESTING_ONE = true;
 js.Browser.window = typeof window != "undefined" ? window : null;
 js.Browser.document = typeof window != "undefined" ? window.document : null;
 Main.main();

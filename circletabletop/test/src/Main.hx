@@ -54,7 +54,13 @@ class ArcSplit {
 		var newSplit:ArcSplit = null;
 		var lowLimit:Float = from;
 		var highLimit:Float = to;
+		
+		// check if splitter is outside bounds
+		if (splitLowLimit > highLimit || splitHighLimit < lowLimit) { 
+			return this;
+		}
 
+		// check if splitter encloses entire bounds
 		if (splitLowLimit <= lowLimit && splitHighLimit >= highLimit) {  // split entire length of arcSplit, no more!
 			trace("Truncate:: Split till no more.");
 			return null;
@@ -175,7 +181,7 @@ class TestExp {
 	private var arcs:Shape;
 	
 	private static inline var SIZE:Float = 16;
-	private static inline var SIZE2:Float = 38;
+	private static inline var SIZE2:Float = 32;
 	
 	private var circles:Array<Shape>;
 	private var circlesSplits:Array<ArcSplit>;
@@ -297,6 +303,8 @@ class TestExp {
 		  circle.graphics.beginFill(fill).drawCircle(0, 0, r);
 	}
 		
+	
+	static inline var TESTING_ONE:Bool = true;
 	function drawExposedArcs() {
 		var c1:createjs.Shape;
 		var a:ArcSplit;
@@ -305,13 +313,18 @@ class TestExp {
 		var len:Int = circles.length;
 		var g = arcs.graphics;
 		g.clear();
+		var limit;
+		
+		
 		
 		
 		for (i in 0...len) {
 			 circlesSplits[i] = new ArcSplit().asDefault();
 		}
 		
-		for (i in 0...1) {
+		limit = TESTING_ONE ? 1 : len;
+		
+		for (i in 0...limit) {
 			c1 = circles[i];
 			g.beginStroke("#555555");
 			g.drawCircle(c1.x, c1.y, SIZE2);
@@ -353,8 +366,8 @@ class TestExp {
 					circlesSplits[i] = arc = arc.performSplitting(baseAng-ang , baseAng+ang);
 					a = arc;
 					
-					
-					/*
+					if (!TESTING_ONE) {
+					///*
 					ang = getIntersectionArc(c2.x, c2.y, SIZE2, c1.x, c1.y, SIZE2);
 					arc = circlesSplits[k];
 					baseAng = Math.atan2(offsetY, offsetX);
@@ -381,22 +394,24 @@ class TestExp {
 					g.moveTo(x,y);
 					g.lineTo(x + ny*aDist*.5, y - nx*aDist*.5 );
 					g.endStroke();
-					*/
-					
+					//*/
+					}
 				}
 
 			}
 			
-			for (i in 0...1 ) { 
+			for (i in 0...limit ) { 
 				c1 = circles[i];
 				arc = circlesSplits[i];
 				a = arc;
-			trace(a.getCount());
+				if (TESTING_ONE)  { 
+					if (a != null) trace(a.getCount());
+				}
 				while ( a != null) {
 					g.beginStroke("#ff0000");
 					g.arc(c1.x, c1.y, SIZE2, a.from, a.to, false);
 					g.endStroke();
-					trace(a.toString());
+					if (TESTING_ONE) trace(a.toString());
 					a = a.next;
 				}	
 			}
