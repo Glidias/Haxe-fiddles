@@ -1,4 +1,8 @@
+import createjs.Container;
+import createjs.DisplayObject;
+import createjs.MovieClip;
 import createjs.Shape;
+import createjs.Sprite;
 import createjs.Stage;
 import createjs.Matrix2D;
 import js.Browser;
@@ -112,7 +116,7 @@ class ArcSplit {
 	}
 	
 	function performSplitting2(arcMinAng:Float, arcMaxAng:Float):ArcSplit {
-		var headS:ArcSplit = this;
+		var headS:ArcSplit = null;
 		var s:ArcSplit  = this;
 		var lastS:ArcSplit = null;
 		while (s != null) 
@@ -125,7 +129,7 @@ class ArcSplit {
 			if (checkS != null) { // replace
 				s.next = null;
 				
-				if (lastS != null) {
+				if (headS != null) {
 					lastS.next = checkS;
 				}
 				else {
@@ -143,11 +147,7 @@ class ArcSplit {
 				}
 			
 			}
-			else {  // shift 
-				s.next = null;
-				headS = nextS;
-		
-			}
+			
 			
 			lastS = s;
 			s = nextS;
@@ -178,6 +178,7 @@ class TestExp {
 	private var canvas:CanvasElement;
 	private var stage:Stage;
 	private var shape:Shape;
+	private var circleCont:Container;
 	private var arcs:Shape;
 	
 	private static inline var SIZE:Float = 16;
@@ -200,10 +201,15 @@ class TestExp {
 		shape  =new Shape();
 		stage.addChild(shape);
 		
+		circleCont = new Container();
+		stage.addChild(circleCont);
+		
 		arcs = new Shape();
 		stage.addChild(arcs);
 		
-		arcs.graphics.setStrokeStyle(1);
+
+		
+		
 		
 		
 		shape.graphics
@@ -227,7 +233,7 @@ class TestExp {
 		addCircle(50, 20, SIZE * .5, "#000000");
 		addCircle(70, 20, SIZE * .5, "#000000");
 		addCircle(90, 20, SIZE * .5, "#000000");
-		drawExposedArcs();
+//		drawExposedArcs();
 	}
 	
 	var xDist:Float;
@@ -295,24 +301,32 @@ class TestExp {
 		 circle.y = y;
 		 circle.name = "circle";
 		 circle.on("pressmove", drag);
-		 stage.addChild(circle);
+		 circleCont.addChild(circle);
 		 
 		 circles.push(circle);
 		 circlesSplits.push(null);
+		 
 		
-		  circle.graphics.beginFill(fill).drawCircle(0, 0, r);
+		
+		  circle.graphics.beginFill(fill).drawCircle(0, 0, r).endFill();
+		//  circle.graphics.beginStroke("#555555").drawCircle(0,0,SIZE2).endStroke();
 	}
 		
 	
-	static inline var TESTING_ONE:Bool = true;
+	static inline var TESTING_ONE:Bool = false;
+	static inline var DRAW_CHORDS:Bool = false;
+	
 	function drawExposedArcs() {
+		
 		var c1:createjs.Shape;
 		var a:ArcSplit;
 		var baseAng:Float;
 		var arc:ArcSplit;
 		var len:Int = circles.length;
+	
 		var g = arcs.graphics;
 		g.clear();
+	//	g.setStrokeStyle(1);
 		var limit;
 		
 		
@@ -326,14 +340,15 @@ class TestExp {
 		
 		for (i in 0...limit) {
 			c1 = circles[i];
-			g.beginStroke("#555555");
-			g.drawCircle(c1.x, c1.y, SIZE2);
-			g.endStroke();
 			
 			
-			var upp = i + 1;
-			for (k in upp...len ) {
+			
+			
+			for (k in (i+1)...len ) {
+				
 				var c2 = circles[k];
+				
+				
 				var ang;
 				ang = getIntersectionArc(c1.x, c1.y, SIZE2, c2.x, c2.y, SIZE2);
 				if (ang != 0) {
@@ -344,78 +359,97 @@ class TestExp {
 					var ny = offsetY / cDist;
 					
 					// line to to chord's midpt from circle center
-					g.beginStroke("#555555");
-					g.moveTo(c1.x, c1.y);
-					g.lineTo(x=c1.x+nx*xDist,  y=c1.y+ny*xDist);
-					g.endStroke();
-					
-					// chord pt1
-					g.beginStroke("#555555");
-					g.moveTo(x,y);
-					g.lineTo(x - ny*aDist*.5, y + nx*aDist*.5 );
-					g.endStroke();
-					
-					// chord pt2
-					g.beginStroke("#555555");
-					g.moveTo(x,y);
-					g.lineTo(x + ny*aDist*.5, y - nx*aDist*.5 );
-					g.endStroke();
+					if (DRAW_CHORDS) {
+						g.beginStroke("#555555");
+						g.moveTo(c1.x, c1.y);
+						g.lineTo(x=c1.x+nx*xDist,  y=c1.y+ny*xDist);
+						g.endStroke();
+						
+						// chord pt1
+						g.beginStroke("#555555");
+						g.moveTo(x,y);
+						g.lineTo(x - ny*aDist*.5, y + nx*aDist*.5 );
+						g.endStroke();
+						
+						// chord pt2
+						g.beginStroke("#555555");
+						g.moveTo(x,y);
+						g.lineTo(x + ny*aDist*.5, y - nx*aDist*.5 );
+						g.endStroke();
+					}
 					
 					arc = circlesSplits[i];
 					baseAng = Math.atan2(offsetY, offsetX);
-					circlesSplits[i] = arc = arc.performSplitting(baseAng-ang , baseAng+ang);
-					a = arc;
+					if (arc != null) circlesSplits[i] = arc = arc.performSplitting(baseAng-ang , baseAng+ang);
+					
 					
 					if (!TESTING_ONE) {
 					///*
 					ang = getIntersectionArc(c2.x, c2.y, SIZE2, c1.x, c1.y, SIZE2);
 					arc = circlesSplits[k];
 					baseAng = Math.atan2(offsetY, offsetX);
-					circlesSplits[k] = arc = arc.performSplitting(baseAng-ang , baseAng+ang);
-					a = arc;
+					if (arc != null) circlesSplits[k] = arc = arc.performSplitting(baseAng-ang , baseAng+ang);
+					
 					
 					nx *= -1;
 					ny *= -1;
 					
+					
 					// line to to chord's midpt from circle center
-					g.beginStroke("#555555");
-					g.moveTo(c2.x, c2.y);
-					g.lineTo(x=c2.x+nx*xDist,  y=c2.y+ny*xDist);
-					g.endStroke();
 					
-					// chord pt1
-					g.beginStroke("#555555");
-					g.moveTo(x,y);
-					g.lineTo(x - ny*aDist*.5, y + nx*aDist*.5 );
-					g.endStroke();
+					if (DRAW_CHORDS) {
+						g.beginStroke("#555555");
+						g.moveTo(c2.x, c2.y);
+						g.lineTo(x=c2.x+nx*xDist,  y=c2.y+ny*xDist);
+						g.endStroke();
+						
+						// chord pt1
+						g.beginStroke("#555555");
+						g.moveTo(x,y);
+						g.lineTo(x - ny*aDist*.5, y + nx*aDist*.5 );
+						g.endStroke();
+						
+						// chord pt2
+						g.beginStroke("#555555");
+						g.moveTo(x,y);
+						g.lineTo(x + ny*aDist*.5, y - nx*aDist*.5 );
+						g.endStroke();
+					}
 					
-					// chord pt2
-					g.beginStroke("#555555");
-					g.moveTo(x,y);
-					g.lineTo(x + ny*aDist*.5, y - nx*aDist*.5 );
-					g.endStroke();
 					//*/
 					}
 				}
 
 			}
 			
+			//g.setStrokeStyle(2);
+			
+			
+			// dunno why need to clear graphics here as well???
+			
+			
+			g.clear();
 			for (i in 0...limit ) { 
+				
 				c1 = circles[i];
 				arc = circlesSplits[i];
 				a = arc;
-				if (TESTING_ONE)  { 
-					if (a != null) trace(a.getCount());
-				}
+				
+				//if (i==1) trace("B");
 				while ( a != null) {
-					g.beginStroke("#ff0000");
+					g.beginStroke("#ffff00");
 					g.arc(c1.x, c1.y, SIZE2, a.from, a.to, false);
 					g.endStroke();
-					if (TESTING_ONE) trace(a.toString());
+					//if (i == 1) {
+					//	if (a != null) trace(a +"");
+					
+					//}
 					a = a.next;
 				}	
 			}
+			
 		}
+		
 		
 		
 	}
@@ -427,9 +461,9 @@ class TestExp {
 		matrix.appendMatrix(m);
 		shape.set(matrix.decompose());
 		
-		
+		//trace("FRAME");
 		drawExposedArcs();
-		stage.update();
+			stage.update();
 		
 			
 		Browser.window.requestAnimationFrame( requestFrame);

@@ -16,7 +16,7 @@ ArcSplit.prototype = {
 		return count;
 	}
 	,performSplitting2: function(arcMinAng,arcMaxAng) {
-		var headS = this;
+		var headS = null;
 		var s = this;
 		var lastS = null;
 		while(s != null) {
@@ -24,7 +24,7 @@ ArcSplit.prototype = {
 			var checkS = s.splitBy(arcMinAng,arcMaxAng);
 			if(checkS != null) {
 				s.next = null;
-				if(lastS != null) lastS.next = checkS; else headS = checkS;
+				if(headS != null) lastS.next = checkS; else headS = checkS;
 				if(checkS.next != null) {
 					s = checkS.next;
 					checkS.next.next = nextS;
@@ -32,9 +32,6 @@ ArcSplit.prototype = {
 					s = checkS;
 					checkS.next = nextS;
 				}
-			} else {
-				s.next = null;
-				headS = nextS;
 			}
 			lastS = s;
 			s = nextS;
@@ -101,9 +98,10 @@ var TestExp = function() {
 	this.stage = new createjs.Stage(this.canvas);
 	this.shape = new createjs.Shape();
 	this.stage.addChild(this.shape);
+	this.circleCont = new createjs.Container();
+	this.stage.addChild(this.circleCont);
 	this.arcs = new createjs.Shape();
 	this.stage.addChild(this.arcs);
-	this.arcs.graphics.setStrokeStyle(1);
 	this.shape.graphics.beginStroke("red").rect(-100,-50,200,100).endStroke();
 	this.shape.x = 400;
 	this.shape.y = 200;
@@ -114,7 +112,6 @@ var TestExp = function() {
 	this.addCircle(50,20,8.,"#000000");
 	this.addCircle(70,20,8.,"#000000");
 	this.addCircle(90,20,8.,"#000000");
-	this.drawExposedArcs();
 };
 TestExp.prototype = {
 	requestFrame: function(time) {
@@ -141,16 +138,12 @@ TestExp.prototype = {
 			var i = _g++;
 			this.circlesSplits[i] = new ArcSplit().asDefault();
 		}
-		limit = 1;
+		limit = len;
 		var _g = 0;
 		while(_g < limit) {
 			var i = _g++;
 			c1 = this.circles[i];
-			g.beginStroke("#555555");
-			g.drawCircle(c1.x,c1.y,32);
-			g.endStroke();
-			var upp = i + 1;
-			var _g1 = upp;
+			var _g1 = i + 1;
 			while(_g1 < len) {
 				var k = _g1++;
 				var c2 = this.circles[k];
@@ -161,36 +154,28 @@ TestExp.prototype = {
 					var y;
 					var nx = this.offsetX / this.cDist;
 					var ny = this.offsetY / this.cDist;
-					g.beginStroke("#555555");
-					g.moveTo(c1.x,c1.y);
-					g.lineTo(x = c1.x + nx * this.xDist,y = c1.y + ny * this.xDist);
-					g.endStroke();
-					g.beginStroke("#555555");
-					g.moveTo(x,y);
-					g.lineTo(x - ny * this.aDist * .5,y + nx * this.aDist * .5);
-					g.endStroke();
-					g.beginStroke("#555555");
-					g.moveTo(x,y);
-					g.lineTo(x + ny * this.aDist * .5,y - nx * this.aDist * .5);
-					g.endStroke();
 					arc = this.circlesSplits[i];
 					baseAng = Math.atan2(this.offsetY,this.offsetX);
-					this.circlesSplits[i] = arc = arc.performSplitting(baseAng - ang,baseAng + ang);
-					a = arc;
+					if(arc != null) this.circlesSplits[i] = arc = arc.performSplitting(baseAng - ang,baseAng + ang);
+					ang = this.getIntersectionArc(c2.x,c2.y,32,c1.x,c1.y,32);
+					arc = this.circlesSplits[k];
+					baseAng = Math.atan2(this.offsetY,this.offsetX);
+					if(arc != null) this.circlesSplits[k] = arc = arc.performSplitting(baseAng - ang,baseAng + ang);
+					nx *= -1;
+					ny *= -1;
 				}
 			}
+			g.clear();
 			var _g1 = 0;
 			while(_g1 < limit) {
 				var i1 = _g1++;
 				c1 = this.circles[i1];
 				arc = this.circlesSplits[i1];
 				a = arc;
-				if(a != null) console.log(a.getCount());
 				while(a != null) {
-					g.beginStroke("#ff0000");
+					g.beginStroke("#ffff00");
 					g.arc(c1.x,c1.y,32,a.from,a.to,false);
 					g.endStroke();
-					console.log(a.toString());
 					a = a.next;
 				}
 			}
@@ -203,10 +188,10 @@ TestExp.prototype = {
 		circle.y = y;
 		circle.name = "circle";
 		circle.on("pressmove",$bind(this,this.drag));
-		this.stage.addChild(circle);
+		this.circleCont.addChild(circle);
 		this.circles.push(circle);
 		this.circlesSplits.push(null);
-		circle.graphics.beginFill(fill).drawCircle(0,0,r);
+		circle.graphics.beginFill(fill).drawCircle(0,0,r).endFill();
 	}
 	,drag: function(evt) {
 		if(evt.target.name == "square") {
@@ -265,7 +250,8 @@ TestExp.SIZE2 = 32;
 TestExp.RAD_TO_DEG = 57.295779513082320876798154814105;
 TestExp.PI_2 = 3.1415926535897932384626433832795 * 2;
 TestExp.PI = 3.1415926535897932384626433832795;
-TestExp.TESTING_ONE = true;
+TestExp.TESTING_ONE = false;
+TestExp.DRAW_CHORDS = false;
 js.Browser.window = typeof window != "undefined" ? window : null;
 js.Browser.document = typeof window != "undefined" ? window.document : null;
 Main.main();
