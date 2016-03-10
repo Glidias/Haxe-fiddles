@@ -9,12 +9,14 @@ import js.Browser;
 import js.html.CanvasElement;
 import js.html.CanvasRenderingContext2D;
 import js.html.RequestAnimationFrameCallback;
+import tros.chess.ChessRuleFlags;
 
 class Main
 {
 	static public function main()
 	{
 		new TestExp();
+		ChessRuleFlags;
 	}
 	
 	
@@ -116,6 +118,7 @@ class ArcSplit {
 	}
 	
 	function performSplitting2(arcMinAng:Float, arcMaxAng:Float):ArcSplit {
+		var checkS:ArcSplit = null;
 		var headS:ArcSplit = null;
 		var s:ArcSplit  = this;
 		var lastS:ArcSplit = null;
@@ -125,7 +128,7 @@ class ArcSplit {
 			
 			
 			
-			var checkS:ArcSplit = s.splitBy(arcMinAng, arcMaxAng);
+			checkS = s.splitBy(arcMinAng, arcMaxAng);
 			if (checkS != null) { // replace
 				s.next = null;
 				
@@ -149,9 +152,15 @@ class ArcSplit {
 			}
 			
 			
+			
+			
 			lastS = s;
 			s = nextS;
 		}
+		
+		if (headS == null && checkS != null) {
+				headS = checkS;
+			}
 		
 		return headS;
 	}

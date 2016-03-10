@@ -2,6 +2,7 @@
 var Main = function() { }
 Main.main = function() {
 	new TestExp();
+	tros.chess.ChessRuleFlags;
 }
 var ArcSplit = function() {
 };
@@ -16,12 +17,13 @@ ArcSplit.prototype = {
 		return count;
 	}
 	,performSplitting2: function(arcMinAng,arcMaxAng) {
+		var checkS = null;
 		var headS = null;
 		var s = this;
 		var lastS = null;
 		while(s != null) {
 			var nextS = s.next;
-			var checkS = s.splitBy(arcMinAng,arcMaxAng);
+			checkS = s.splitBy(arcMinAng,arcMaxAng);
 			if(checkS != null) {
 				s.next = null;
 				if(headS != null) lastS.next = checkS; else headS = checkS;
@@ -36,6 +38,7 @@ ArcSplit.prototype = {
 			lastS = s;
 			s = nextS;
 		}
+		if(headS == null && checkS != null) headS = checkS;
 		return headS;
 	}
 	,performSplitting: function(arcMinAng,arcMaxAng) {
@@ -229,6 +232,10 @@ TestExp.prototype = {
 }
 var js = {}
 js.Browser = function() { }
+var tros = {}
+tros.chess = {}
+tros.chess.ChessRuleFlags = function() {
+};
 var $_, $fid = 0;
 function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; o.hx__closures__[m.__id__] = f; } return f; };
 Math.__name__ = ["Math"];
@@ -254,5 +261,27 @@ TestExp.TESTING_ONE = false;
 TestExp.DRAW_CHORDS = false;
 js.Browser.window = typeof window != "undefined" ? window : null;
 js.Browser.document = typeof window != "undefined" ? window.document : null;
+tros.chess.ChessRuleFlags.MELEE_ORTHOGONAL_FULL_ONLY = 1;
+tros.chess.ChessRuleFlags.MELEE_SPREAD_OUT_2 = 2;
+tros.chess.ChessRuleFlags.MELEE_FREE_INTERCEPT_JOINER_PATH = 4;
+tros.chess.ChessRuleFlags.MELEE_FREE_INTERCEPT_ANYONE = 8;
+tros.chess.ChessRuleFlags.MELEE_FREE_INTERCEPT_IMMEDIATE_RESPONSE = 16;
+tros.chess.ChessRuleFlags.MELEE_COST_INTERCEPT_JOINER = 32;
+tros.chess.ChessRuleFlags.MELEE_COST_INTERCEPT_JOINER_NEWBLOB = 64;
+tros.chess.ChessRuleFlags.MELEE_DIAGONAL_OPENHALF_ENGAGE = 128;
+tros.chess.ChessRuleFlags.MELEE_DIAGONAL_BISHOP_ENGAGE = 256;
+tros.chess.ChessRuleFlags.TOTAL_MELEE_RULES = 9;
+tros.chess.ChessRuleFlags.MOVEMENT_DISPLACEMENT = 512;
+tros.chess.ChessRuleFlags.MOVEMENT_FRIENDLY_DIAGONAL_L = 1024;
+tros.chess.ChessRuleFlags.MOVEMENT_FRIENDLY_BISHOP_DIAGONAL_L = 2048;
+tros.chess.ChessRuleFlags.MOVEMENT_DIAGONAL_COST_ONE = 4096;
+tros.chess.ChessRuleFlags.CONFIRMED_BLOB_BLOCK_FRIENDLY = 8192;
+tros.chess.ChessRuleFlags.CONFIRMED_BLOB_BLOCK_ENEMY = 16384;
+tros.chess.ChessRuleFlags.UNCONFIRMED_BLOB_BLOCK_FRIENDLY = 32768;
+tros.chess.ChessRuleFlags.UNCONFIRMED_BLOB_BLOCK_ENEMY = 65536;
+tros.chess.ChessRuleFlags.RULESET_ALL = 131071;
+tros.chess.ChessRuleFlags.RULESET_ABSTRACT = 1062;
+tros.chess.ChessRuleFlags.RULESET_SPATIAL_REALISM = 124542;
+tros.chess.ChessRuleFlags.RULESET_TRYOUT = 58918;
 Main.main();
 })();
