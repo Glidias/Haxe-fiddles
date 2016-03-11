@@ -1,0 +1,43 @@
+RULESET_ABSTRACT
+(RULESET_SPATIAL_REALISM & ~MOVEMENT_DISPLACEMENT)
+
+_____________________
+
+Guideline for grid/miniatures over chess grid..the necessity of abstraction:
+
+A generic Chinese chess grid (with a symbolic river/frontline border) is used solely to handle starting initial tactical formation layout and determine reachability of targets prior to a melee engagement clashes in the FIrst Round of Limelights. Primarily used to handle starting engagements only. Once individual engagements occur, it's possible for certain people to leave the formation and no longer be restricted to movement on the chess grid on subsequent ROund of Limelights (eg. if they performed FUll Evade to flee, or a terrain roll that displaces themselves), so they don't hold any explicit collidable position on the chess grid anymore and their last limelight position on the chess grid (if any) is only a conceptual rough indicator to determine reachability to other bouts.
+
+Thus, the Chess grid is only a short metagame at the start of combat to determine WHO can engage who, taking into account any chokepoints, restricted tunnel widths, and some randomly placed obstacles in the environment (in order to simulate the surrounding tactical environment where 2 parties meet).
+
+Abstract chess tactics:
+----------------------------
+
+It's possible to play the initial start of combat WITHOUT the chess grid visually shown to players, and only used by the GM secretly to calculate who can engage who. However, the decisiosn the players make in this context would appear slightly arbituary without an explicit visual reference, which the GM must describe accordingly. ALso, the precision required on which side/flank of the enemy to engage would not be avilable, or would appear arbituary if such a decision is presentded to the player. Thus, the chess system has to be simplified to the following:
+
+- No "funny" custom-positioned formation arrangements. Instead, use a standardised formation generation system that simply involves describing men for each row and their alignment, including spread of formation ,etc. ie. totally parametric and easy to visualise in a predictable general fashion without a map.
+
+-  There are no blob-engagement end point circles that deal collision detection. Instead, engagement arcs of exposed surrounding half-squares is determined around every potential target. In order to engage him, you just need to move to cover any of those squares along a particular arc. Distance is simply determined as shortest path to any one of those squares. Doing so constitutes as "creating/joining the bout" on that arc. The number n of exposed corner half squares (and extended half-squares rects from their cardinal edges) determines the maximum number of people that can surround him on that arc (Math.floor(n/2)), and also the optimal amount of people that can engage him on that arc.  When this happens, there is no end-point collision blob formed as mentioned. Instead, upon deciding whether to engage someone, you will be given a rough indicator indicating how much of him is exposed on that arc and how many players can surround him...therefore allowing you to also know how many of your friends can also engage him on that arc. Engaging a target to outnumber him or start a fresh new 1-on-1 bout with the target simply involves "entering" that bout engagement arc.
+
+- Moving up the entire formation in order to run toe to toe with the enemy, involves several variations of some optional sidestepping to either left/right, if you wish, otherwise, it's a straight on advance. You might/can be a given a list of contact engagements that will occur when you engage the enemy on that setting (shift left/right or straight ahead). 
+
+- You can also optionally move up specific groups/columns of individuals as a formation, or select only a specific ranks(S) in front to move up.  However, you cannot get pass the frontline of the enemy side for such grouped movement.
+
+
+- As long as you touch one of the engagement contact exposed half squares while making your movement path, engagement will/can be triggered. If you are trying to "pass" through while everyone is busily engaged within the arc, this requires a Terrain Roll challenge in order to get pass, with difficulty depending on how crowded that bout arc is and how many half-squares you are passing through. Failure to get through causes you to get stuck while out of formation.  By default, you will attempt a "safe" path if possible.
+
+- When are found hanging around "out of formation", you don't deal collision detection and is effectively outside the chess grid. Your position on the chess grid is merely used as a form of abstract positional limelight reference and determines how many people can engage you on your exposed arc at the time the limelight is formed, and the distance to reach you.
+
+- If actively custom-move on the chessboard (leaving your formation) to fluidly engage anyone AS AN individual, it involves "entering" into a bout on that engagement arc in order to engage/outnumber the relavant person within it. But If you simply advance rank in order to engage the person(s) directly in front of you, and the rest of the guys do likewise by advancing ranks alongside you (ie. following advance), then this is still considered in-formation for those that move up in such a manner. Your explicit position on the chessboard is maintained. 
+
+
+
+
+
+Dealing with melee outnumberers while within a formation:
+--------------------------------------------------
+House-rule that allows Multiple Opponents terrain roll to be done within a formation without being forced to leave the formation. This is happens when your "friends" beside you in the formation happen to act as a natural obstacle/deterrant against multiple enemies being able to find an adequate opening to hit you. Thus, the enemies, even though they are engaging/targeting you, is effectively engaging the "formation" as well. 
+Note that there can be cases where you'll still be forced to leave the formation if there's not enough friends being able to cover your flanks. How to determine this?
+
+Before the first limelight starts, in order of limelights and mobility for outnumberers within the limelight, shift individual engagement blobs of outnumberers away from  diagonal and adjacient contacts from your other "friends" within the target formation, if space allows, while still maintaining engagement contact on you. Any outnumberers, if no longer being marked out by friends within your formation, in order to be avoided, must also yield movement on your part (forcing you to leave the formation) with your successful terrain roll. In short, there can be cases where performing a Terrain Roll might require you to leave the formation in order to avoid a specific outnumberer, otherwise, you have to suck it up within the formation and deal with that particular enemy as well. Depending on the nature of your exposed flanks within your formation, you might being forced to leave the formation or get murdered by multiple enemies. This is how a formation MIGHT end up breaking during a melee clash.
+
+As always, "leaving" the formation means no longer holding a position within the Chess grid.
