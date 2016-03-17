@@ -5,10 +5,15 @@ import createjs.Shape;
 import createjs.Sprite;
 import createjs.Stage;
 import createjs.Matrix2D;
+import de.polygonal.ds.Graph;
 import js.Browser;
 import js.html.CanvasElement;
 import js.html.CanvasRenderingContext2D;
 import js.html.RequestAnimationFrameCallback;
+import textifician.mapping.LocationDefinition;
+import textifician.mapping.LocationPacket;
+import textifician.mapping.TextificianUtil;
+import textifician.mapping.TextificianWorld;
 import tros.chess.ChessRuleFlags;
 
 class Main
@@ -17,6 +22,9 @@ class Main
 	{
 		new TestExp();
 		ChessRuleFlags;
+		Graph;
+		LocationPacket; LocationDefinition; TextificianWorld; TextificianUtil;
+
 	}
 	
 	
