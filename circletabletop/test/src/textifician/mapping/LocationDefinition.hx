@@ -26,19 +26,19 @@ class LocationDefinition
 	public static inline var LIGHTING_NORMAL:Int =  2;
 	public static inline var LIGHTING_BRIGHT:Int =  3;
 	
-	public static inline var CROWDEDNESS_NONE:Int = 0;
-	public static inline var CROWDEDNESS_VERY_SPARSE:Int = 1;
-	public static inline var CROWDEDNESS_SPARSE:Int = 2;
-	public static inline var CROWDEDNESS_AVERAGE:Int = 3;
-	public static inline var CROWDEDNESS_DENSE:Int = 4;
-	public static inline var CROWDEDNESS_VERY_DENSE:Int = 5;
+	public static inline var DENSITY_NONE:Int = 0;
+	public static inline var DENSITY_VERY_SPARSE:Int = 1;
+	public static inline var DENSITY_SPARSE:Int = 2;
+	public static inline var DENSITY_AVERAGE:Int = 3;
+	public static inline var DENSITY_DENSE:Int = 4;
+	public static inline var DENSITY_VERY_DENSE:Int = 5;
 
 	public var id:String;
 	
 	public var label:String;
 	public var description:String;
 	public var flags:Int;
-	public var size:Float;
+	public var size:Float; // convention for now: radius for TYPE_REGION, TYPE_POINT N/A, and TYPE_PATH size determines width of path 
 	public var type:Int;
 	
 	public var envFlags:Int;
@@ -47,7 +47,7 @@ class LocationDefinition
 	
 	// procedural generation
 	public var generalFixtures:Array<String>;  // array of fixture definitions 
-	public var crowdedness:Int;  // density of fixtures
+	public var fixtureDensity:Int;  // density of fixtures
 	
 	// variable that might be useful for point to point distance/breakpoint arc resolution
 	public var priorityIndex:Int;

@@ -4,7 +4,7 @@ import de.polygonal.ds.GraphArc;
 import de.polygonal.ds.GraphNode;
 
 /**
- * ...
+ * Generic mapping/measurement methods used by Textifician engine
  * @author Glenn Ko
  */
 class TextificianUtil

@@ -3,7 +3,7 @@ import textifician.mapping.IXYZ;
 import textifician.rpg.ICharacter;
 
 /**
- * ...
+ * Marker class to denote a party of characters
  * @author Glenn Ko
  */
 interface IParty extends IXYZ

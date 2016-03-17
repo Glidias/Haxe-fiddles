@@ -2,6 +2,7 @@ package textifician.rpg;
 import textifician.mapping.IXYZ;
 
 /**
+ * Marker class for pickable items
  * @author Glenn Ko
  */
 

@@ -22,9 +22,10 @@ class Zone implements IXYZ
 	public var z:Float;
 	private var parentZone:Zone; // does this zone exist as a child under another zone? If so, the entrance leading into the zone will also lead back out to the parentZOne. This determines the parent coordinate space for this zone.
 	
-	// Priority when entering a node with Zone..which starting point to choose?
+	// CONVENTION: Priority when entering a node with Zone..which starting point to choose?
 	// LocationDefinition is FLAG_ENTRANCE into given zone, FInd nearest entrance....haven't entered Zone yet until gone through entrance
-	// LocationDefinition is FLAG_KEY and NOT flag_entrance, will fast-forward enter into that Zone based off mapped distance to it
+	// LocationDefinition is FLAG_KEY and NOT flag_entrance, will fast-forward enter into that Zone based off mapped distance to it from current position.
+	// If no current position, than randomly choose 1 location.
 	
 	public function new() 
 	{
