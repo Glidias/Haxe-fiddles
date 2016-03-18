@@ -9,6 +9,14 @@ Main.main = function() {
 	textifician.mapping.LocationDefinition;
 	textifician.mapping.TextificianWorld;
 	textifician.mapping.TextificianUtil;
+	new TestTextification();
+}
+var TestTextification = function() {
+	this.world = new textifician.mapping.TextificianWorld();
+};
+TestTextification.__name__ = true;
+TestTextification.prototype = {
+	__class__: TestTextification
 }
 var ArcSplit = function() {
 };
@@ -1377,9 +1385,20 @@ de.polygonal.ds.error.Assert = function() { }
 de.polygonal.ds.error.Assert.__name__ = true;
 var haxe = {}
 haxe.ds = {}
-haxe.ds.StringMap = function() { }
+haxe.ds.StringMap = function() {
+	this.h = { };
+};
 haxe.ds.StringMap.__name__ = true;
 haxe.ds.StringMap.__interfaces__ = [IMap];
+haxe.ds.StringMap.prototype = {
+	get: function(key) {
+		return this.h["$" + key];
+	}
+	,set: function(key,value) {
+		this.h["$" + key] = value;
+	}
+	,__class__: haxe.ds.StringMap
+}
 var js = {}
 js.Boot = function() { }
 js.Boot.__name__ = true;
@@ -1510,13 +1529,85 @@ textifician.mapping.IndoorLocationSpecs = function() {
 };
 textifician.mapping.IndoorLocationSpecs.__name__ = true;
 textifician.mapping.IndoorLocationSpecs.prototype = {
-	__class__: textifician.mapping.IndoorLocationSpecs
+	create: function(wallHeight,wallThickness,wallStrength,ceilingThickness,ceilingStrength) {
+		if(ceilingStrength == null) ceilingStrength = -1;
+		if(ceilingThickness == null) ceilingThickness = -1;
+		if(wallStrength == null) wallStrength = -1;
+		if(wallThickness == null) wallThickness = -1;
+		if(wallHeight == null) wallHeight = -1;
+		var me = new textifician.mapping.IndoorLocationSpecs();
+		me.wallHeight = wallHeight < 0?textifician.mapping.IndoorLocationSpecs.DEFAULT_WALL_HEIGHT:wallHeight;
+		me.wallThickness = wallThickness < 0?textifician.mapping.IndoorLocationSpecs.DEFAULT_WALL_THICKNESS:wallThickness;
+		me.wallStrength = wallStrength < 0?textifician.mapping.IndoorLocationSpecs.DEFAULT_WALL_STRENGTH:wallStrength;
+		me.ceilingThickness = ceilingThickness < 0?textifician.mapping.IndoorLocationSpecs.DEFAULT_CEILING_THICKNESS:ceilingThickness;
+		me.ceilingStrength = ceilingStrength < 0?textifician.mapping.IndoorLocationSpecs.DEFAULT_CEILING_STRENGTH:ceilingStrength;
+		return me;
+	}
+	,__class__: textifician.mapping.IndoorLocationSpecs
 }
 textifician.mapping.LocationDefinition = function() {
 };
 textifician.mapping.LocationDefinition.__name__ = true;
 textifician.mapping.LocationDefinition.prototype = {
-	__class__: textifician.mapping.LocationDefinition
+	setCeilingAmount: function(ceilingAmount) {
+		this.envFlags &= -13;
+		this.envFlags |= ceilingAmount == 0?0:ceilingAmount == 1?4:ceilingAmount == 2?8:12;
+		return this;
+	}
+	,setWallAmount: function(wallAmount) {
+		this.envFlags &= -4;
+		this.envFlags |= wallAmount == 0?0:wallAmount == 1?1:wallAmount == 2?2:3;
+		return this;
+	}
+	,setupShelterAmounts: function(wallAmount,ceilingAmount) {
+		this.envFlags &= -16;
+		this.envFlags |= wallAmount == 0?0:wallAmount == 1?1:wallAmount == 2?2:3;
+		this.envFlags |= ceilingAmount == 0?0:ceilingAmount == 1?4:ceilingAmount == 2?8:12;
+		return this;
+	}
+	,makeFullyOutdoor: function() {
+		this.envFlags &= -16;
+		return this;
+	}
+	,makeFullyIndoor: function() {
+		this.envFlags &= -16;
+		this.envFlags |= 15;
+		return this;
+	}
+	,resetShelterCeilingFlags: function() {
+		this.envFlags &= -13;
+	}
+	,resetShelterWallFlags: function() {
+		this.envFlags &= -4;
+	}
+	,resetShelterFlags: function() {
+		this.envFlags &= -16;
+	}
+	,makeLandmark: function(val) {
+		if(val == null) val = true;
+		if(val) this.flags |= 8; else this.flags &= -9;
+		return this;
+	}
+	,makeKey: function(val) {
+		if(val == null) val = true;
+		if(val) this.flags |= 4; else this.flags &= -5;
+		return this;
+	}
+	,makeEntrance: function(val) {
+		if(val == null) val = true;
+		if(val) this.flags |= 1; else this.flags &= -2;
+		return this;
+	}
+	,makeDoor: function(val,implyEntrance) {
+		if(implyEntrance == null) implyEntrance = true;
+		if(val == null) val = true;
+		if(val) {
+			this.flags |= implyEntrance?1:0;
+			this.flags |= 2;
+		} else this.flags &= -3;
+		return this;
+	}
+	,__class__: textifician.mapping.LocationDefinition
 }
 textifician.mapping.LocationPacket = function() {
 	this.state = new textifician.mapping.LocationState();
@@ -1531,7 +1622,34 @@ textifician.mapping.LocationState = function() {
 };
 textifician.mapping.LocationState.__name__ = true;
 textifician.mapping.LocationState.prototype = {
-	__class__: textifician.mapping.LocationState
+	unlockDoor: function() {
+		this.flags &= -2;
+		return this;
+	}
+	,lockDoor: function() {
+		this.flags |= 1;
+		return this;
+	}
+	,closeAndLockDoor: function() {
+		this.closeDoor();
+		this.flags |= 1;
+		return this;
+	}
+	,closeDoor: function() {
+		this.flags &= -7;
+		return this;
+	}
+	,openDoorPartially: function(ajarOnly) {
+		if(ajarOnly == null) ajarOnly = false;
+		this.flags &= -7;
+		this.flags |= ajarOnly?2:4;
+		return this;
+	}
+	,openDoorFully: function() {
+		this.flags |= 6;
+		return this;
+	}
+	,__class__: textifician.mapping.LocationState
 }
 textifician.mapping.TextificianUtil = function() { }
 textifician.mapping.TextificianUtil.__name__ = true;
@@ -1560,15 +1678,46 @@ textifician.mapping.TextificianUtil.getIdFromLabel = function(label) {
 textifician.mapping.TextificianWorld = function() {
 	textifician.rpg.ICharacter;
 	textifician.rpg.IParty;
+	textifician.rpg.IFixture;
+	textifician.rpg.IItem;
+	this.zones = [];
+	this.graph = new de.polygonal.ds.Graph();
+	this.locationDefs = new haxe.ds.StringMap();
 };
 textifician.mapping.TextificianWorld.__name__ = true;
+textifician.mapping.TextificianWorld.configureGlobals = function(defaultMapScale,smallestMovementUnit) {
+	textifician.mapping.Zone.DEFAULT_SCALE = defaultMapScale;
+	textifician.mapping.TextificianUtil.EPSILON = smallestMovementUnit;
+}
+textifician.mapping.TextificianWorld.configureGlobalMapScale = function(defaultMapScale) {
+	textifician.mapping.Zone.DEFAULT_SCALE = defaultMapScale;
+}
+textifician.mapping.TextificianWorld.configureGlobalSmallestMovementDist = function(smallestMovementUnit) {
+	textifician.mapping.TextificianUtil.EPSILON = smallestMovementUnit;
+}
 textifician.mapping.TextificianWorld.prototype = {
-	__class__: textifician.mapping.TextificianWorld
+	addZone: function(zone) {
+		this.zones.push(zone);
+	}
+	,addLocationDefinition: function(def,forceOverwrite) {
+		if(forceOverwrite == null) forceOverwrite = true;
+		var current = this.locationDefs.get(def.id);
+		if(forceOverwrite || current == null) this.locationDefs.set(def.id,def);
+		return current;
+	}
+	,__class__: textifician.mapping.TextificianWorld
 }
 textifician.mapping.Zone = function() {
 };
 textifician.mapping.Zone.__name__ = true;
 textifician.mapping.Zone.__interfaces__ = [textifician.mapping.IXYZ];
+textifician.mapping.Zone.create = function(label,id) {
+	var zone = new textifician.mapping.Zone();
+	zone.label = label;
+	zone.id = id != null?id:textifician.mapping.TextificianUtil.getIdFromLabel(label);
+	zone.scale = textifician.mapping.Zone.DEFAULT_SCALE;
+	return zone;
+}
 textifician.mapping.Zone.setupNew = function(label,id,x,y,z,size,scale) {
 	if(scale == null) scale = 1;
 	if(size == null) size = 0;
@@ -1584,11 +1733,36 @@ textifician.mapping.Zone.setupNew = function(label,id,x,y,z,size,scale) {
 	return newZone;
 }
 textifician.mapping.Zone.prototype = {
-	removeChild: function(zone) {
+	removeChild: function(node) {
 		return null;
 	}
-	,addChild: function(zone) {
+	,addChild: function(node) {
 		return null;
+	}
+	,addChildren: function(list) {
+		var _g1 = 0, _g = list.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			this.addChild(list[i]);
+		}
+		return this;
+	}
+	,setPos: function(x,y,z) {
+		if(z == null) z = 0;
+		if(y == null) y = 0;
+		if(x == null) x = 0;
+		this.x = x;
+		this.y = y;
+		this.z = z;
+		return this;
+	}
+	,setSize: function(size) {
+		this.size = size;
+		return this;
+	}
+	,setScale: function(scale) {
+		this.scale = scale;
+		return this;
 	}
 	,__class__: textifician.mapping.Zone
 }
@@ -1598,6 +1772,17 @@ textifician.rpg.ICharacter.__name__ = true;
 textifician.rpg.ICharacter.__interfaces__ = [textifician.mapping.IXYZ];
 textifician.rpg.ICharacter.prototype = {
 	__class__: textifician.rpg.ICharacter
+}
+textifician.rpg.IFixture = function() { }
+textifician.rpg.IFixture.__name__ = true;
+textifician.rpg.IFixture.prototype = {
+	__class__: textifician.rpg.IFixture
+}
+textifician.rpg.IItem = function() { }
+textifician.rpg.IItem.__name__ = true;
+textifician.rpg.IItem.__interfaces__ = [textifician.mapping.IXYZ];
+textifician.rpg.IItem.prototype = {
+	__class__: textifician.rpg.IItem
 }
 textifician.rpg.IParty = function() { }
 textifician.rpg.IParty.__name__ = true;
@@ -1651,10 +1836,24 @@ TestExp.DRAW_CHORDS = false;
 de.polygonal.ds.HashKey._counter = 0;
 js.Browser.window = typeof window != "undefined" ? window : null;
 js.Browser.document = typeof window != "undefined" ? window.document : null;
+textifician.mapping.ArcPacket.CARDINAL_EAST = 0;
+textifician.mapping.ArcPacket.CARDINAL_SOUTH_EAST = 1;
+textifician.mapping.ArcPacket.CARDINAL_SOUTH = 2;
+textifician.mapping.ArcPacket.CARDINAL_SOUTH_WEST = 3;
+textifician.mapping.ArcPacket.CARDINAL_WEST = 4;
+textifician.mapping.ArcPacket.CARDINAL_NORTH_WEST = 5;
+textifician.mapping.ArcPacket.CARDINAL_NORTH = 6;
+textifician.mapping.ArcPacket.CARDINAL_NORTH_EAST = 7;
 textifician.mapping.ArcPacket.FLAG_ENTRANCE = 1;
+textifician.mapping.IndoorLocationSpecs.DEFAULT_WALL_HEIGHT = 1;
+textifician.mapping.IndoorLocationSpecs.DEFAULT_WALL_THICKNESS = 1;
+textifician.mapping.IndoorLocationSpecs.DEFAULT_WALL_STRENGTH = 1;
+textifician.mapping.IndoorLocationSpecs.DEFAULT_CEILING_THICKNESS = 1;
+textifician.mapping.IndoorLocationSpecs.DEFAULT_CEILING_STRENGTH = 1;
 textifician.mapping.LocationDefinition.FLAG_ENTRANCE = 1;
-textifician.mapping.LocationDefinition.FLAG_KEY = 2;
-textifician.mapping.LocationDefinition.FLAG_LANDMARK = 4;
+textifician.mapping.LocationDefinition.FLAG_DOOR = 2;
+textifician.mapping.LocationDefinition.FLAG_KEY = 4;
+textifician.mapping.LocationDefinition.FLAG_LANDMARK = 8;
 textifician.mapping.LocationDefinition.TYPE_POINT = 0;
 textifician.mapping.LocationDefinition.TYPE_PATH = 1;
 textifician.mapping.LocationDefinition.TYPE_REGION = 2;
@@ -1666,13 +1865,21 @@ textifician.mapping.LocationDefinition.LIGHTING_NONE_OR_OUTDOOR = 0;
 textifician.mapping.LocationDefinition.LIGHTING_DIM = 1;
 textifician.mapping.LocationDefinition.LIGHTING_NORMAL = 2;
 textifician.mapping.LocationDefinition.LIGHTING_BRIGHT = 3;
-textifician.mapping.LocationDefinition.CROWDEDNESS_NONE = 0;
-textifician.mapping.LocationDefinition.CROWDEDNESS_VERY_SPARSE = 1;
-textifician.mapping.LocationDefinition.CROWDEDNESS_SPARSE = 2;
-textifician.mapping.LocationDefinition.CROWDEDNESS_AVERAGE = 3;
-textifician.mapping.LocationDefinition.CROWDEDNESS_DENSE = 4;
-textifician.mapping.LocationDefinition.CROWDEDNESS_VERY_DENSE = 5;
+textifician.mapping.LocationDefinition.DENSITY_NONE = 0;
+textifician.mapping.LocationDefinition.DENSITY_VERY_SPARSE = 1;
+textifician.mapping.LocationDefinition.DENSITY_SPARSE = 2;
+textifician.mapping.LocationDefinition.DENSITY_AVERAGE = 3;
+textifician.mapping.LocationDefinition.DENSITY_DENSE = 4;
+textifician.mapping.LocationDefinition.DENSITY_VERY_DENSE = 5;
+textifician.mapping.LocationDefinition.SHELTER_NONE = 0;
+textifician.mapping.LocationDefinition.SHELTER_SPARSE = 1;
+textifician.mapping.LocationDefinition.SHELTER_HALF = 2;
+textifician.mapping.LocationDefinition.SHELTER_FULL = 3;
+textifician.mapping.LocationState.FLAG_DOOR_LOCKED = 1;
+textifician.mapping.LocationState.FLAG_DOOR_OPEN_1 = 2;
+textifician.mapping.LocationState.FLAG_DOOR_OPEN_2 = 4;
 textifician.mapping.TextificianUtil.EPSILON = 1;
+textifician.mapping.Zone.DEFAULT_SCALE = 1;
 tros.chess.ChessRuleFlags.MELEE_ORTHOGONAL_FULL_ONLY = 1;
 tros.chess.ChessRuleFlags.MELEE_FREE_INTERCEPT_JOINER_PATH = 2;
 tros.chess.ChessRuleFlags.MELEE_FREE_INTERCEPT_ANYONE = 4;

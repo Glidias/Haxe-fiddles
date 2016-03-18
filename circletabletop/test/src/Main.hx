@@ -24,9 +24,20 @@ class Main
 		ChessRuleFlags;
 		Graph;
 		LocationPacket; LocationDefinition; TextificianWorld; TextificianUtil;
+		new TestTextification();
+		
 
 	}
 	
+	
+}
+
+class TestTextification {
+	var world:TextificianWorld;
+	
+	public function new() {
+		world = new TextificianWorld();
+	}
 	
 }
 

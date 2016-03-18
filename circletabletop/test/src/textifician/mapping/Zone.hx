@@ -11,6 +11,8 @@ class Zone implements IXYZ
 {
 	private var id:String;
 	
+	public static var DEFAULT_SCALE:Float = 1;
+	
 	private var label:String;
 	private var childNodes:Array<GraphNode<Dynamic>>; // starting locations are Std.is( GraphNode.data, LocationPacket) instead of Zone. 
 	private var size:Float;  // radial size if any, zero if Point-based., if sizs ie negative, deemed infinity
@@ -25,18 +27,48 @@ class Zone implements IXYZ
 	// CONVENTION: Priority when entering a node with Zone..which starting point to choose?
 	// LocationDefinition is FLAG_ENTRANCE into given zone, FInd nearest entrance....haven't entered Zone yet until gone through entrance
 	// LocationDefinition is FLAG_KEY and NOT flag_entrance, will fast-forward enter into that Zone based off mapped distance to it from current position.
-	// If no current position, than randomly choose 1 location.
+	// If no current position, than randomly choose 1 location. 
 	
 	public function new() 
 	{
 	
 	}
 	
-	public function addChild(zone:Zone):Zone {
+	public static function create(label:String, id:String = null):Zone {
+		var zone:Zone = new Zone();
+		zone.label = label;
+		zone.id = id != null ? id : TextificianUtil.getIdFromLabel(label);
+		zone.scale = DEFAULT_SCALE;
+		return zone;
+	}
+	public function setScale(scale:Float):Zone {
+		this.scale = scale;
+		return this;
+	}
+	public function setSize(size:Float):Zone {
+		this.size = size;
+		return this;
+	}
+	public function setPos(x:Float = 0, y:Float=0, z:Float=0 ):Zone {
+		this.x = x;
+		this.y = y;
+		this.z = z;
+		return this;
+	}
+
+	public function addChildren(list:Array<GraphNode<Dynamic>>):Zone {
+		for ( i in 0...list.length) {
+			addChild(list[i]);
+		}
+		return this;
+	}
+	
+	public function addChild(node:GraphNode<Dynamic>):GraphNode<Dynamic> {
+		
 		return null;
 	}
 	
-	public function removeChild(zone:Zone):Zone {
+	public function removeChild(node:GraphNode<Dynamic>):GraphNode<Dynamic> {
 		return null;
 	}
 	
