@@ -104,4 +104,42 @@ Distance path to region
 )))
 
 
+________
+
+
+Location line-of-sight visibility:
+--------------------------------
+Textifician infers line-of-sight visibilty between location graph nodes using the following rules:
+
+- Direct Adjaciency 
+   - always deemed visible
+
+______________________
+
+By "enclosed" it means a location that is enclosed by some walls whose heights (if specified, else treated as high enough walls) are deemed high enough for occlusion.
+
+- Contigous Adjaciency  (if otherwise stated, always deemed visible)
+ - (any combination of enclosure types, including direct adjaciency)
+   -  In general with any type of enclosures, break if arc has a manually placed "out-of-range" Visibility Break that exceeds range limit)
+   
+ - (enclosed region to non-enclosed region, and vice versa.. mismatch)
+   - without an entrance to look through, deemed not visible. If got entrance, use entrance calcuilation to detemine visibility.
+   
+ - ( path to  path, or path to any type of point)
+  -  For contigous paths, or an enclosed path to point, break when angle turning from current location point position on path is off.
+
+- (enclosed path to any type of region, or any enclosed region to any type of path)
+   - From enclosed path to any type  of region, treat size of path and arc direction as "entrance" if there's no predefined entrance. Use entrance calculation.
+  
+-  (entrance calculation)
+  - Get arc through entrance. Check if current mapped position of character towards entrance angle versus the arc entrance angle is "off" or not.
+
+
+Angle threshold is usually below 30 degrees o determine visibility valdity.
+ 
+As a result, it's psosible to spot locations beyond adjacient locations. Take note that total visibility outside LOS is still subjected to distance visibility  checks. If you are in fog/smoke, etc. or the location is so far away, you will not be able to see that location. Also, some locations can reduce one's visibility. When scanning from/through location with reduced visibility, use the reduced visibility limit for that location to determine when the contigious visiblity scanning stops. Location visibility can be a reduction by a fraction OR a max visibility value.
+
+
+
+
 */
