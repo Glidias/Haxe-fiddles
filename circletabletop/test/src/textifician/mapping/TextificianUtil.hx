@@ -111,34 +111,58 @@ Location line-of-sight visibility:
 --------------------------------
 Textifician infers line-of-sight visibilty between location graph nodes using the following rules:
 
-- Direct Adjaciency 
-   - always deemed visible
-
 ______________________
 
-By "enclosed" it means a location that is enclosed by some walls whose heights (if specified, else treated as high enough walls) are deemed high enough for occlusion.
+Conventions to determine LOS visibility between point/radius-based locations:
+-----------------
 
-- Contigous Adjaciency  (if otherwise stated, always deemed visible)
- - (any combination of enclosure types, including direct adjaciency)
-   -  In general with any type of enclosures, break if arc has a manually placed "out-of-range" Visibility Break that exceeds range limit)
-   
- - (enclosed region to non-enclosed region, and vice versa.. mismatch)
-   - without an entrance to look through, deemed not visible. If got entrance, use entrance calcuilation to detemine visibility.
-   
- - ( path to  path, or path to any type of point)
-  -  For contigous paths, or an enclosed path to point, break when angle turning from current location point position on path is off.
+Point considered a region with a near-zero radius.
 
-- (enclosed path to any type of region, or any enclosed region to any type of path)
-   - From enclosed path to any type  of region, treat size of path and arc direction as "entrance" if there's no predefined entrance. Use entrance calculation.
-  
--  (entrance calculation)
-  - Get arc through entrance. Check if current mapped position of character towards entrance angle versus the arc entrance angle is "off" or not.
+General rules of whether an area is considered OPENED vs ENCLOSED.
+
+- Something that is deemed "opened" is completely open from all sides as far as visibility is concerned. 
+- If there is walls that are high enough to block it's view from others (of ANY quantity), then it's considered "enclosed", even if parts of the location isn't fully covered. 
+- Some locations may not have explicit walls defined for that location, but are still deemed "enclosed" due to the surrounding locations/implicit obstacles around it. Again, a single neaerby occluding obstacle of vis-blocking height may be good enough to consider an area to be "enclosed".
+- A location within an indoor zone isn't ncessarily enclosed. It is only "Enclosed" when that location is completely self-contained by it's own local walls or blocking obstacles, and the same concept applies to any location found at an outdoor zone. For example, ther can be open halls within an indoor area, an an open hall is considered opened even though it exists indoors.
+
+_____________________
+
+Adjacient location LOS visiblity is always deemed true, except in the case of doors or special vis-blocking arcs.
+
+But what about contigous LOS visiblity across multiple locations down the chain?
+Rules to determine contigous LOS visibility.
+
+Unless otherwise stated, deemed always visible in contigous manner.
+
+Start From Opened Path to Opened Region 
+-----------------------------
+(visible)
+
+Enclosed path to Enclosed Path
+------------------------------
+Turning angle cannot be too drastic. There are 2 checks that must be done in the following order..
+- Angle turning accumulates (accumulatedAngle) until it raeches pass threshold and no longer visible.
+- Direction to target position from current position, angled against principle angle, cannot exceed angle threshold as well.
+///accumulatedAngle can run on absolute, so bendey roads do not subtract from each other?
+
+Start from Enclosed Path to Opened Region
+Start from Enclosed Path to Enclosed Region
+-----------------------------------
+- Uses shortest possible arc angle turning to the region's radial bounds, from exit arc angle.
+- A Region that is of infinite radius (unbounded) is deemed always visible contigously from the given exit arc angle. 
+
+Determining exit arc from path to region,
+ (when no entrance is specified, otherwise simply use exit arc that is along person's own traveling arc towards entrance node).
+If at end of path , then exit arc direction is equal to the last arc leading to the end of path.
+Otherwise, exit arc is simply the last traveled arc path before running on the closest exit direction towards the target region.
+Basically, the latter rule somes up all cases. (ie. the last traveled arc before exiting out to region..)
 
 
-Angle threshold is usually below 30 degrees o determine visibility valdity.
- 
-As a result, it's psosible to spot locations beyond adjacient locations. Take note that total visibility outside LOS is still subjected to distance visibility  checks. If you are in fog/smoke, etc. or the location is so far away, you will not be able to see that location. Also, some locations can reduce one's visibility. When scanning from/through location with reduced visibility, use the reduced visibility limit for that location to determine when the contigious visiblity scanning stops. Location visibility can be a reduction by a fraction OR a max visibility value.
-
+Start from Enclosed  Region to Enclosed Region
+Start from Enclosed  Region to Open Region
+--------------------------------
+Cannot see beyond contigous.
+Enclosed means self contained.
 
 
 
