@@ -29,9 +29,11 @@ class Zone implements IXYZ
 	// LocationDefinition is FLAG_KEY and NOT flag_entrance, will fast-forward enter into that Zone based off mapped distance to it from current position.
 	// If no current position, than randomly choose 1 location. 
 	
+	
+	
 	public function new() 
 	{
-	
+		
 	}
 	
 	public static function create(label:String, id:String = null):Zone {

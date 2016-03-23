@@ -61,6 +61,8 @@ class LocationDefinition
 	// variable that might be useful for point to point distance/breakpoint arc resolution
 	public var priorityIndex:Int;
 	
+
+	
 	
 	/**
 	 * Useful method to automatically define a door entrance location

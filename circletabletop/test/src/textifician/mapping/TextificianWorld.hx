@@ -25,6 +25,7 @@ import textifician.rpg.IParty;
  * 
  * @author Glenn Ko
  */
+@:expose
 class TextificianWorld
 {
 	
@@ -45,6 +46,12 @@ class TextificianWorld
 		zones = [];
 		graph = new Graph();
 		locationDefs = new StringMap<LocationDefinition>();
+		//locationDefs.set("", 
+	}
+	
+	// TODO:
+	public function setupDefaultNew():Void {
+		// addLocationDefinition(LocationDefinition.create(), 
 	}
 	
 	public static function configureGlobals(defaultMapScale:Float, smallestMovementUnit:Float):Void {
@@ -70,6 +77,7 @@ class TextificianWorld
 	}
 	
 
+	
 	
 	
 

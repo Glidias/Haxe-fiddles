@@ -1,259 +1,23 @@
 (function () { "use strict";
-var Main = function() { }
-Main.__name__ = true;
-Main.main = function() {
-	new TestExp();
-	tros.chess.ChessRuleFlags;
-	de.polygonal.ds.Graph;
-	textifician.mapping.LocationPacket;
-	textifician.mapping.LocationDefinition;
-	textifician.mapping.TextificianWorld;
-	textifician.mapping.TextificianUtil;
-	new TestTextification();
-}
-var TestTextification = function() {
-	this.world = new textifician.mapping.TextificianWorld();
-};
-TestTextification.__name__ = true;
-TestTextification.prototype = {
-	__class__: TestTextification
-}
-var ArcSplit = function() {
-};
-ArcSplit.__name__ = true;
-ArcSplit.prototype = {
-	getCount: function() {
-		var count = 1;
-		var s = this.next;
-		while(s != null) {
-			count++;
-			s = s.next;
-		}
-		return count;
-	}
-	,performSplitting2: function(arcMinAng,arcMaxAng) {
-		var checkS = null;
-		var headS = null;
-		var s = this;
-		var lastS = null;
-		while(s != null) {
-			var nextS = s.next;
-			checkS = s.splitBy(arcMinAng,arcMaxAng);
-			if(checkS != null) {
-				s.next = null;
-				if(headS != null) lastS.next = checkS; else headS = checkS;
-				if(checkS.next != null) {
-					s = checkS.next;
-					checkS.next.next = nextS;
-				} else {
-					s = checkS;
-					checkS.next = nextS;
-				}
-			}
-			lastS = s;
-			s = nextS;
-		}
-		if(headS == null && checkS != null) headS = checkS;
-		return headS;
-	}
-	,performSplitting: function(arcMinAng,arcMaxAng) {
-		var headS = this;
-		if(arcMinAng < 0) {
-			if(arcMaxAng >= 0) {
-				headS = headS.performSplitting2(3.1415926535897932384626433832795 * 2 + arcMinAng,3.1415926535897932384626433832795 * 2);
-				if(headS != null) headS = headS.performSplitting2(0,arcMaxAng);
-			} else headS = headS.performSplitting2(3.1415926535897932384626433832795 * 2 + arcMinAng,3.1415926535897932384626433832795 * 2 + arcMaxAng);
-		} else headS = headS.performSplitting2(arcMinAng,arcMaxAng <= 0?3.1415926535897932384626433832795 * 2 + arcMaxAng:arcMaxAng);
-		return headS;
-	}
-	,splitBy: function(splitLowLimit,splitHighLimit) {
-		var newSplit = null;
-		var lowLimit = this.from;
-		var highLimit = this.to;
-		if(splitLowLimit > highLimit || splitHighLimit < lowLimit) return this;
-		if(splitLowLimit <= lowLimit && splitHighLimit >= highLimit) {
-			console.log("Truncate:: Split till no more.");
-			return null;
-		}
-		if(splitLowLimit > lowLimit && splitHighLimit < highLimit) {
-			newSplit = new ArcSplit();
-			newSplit.from = lowLimit;
-			newSplit.to = splitLowLimit;
-			newSplit.next = new ArcSplit();
-			newSplit.next.setFromTo(splitHighLimit,highLimit);
-		} else if(splitLowLimit <= lowLimit) {
-			newSplit = new ArcSplit();
-			newSplit.from = splitHighLimit;
-			newSplit.to = highLimit;
-		} else {
-			newSplit = new ArcSplit();
-			newSplit.from = lowLimit;
-			newSplit.to = splitLowLimit;
-		}
-		return newSplit;
-	}
-	,setFromTo: function(fromAng,toAng) {
-		this.from = fromAng;
-		this.to = toAng;
-	}
-	,getPreviewApprox: function(val) {
-		return Math.round(val * 57.295779513082320876798154814105);
-	}
-	,getDegApprox: function(val) {
-		return Math.round(val * 57.295779513082320876798154814105);
-	}
-	,toString: function() {
-		return "[ArcSplit " + Math.round(this.from * 57.295779513082320876798154814105) + "->" + Math.round(this.to * 57.295779513082320876798154814105) + "]";
-	}
-	,asDefault: function() {
-		this.from = 0;
-		this.to = 3.1415926535897932384626433832795 * 2;
-		return this;
-	}
-	,__class__: ArcSplit
-}
-var TestExp = function() {
-	this.canvas = js.Browser.document.getElementById("nanoFL_canvas");
-	this.stage = new createjs.Stage(this.canvas);
-	this.shape = new createjs.Shape();
-	this.stage.addChild(this.shape);
-	this.circleCont = new createjs.Container();
-	this.stage.addChild(this.circleCont);
-	this.arcs = new createjs.Shape();
-	this.stage.addChild(this.arcs);
-	this.shape.graphics.beginStroke("red").rect(-100,-50,200,100).endStroke();
-	this.shape.x = 400;
-	this.shape.y = 200;
-	this.circles = [];
-	this.circlesSplits = [];
-	js.Browser.window.requestAnimationFrame($bind(this,this.requestFrame));
-	this.addCircle(20,20,8.,"#000000");
-	this.addCircle(50,20,8.,"#000000");
-	this.addCircle(70,20,8.,"#000000");
-	this.addCircle(90,20,8.,"#000000");
-};
-TestExp.__name__ = true;
-TestExp.prototype = {
-	requestFrame: function(time) {
-		var matrix = this.shape.getMatrix();
-		var m = new createjs.Matrix2D().appendTransform(0,0,1,1,1,0,0);
-		matrix.appendMatrix(m);
-		this.shape.set(matrix.decompose());
-		this.drawExposedArcs();
-		this.stage.update();
-		js.Browser.window.requestAnimationFrame($bind(this,this.requestFrame));
-		return true;
-	}
-	,drawExposedArcs: function() {
-		var c1;
-		var a;
-		var baseAng;
-		var arc;
-		var len = this.circles.length;
-		var g = this.arcs.graphics;
-		g.clear();
-		var limit;
-		var _g = 0;
-		while(_g < len) {
-			var i = _g++;
-			this.circlesSplits[i] = new ArcSplit().asDefault();
-		}
-		limit = len;
-		var _g = 0;
-		while(_g < limit) {
-			var i = _g++;
-			c1 = this.circles[i];
-			var _g1 = i + 1;
-			while(_g1 < len) {
-				var k = _g1++;
-				var c2 = this.circles[k];
-				var ang;
-				ang = this.getIntersectionArc(c1.x,c1.y,32,c2.x,c2.y,32);
-				if(ang != 0) {
-					var x;
-					var y;
-					var nx = this.offsetX / this.cDist;
-					var ny = this.offsetY / this.cDist;
-					arc = this.circlesSplits[i];
-					baseAng = Math.atan2(this.offsetY,this.offsetX);
-					if(arc != null) this.circlesSplits[i] = arc = arc.performSplitting(baseAng - ang,baseAng + ang);
-					ang = this.getIntersectionArc(c2.x,c2.y,32,c1.x,c1.y,32);
-					arc = this.circlesSplits[k];
-					baseAng = Math.atan2(this.offsetY,this.offsetX);
-					if(arc != null) this.circlesSplits[k] = arc = arc.performSplitting(baseAng - ang,baseAng + ang);
-					nx *= -1;
-					ny *= -1;
-				}
-			}
-			g.clear();
-			var _g1 = 0;
-			while(_g1 < limit) {
-				var i1 = _g1++;
-				c1 = this.circles[i1];
-				arc = this.circlesSplits[i1];
-				a = arc;
-				while(a != null) {
-					g.beginStroke("#ffff00");
-					g.arc(c1.x,c1.y,32,a.from,a.to,false);
-					g.endStroke();
-					a = a.next;
-				}
-			}
-		}
-	}
-	,addCircle: function(x,y,r,fill) {
-		var circle = new createjs.Shape();
-		circle.graphics.beginFill(fill).drawCircle(0,0,r);
-		circle.x = x;
-		circle.y = y;
-		circle.name = "circle";
-		circle.on("pressmove",$bind(this,this.drag));
-		this.circleCont.addChild(circle);
-		this.circles.push(circle);
-		this.circlesSplits.push(null);
-		circle.graphics.beginFill(fill).drawCircle(0,0,r).endFill();
-	}
-	,drag: function(evt) {
-		if(evt.target.name == "square") {
-			evt.target.x = evt.stageX - 16;
-			evt.target.y = evt.stageY - 16;
-		} else {
-			evt.target.x = evt.stageX;
-			evt.target.y = evt.stageY;
-		}
-		this.stage.update();
-	}
-	,divideCircle: function(circle,clipFromArc,clipAmountAng) {
-		var s = circle;
-		while(s != null) {
-			var nextArc = circle.next;
-			s = nextArc;
-		}
-	}
-	,getIntersectionArc: function(x1,y1,R,x2,y2,r) {
-		var x = x2 - x1;
-		var y = y2 - y1;
-		this.offsetX = x;
-		this.offsetY = y;
-		var rr = R + r;
-		if(x * x + y * y >= rr * rr) return 0;
-		var d = Math.sqrt(x * x + y * y);
-		this.cDist = d;
-		x = d * d - r * r + R * R;
-		x /= 2 * d;
-		this.xDist = x;
-		var a = 1 / d * Math.sqrt((-d + r - R) * (-d - r + R) * (-d + r + R) * (d + r + R));
-		this.aDist = a;
-		return Math.atan2(0.5 * a,x);
-	}
-	,__class__: TestExp
-}
 var IMap = function() { }
 IMap.__name__ = true;
 var Std = function() { }
 Std.__name__ = true;
 Std.string = function(s) {
 	return js.Boot.__string_rec(s,"");
+}
+var TextificianGoJS = function() {
+};
+TextificianGoJS.__name__ = true;
+TextificianGoJS.main = function() {
+	de.polygonal.ds.Graph;
+	textifician.mapping.LocationPacket;
+	textifician.mapping.LocationDefinition;
+	textifician.mapping.TextificianWorld;
+	textifician.mapping.TextificianUtil;
+}
+TextificianGoJS.prototype = {
+	__class__: TextificianGoJS
 }
 var Type = function() { }
 Type.__name__ = true;
@@ -1510,8 +1274,6 @@ js.Boot.__instanceof = function(o,cl) {
 		return o.__enum__ == cl;
 	}
 }
-js.Browser = function() { }
-js.Browser.__name__ = true;
 var textifician = {}
 textifician.mapping = {}
 textifician.mapping.ArcPacket = function() {
@@ -1684,6 +1446,7 @@ textifician.mapping.TextificianWorld = function() {
 	this.graph = new de.polygonal.ds.Graph();
 	this.locationDefs = new haxe.ds.StringMap();
 };
+$hxExpose(textifician.mapping.TextificianWorld, "textifician.mapping.TextificianWorld");
 textifician.mapping.TextificianWorld.__name__ = true;
 textifician.mapping.TextificianWorld.configureGlobals = function(defaultMapScale,smallestMovementUnit) {
 	textifician.mapping.Zone.DEFAULT_SCALE = defaultMapScale;
@@ -1790,16 +1553,6 @@ textifician.rpg.IParty.__interfaces__ = [textifician.mapping.IXYZ];
 textifician.rpg.IParty.prototype = {
 	__class__: textifician.rpg.IParty
 }
-var tros = {}
-tros.chess = {}
-tros.chess.ChessRuleFlags = function() {
-};
-tros.chess.ChessRuleFlags.__name__ = true;
-tros.chess.ChessRuleFlags.prototype = {
-	__class__: tros.chess.ChessRuleFlags
-}
-var $_, $fid = 0;
-function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; o.hx__closures__[m.__id__] = f; } return f; };
 Math.__name__ = ["Math"];
 Math.NaN = Number.NaN;
 Math.NEGATIVE_INFINITY = Number.NEGATIVE_INFINITY;
@@ -1822,20 +1575,7 @@ var Bool = Boolean;
 Bool.__ename__ = ["Bool"];
 var Class = { __name__ : ["Class"]};
 var Enum = { };
-createjs.DisplayObject.prototype.setBounds = function(x, y, width, height) { this._bounds = x != null ? (this._bounds || new createjs.Rectangle()).setValues(x, y, width, height) : null; };;
-ArcSplit.PI_2 = 3.1415926535897932384626433832795 * 2;
-ArcSplit.PI = 3.1415926535897932384626433832795;
-ArcSplit.RAD_TO_DEG = 57.295779513082320876798154814105;
-TestExp.SIZE = 16;
-TestExp.SIZE2 = 32;
-TestExp.RAD_TO_DEG = 57.295779513082320876798154814105;
-TestExp.PI_2 = 3.1415926535897932384626433832795 * 2;
-TestExp.PI = 3.1415926535897932384626433832795;
-TestExp.TESTING_ONE = false;
-TestExp.DRAW_CHORDS = false;
 de.polygonal.ds.HashKey._counter = 0;
-js.Browser.window = typeof window != "undefined" ? window : null;
-js.Browser.document = typeof window != "undefined" ? window.document : null;
 textifician.mapping.ArcPacket.CARDINAL_EAST = 0;
 textifician.mapping.ArcPacket.CARDINAL_SOUTH_EAST = 1;
 textifician.mapping.ArcPacket.CARDINAL_SOUTH = 2;
@@ -1854,6 +1594,7 @@ textifician.mapping.LocationDefinition.FLAG_ENTRANCE = 1;
 textifician.mapping.LocationDefinition.FLAG_DOOR = 2;
 textifician.mapping.LocationDefinition.FLAG_KEY = 4;
 textifician.mapping.LocationDefinition.FLAG_LANDMARK = 8;
+textifician.mapping.LocationDefinition.FLAG_ENCLOSED = 16;
 textifician.mapping.LocationDefinition.TYPE_POINT = 0;
 textifician.mapping.LocationDefinition.TYPE_PATH = 1;
 textifician.mapping.LocationDefinition.TYPE_REGION = 2;
@@ -1880,32 +1621,15 @@ textifician.mapping.LocationState.FLAG_DOOR_OPEN_1 = 2;
 textifician.mapping.LocationState.FLAG_DOOR_OPEN_2 = 4;
 textifician.mapping.TextificianUtil.EPSILON = 1;
 textifician.mapping.Zone.DEFAULT_SCALE = 1;
-tros.chess.ChessRuleFlags.MELEE_ORTHOGONAL_FULL_ONLY = 1;
-tros.chess.ChessRuleFlags.MELEE_FREE_INTERCEPT_JOINER_PATH = 2;
-tros.chess.ChessRuleFlags.MELEE_FREE_INTERCEPT_ANYONE = 4;
-tros.chess.ChessRuleFlags.MELEE_FREE_INTERCEPT_IMMEDIATE_RESPONSE = 8;
-tros.chess.ChessRuleFlags.MELEE_COST_INTERCEPT_JOINER = 16;
-tros.chess.ChessRuleFlags.MELEE_COST_INTERCEPT_JOINER_NEWBLOB = 32;
-tros.chess.ChessRuleFlags.MELEE_DIAGONAL_OPENHALF_ENGAGE = 64;
-tros.chess.ChessRuleFlags.MELEE_DIAGONAL_BISHOP_ENGAGE = 128;
-tros.chess.ChessRuleFlags.MELEE_JOIN_BOUT_2_VS_1_COST = 256;
-tros.chess.ChessRuleFlags.MELEE_JOIN_BOUT_3_VS_1_COST = 512;
-tros.chess.ChessRuleFlags.MELEE_JOIN_BOUT_2_VS_1_NEED_INIT = 1024;
-tros.chess.ChessRuleFlags.MELEE_JOIN_BOUT_2_VS_1_NEED_INIT_AFTER = 2048;
-tros.chess.ChessRuleFlags.MELEE_JOIN_BOUT_3_VS_1_NEED_INIT = 4096;
-tros.chess.ChessRuleFlags.MELEE_JOIN_BOUT_3_VS_1_NEED_INIT_AFTER = 8192;
-tros.chess.ChessRuleFlags.TOTAL_MELEE_RULES = 14;
-tros.chess.ChessRuleFlags.MOVEMENT_DISPLACEMENT = 16384;
-tros.chess.ChessRuleFlags.MOVEMENT_FRIENDLY_DIAGONAL_L = 32768;
-tros.chess.ChessRuleFlags.MOVEMENT_FRIENDLY_BISHOP_DIAGONAL_L = 65536;
-tros.chess.ChessRuleFlags.MOVEMENT_DIAGONAL_COST_ONE = 131072;
-tros.chess.ChessRuleFlags.CONFIRMED_BLOB_BLOCK_FRIENDLY = 262144;
-tros.chess.ChessRuleFlags.CONFIRMED_BLOB_BLOCK_ENEMY = 524288;
-tros.chess.ChessRuleFlags.UNCONFIRMED_BLOB_BLOCK_FRIENDLY = 1048576;
-tros.chess.ChessRuleFlags.UNCONFIRMED_BLOB_BLOCK_ENEMY = 2097152;
-tros.chess.ChessRuleFlags.RULESET_ALL = 4194303;
-tros.chess.ChessRuleFlags.RULESET_ABSTRACT = 48914;
-tros.chess.ChessRuleFlags.RULESET_SPATIAL_REALISM = 3997502;
-tros.chess.ChessRuleFlags.RULESET_TRYOUT = 1900306;
-Main.main();
+TextificianGoJS.main();
+function $hxExpose(src, path) {
+	var o = typeof window != "undefined" ? window : exports;
+	var parts = path.split(".");
+	for(var ii = 0; ii < parts.length-1; ++ii) {
+		var p = parts[ii];
+		if(typeof o[p] == "undefined") o[p] = {};
+		o = o[p];
+	}
+	o[parts[parts.length-1]] = src;
+}
 })();

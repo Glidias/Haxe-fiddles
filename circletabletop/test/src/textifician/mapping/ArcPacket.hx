@@ -21,6 +21,8 @@ class ArcPacket
 	
 	public var flags:Int;
 	public var label:Dynamic; // any custom label, might be String or cardinal integer direction
+	public var breakVisibility:Int;  // breaks visibility at >= arc distance amount of 1, 2, etc. 2 is usually the default value.. 0 indicates no break vis.
+	
 
 	public function new() 
 	{
