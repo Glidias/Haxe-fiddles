@@ -6,6 +6,7 @@ import createjs.Sprite;
 import createjs.Stage;
 import createjs.Matrix2D;
 import de.polygonal.ds.Graph;
+import haxe.Log;
 import js.Browser;
 import js.html.CanvasElement;
 import js.html.CanvasRenderingContext2D;
@@ -25,8 +26,8 @@ class Main
 		Graph;
 		LocationPacket; LocationDefinition; TextificianWorld; TextificianUtil;
 		new TestTextification();
-		
 
+	
 	}
 	
 	

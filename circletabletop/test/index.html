@@ -2,12 +2,57 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <title>easeljs test</title>
+        <title>quick haxe tests</title>
     </head>
     <body style="padding:0; font-size:0; background-color:#dddddd ">
 		<canvas id="nanoFL_canvas" width="640" height="480" style="background-color:white"></canvas>
 		<script src="http://code.createjs.com/tweenjs-0.5.1.min.js"></script>
 		<script src="../native/lib/easeljs-0.8.0.combined.js"></script>
 		<script src="bin/index.js"></script>
+		<script>
+			
+		// Basic convenience hack to set all Textifician mapping classes to global namespace
+			function exposeHxMappingClassesToGlobalNamespace() {
+				var p;
+				var arr = [];
+				for (p in textifician.mapping) {
+					window[p] = textifician.mapping[p];
+				}
+			}
+			exposeHxMappingClassesToGlobalNamespace();
+			var TJSON = tjson.TJSON;
+			
+			// ------------------
+			
+			// quick tests goes here
+			var world = new TextificianWorld();
+			world.setupDefaultNew();
+			 
+			var locDef = LocationDefinition.createWithMatchingId(LocationDefinition.TYPE_PATH, "Road");
+			locDef.setSize(6).setDescription("A barren road runs here.");
+			world.addLocationDef(locDef);
+			
+			var zone = world.getZone();
+			world.getZone();
+			
+			var pointDef = world.getLocationDef("Point");
+			var regionDef = world.getLocationDef("Region");
+			var pathDef = world.getLocationDef("Path");
+			
+			var roadDef = world.getLocationDef("Road");
+	
+			
+			// this causes too mcuch recusrion, may need to update to latest DS version. If latest version doesn't work, may need to avoid serializing the graph and find another method instead...
+		//	world.addLocationNode(roadDef, 0,10,0);
+		//	world.addLocationNode(roadDef, 0,20,0);
+		//	world.addLocationNode(regionDef, 0,0,0);
+			
+			var savedOutput = TextificianWorld.serialize(world);
+			console.log(savedOutput);
+			
+			world = TextificianWorld.unserialize(savedOutput);
+			
+			
+		</script>
     </body>
 </html>

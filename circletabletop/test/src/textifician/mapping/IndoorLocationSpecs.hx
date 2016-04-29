@@ -4,6 +4,7 @@ package textifician.mapping ;
  * Generic wall/ceiling data for semi-indoor/indoor areas. Can be useful to determine things like bullet penetration and the like..
  * @author Glenn Ko
  */
+@:expose
 class IndoorLocationSpecs
 {
 	public var wallHeight:Float;
@@ -22,7 +23,9 @@ class IndoorLocationSpecs
 	{
 		
 	}
+	public function testMethod():Void {
 	
+	}
 	/**
 	 * Constructor
 	 * Use negative values for parameters to set as DEFAULT values
@@ -33,7 +36,7 @@ class IndoorLocationSpecs
 	 * @param	ceilingStrength
 	 * @return
 	 */
-	public function create(wallHeight:Float=-1, wallThickness:Float=-1, wallStrength:Float=-1,  ceilingThickness:Float=-1, ceilingStrength:Float=-1):IndoorLocationSpecs {
+	public static function create(wallHeight:Float=-1, wallThickness:Float=-1, wallStrength:Float=-1,  ceilingThickness:Float=-1, ceilingStrength:Float=-1):IndoorLocationSpecs {
 		var me:IndoorLocationSpecs = new IndoorLocationSpecs();
 		me.wallHeight = wallHeight < 0 ? DEFAULT_WALL_HEIGHT : wallHeight;
 		me.wallThickness = wallThickness < 0 ? DEFAULT_WALL_THICKNESS : wallThickness;

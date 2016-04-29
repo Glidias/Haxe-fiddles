@@ -7,6 +7,7 @@ import de.polygonal.ds.GraphNode;
  * Generic mapping/measurement methods used by Textifician engine
  * @author Glenn Ko
  */
+@:expose
 class TextificianUtil
 {
 	
@@ -36,9 +37,7 @@ class TextificianUtil
 		return Math.sqrt(dx * dx + dy * dy);
 	}
 	
-	public static function getIdFromLabel(label:String):String {
-		return label;
-	}
+	
 	
 }
 

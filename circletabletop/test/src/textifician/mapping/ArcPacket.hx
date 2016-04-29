@@ -4,6 +4,7 @@ package textifician.mapping ;
  * specific data for graph arc
  * @author Glenn Ko
  */
+@:expose
 class ArcPacket
 {
 	// starting from x=1 direction

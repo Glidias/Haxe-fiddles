@@ -1,7 +1,7 @@
 package textifician.mapping ;
 
 /**
- * Node-specific data 
+ * Node-specific data ..
  * @author Glenn Ko
  */
 class LocationPacket implements IXYZ
@@ -15,8 +15,8 @@ class LocationPacket implements IXYZ
 
 	public function new() 
 	{
-		state = new LocationState();
-		def = new LocationDefinition();
+		//state = new LocationState();
+		//	def = new LocationDefinition();
 		//defOverwrites = { };
 	}
 	

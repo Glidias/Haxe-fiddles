@@ -2,6 +2,7 @@
 package tjson;
 using StringTools;
 
+
 @:expose
 class TJSON {    
 	public static var OBJECT_REFERENCE_PREFIX = "@~obRef#";

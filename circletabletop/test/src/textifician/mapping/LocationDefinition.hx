@@ -1,10 +1,12 @@
-package textifician.mapping ;
+package textifician.mapping;
+
 
 /**
  * Reusable generic location data definition for a Location node's LocationPacket.
  * @author Glenn Ko
  */
-class LocationDefinition
+@:expose
+class LocationDefinition 
 {
 	public static inline var FLAG_ENTRANCE:Int = (1 << 0);
 	public static inline var FLAG_DOOR:Int = (1 << 1);  // indicates openable closable state
@@ -40,28 +42,95 @@ class LocationDefinition
 	public static inline var SHELTER_HALF:Int = 2;
 	public static inline var SHELTER_FULL:Int = 3;
 
-	public var id:String;
+	@readonly public var id:String;
 	
 	public var label:String;
 	public var description:String;
-	public var flags:Int;
+	@bitmask("FLAG") public var flags:Int;
 	public var size:Float; // convention for now: radius for TYPE_REGION, TYPE_POINT N/A, and TYPE_PATH size determines width of path 
-	public var type:Int;
+	@values("TYPE") public var type:Int;
 	
-	public var envFlags:Int;
+	@bitmask("ENV") public var envFlags:Int;
 	public var indoorLocationSpecs:IndoorLocationSpecs;
-	public var defaultLighting:Int;
+	@range("LIGHTING") public var defaultLighting:Int;
 	
 	// procedural generation
 	public var generalFixtures:Array<String>;  // array of fixture definitions 
-	public var fixtureDensity:Int;  // density of fixtures
+	@range("DENSITY") public var fixtureDensity:Int;  // density of fixtures
 	
 
-	
 	// variable that might be useful for point to point distance/breakpoint arc resolution
 	public var priorityIndex:Int;
 	
 
+	public static function create(type:Int, label:String, id:String=null):LocationDefinition {
+		var locDef:LocationDefinition  = new LocationDefinition();
+		locDef.type = type;
+		locDef.label = label;
+		if (id != null) {
+			locDef.id = id;
+		}
+		return locDef;
+	}
+	
+	public function setSize(val:Float):LocationDefinition {
+		size = val;
+		return this;
+	}
+	public function setDescription(val:String):LocationDefinition {
+		description = val;
+		return this;
+	}
+	
+	public static function createWithMatchingId(type:Int, label:String, id:String = null, doSlugify:Bool=false, camelCase:Bool=false):LocationDefinition {
+		var locDef:LocationDefinition  = new LocationDefinition();
+		locDef.type = type;
+		locDef.label = label;
+		
+		if (id != null) {
+			locDef.id = id;
+		}
+		else {
+			locDef.id = !doSlugify ?  label : slugify(label);
+			if (doSlugify && camelCase) {
+				locDef.id = camelizeSlug(locDef.id);
+			}
+		}
+		//trace(locDef.id);
+		return locDef;
+	}
+	
+	
+	public static inline function slugify(label:String):String
+	{
+		
+	  return (~/-+$/).replace( (~/^-+/).replace( (~/\-\-+/g).replace(	(~/[^\w\-]+/g).replace( (~/\s+/g).replace( label.toString().toLowerCase(), "-"), ""), "-" ), ''), '');
+	  
+	  /*
+		.replace(~/\s+/g, '-')           // Replace spaces with -
+		
+		.replace(~/[^\w\-]+/g, '')       // Remove all non-word chars
+		
+		.replace(~/\-\-+/g, '-')         // Replace multiple - with single -
+		
+		.replace(~/^-+/, '')             // Trim - from start of text
+		
+		.replace(~/-+$/, '');            // Trim - from end of text
+		
+		*/
+	}
+	
+	
+
+	
+	public static inline function camelizeSlug(slug:String):String { 
+		var splitStr = slug.split("-");
+		var len = splitStr.length;
+		for (i in 1...len) {
+			 splitStr[i] = splitStr[i].charAt(0).toUpperCase() + splitStr[i].substr(1); 
+		}
+		return splitStr.join("");
+	}
 	
 	
 	/**
@@ -132,6 +201,11 @@ class LocationDefinition
 		return this;
 	}
 	
+	public function setupIndoorLocationSpecs(locationSpecs:IndoorLocationSpecs):LocationDefinition {
+		indoorLocationSpecs = locationSpecs;
+		return this;
+	}
+	
 	/**
 	 * 
 	 * @param	wallAmount	Amount of wall cover.  Uses SHELTER_ values. A value of 0 none, 1 sparse, 2 half, or 3 for full
@@ -163,3 +237,4 @@ class LocationDefinition
 	}
 	
 }
+

@@ -1,11 +1,17 @@
 package textifician.mapping ;
 import de.polygonal.ds.Graph;
 import de.polygonal.ds.GraphNode;
+import de.polygonal.ds.HashableItem;
+import de.polygonal.ds.HashKey;
 import haxe.ds.StringMap;
+import haxe.rtti.Meta;
+import haxe.Serializer;
+import haxe.Unserializer;
 import textifician.rpg.ICharacter;
 import textifician.rpg.IFixture;
 import textifician.rpg.IItem;
 import textifician.rpg.IParty;
+import tjson.TJSON;
 
 /**
  * Main manager class to construct a Textifician world. aka. The Textifician Engine.
@@ -30,28 +36,49 @@ class TextificianWorld
 {
 	
 	// usually eacn node contains either Zone or LocationPacket
-	private var graph:Graph<GraphNode<Dynamic>>;  
+	private var graph:Graph<Dynamic>;  
 	
 	// Any location vincities can be shown here, that makes for good starting locations for the given gameworld.
-	private var zones:Array<Zone>;
+	private var zones:StringMap<Zone>;
 	
 	// A library hash of location definitions that you can use under this world
 	private var locationDefs:StringMap<LocationDefinition>;
+	
+	
 	
 
 	public function new() 
 	{
 		ICharacter; IParty; IFixture; IItem; 
 		
-		zones = [];
+		zones = new StringMap<Zone>();
 		graph = new Graph();
 		locationDefs = new StringMap<LocationDefinition>();
 		//locationDefs.set("", 
 	}
+
 	
-	// TODO:
-	public function setupDefaultNew():Void {
-		// addLocationDefinition(LocationDefinition.create(), 
+
+	public function setupDefaultNew(zone:Zone = null):Void {
+		if (zone == null) {
+			zone = Zone.create("DefaultZone", "");
+		}
+		
+		
+		addZone(zone);
+		addLocationDef( LocationDefinition.createWithMatchingId(LocationDefinition.TYPE_POINT,"Point") ); 
+		addLocationDef( LocationDefinition.createWithMatchingId(LocationDefinition.TYPE_PATH,"Path") ); 
+		addLocationDef( LocationDefinition.createWithMatchingId(LocationDefinition.TYPE_REGION,"Region") );
+	}
+	
+	public static function serialize(world:TextificianWorld):String {
+		var serializer = new Serializer();
+		serializer.serialize(world);
+		return serializer.toString();
+	}
+	public static function unserialize(str:String):TextificianWorld {
+		var unserializer = new Unserializer(str);
+		return unserializer.unserialize();
 	}
 	
 	public static function configureGlobals(defaultMapScale:Float, smallestMovementUnit:Float):Void {
@@ -65,21 +92,87 @@ class TextificianWorld
 		TextificianUtil.EPSILON = smallestMovementUnit;
 	}
 	
-	
-	public function addLocationDefinition(def:LocationDefinition, forceOverwrite:Bool=true):LocationDefinition {
-		var current:LocationDefinition = locationDefs.get(def.id);
-		if (forceOverwrite || current==null) locationDefs.set(def.id, def);
-		return current;
-	}
-	
-	public function addZone(zone:Zone):Void {
-		zones.push(zone);
-	}
-	
+	public function getDuplicationLocationDef(def:LocationDefinition, newId:String = ""):LocationDefinition {
+		var serializer = new Serializer();
+		serializer.serialize(def);
 
+		var unserializer = new Unserializer(serializer.toString());
+		var locDef:LocationDefinition = unserializer.unserialize();
+		
+		if (newId != null) {
+			locDef.id = newId != "" ? newId :  null;
+			
+		}
+		else {
+			locDef.id =  "instance" + HashKey.next();
+		}
+		return locDef;
+	}
+	
+	public function addLocationNode(def:LocationDefinition, x:Float=0, y:Float=0, z:Float=0, state:LocationState = null, defOverwrites:Dynamic = null):GraphNode<Dynamic> {
+		
+		var locationPacket:LocationPacket = new LocationPacket();
+		locationPacket.def = def;
+		locationPacket.state = state;
+		locationPacket.x = x;
+		locationPacket.y = y;
+		locationPacket.z = z;
+		return graph.addNode(graph.createNode(locationPacket));
+	}
+	public function addZoneNode(zone:Zone):GraphNode<Dynamic> {
+		return graph.addNode(graph.createNode(zone));
+	}
+	
+	public function getLocationDef(id:String):LocationDefinition {
+		return locationDefs.get(id);
+	}
 	
 	
 	
+	public function addLocationDef(def:LocationDefinition, forceOverwrite:Bool = false):LocationDefinition {
+	
+		if (def.id == null) {
+			def.id = "instance" + HashKey.next(); 
+			if (!forceOverwrite && locationDefs.exists(def.id)) throw "Location Definition of: "+def.id +" already exists!";
+			locationDefs.set(def.id, def);
+		}
+		else {
+			var current:LocationDefinition;
+			current = locationDefs.get(def.id);
+			if (current == null) locationDefs.set(def.id, def);
+			else if (forceOverwrite) {
+				locationDefs.set(def.id, def);
+			}
+			else {
+				throw "Location Definition of: "+def.id +" already exists!";
+			}
+		}
+		return def;
+	}
+	
+	public function addZone(zone:Zone, forceOverwrite:Bool=false):Zone {
+		if (zone.id == null) {
+			zone.id = "zone" + HashKey.next(); 
+			if (!forceOverwrite && zones.exists(zone.id)) throw "Zone id of: "+zone.id +" already exists!";
+			zones.set(zone.id, zone);
+		}
+		else {
+			var current:Zone;
+			current = zones.get(zone.id);
+			if (current == null) zones.set(zone.id, zone);
+			else if (forceOverwrite) {
+				zones.set(zone.id, zone);
+			}
+			else {
+				throw "Zone id of: "+zone.id +" already exists!";
+			}
+		}
+		return zone;
+	}
+	
+	public function getZone(id:String=""):Zone {
+		return zones.get(id);
+	}
 
 	
 }

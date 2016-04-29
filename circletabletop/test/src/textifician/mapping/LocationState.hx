@@ -5,6 +5,7 @@ import de.polygonal.ds.GraphNode;
  * ...
  * @author Glenn Ko
  */
+@:expose
 class LocationState
 {
 	public static inline var FLAG_DOOR_LOCKED:Int = (1 << 0);  // lock bolt mechanism
@@ -12,10 +13,10 @@ class LocationState
 	public static inline var FLAG_DOOR_OPEN_1:Int = (1 << 1); // ajar...open as little as possible to peek through
 	public static inline var FLAG_DOOR_OPEN_2:Int = (1 << 2); // partially opened...open just enough to slip body through
 	
-	public var visibleNodesFromHere:Array<GraphNode<Dynamic>>;
+	//public var visibleNodesFromHere:Array<GraphNode<Dynamic>>;  // not needed, using simpler approach to infering visbility
 	public var thingsHere:Array<Dynamic>;  // store any uniquely defined things here for existing node
 	public var notes:String; // any custom notes can go here
-	public var flags:Int; // common state flags can go here with regards to mapping/path-finding
+	public var flags:Int; 
 	public var customData:Dynamic; // custom data extenesion stuff goes here if needed
 	
 	// door controls
