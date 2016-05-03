@@ -90,7 +90,8 @@ function init() {
   [
     { from: 1, to: 2 }
   ]);
-
+	model.linkKeyProperty = "key";
+	
   // the two Diagrams share the same model
   blueDiagram.model = model;
   greenDiagram.model = model;
@@ -162,6 +163,8 @@ function init() {
       // do not display any layout transactions
       if (e.oldValue === "Layout") return;
     }  // You will probably want to use e.isTransactionFinished instead
+	
+	 if (!e.isTransactionFinished) return;
 
     // Add entries into the log
     var changes = e.toString();
@@ -179,6 +182,8 @@ function init() {
         editList = editList.slice(0, editToRedo.data.index);
         editToRedo = null;
       }
+	  
+	 
 
       var tx = e.object;
       var txname = (tx !== null ? e.object.name : "");
@@ -226,12 +231,55 @@ function init() {
   model.addChangedListener(function(e) {
     if (e.isTransactionFinished) {
       var tx = e.object;
-      if (tx instanceof go.Transaction && console) {
+	  
+      if (tx instanceof go.Transaction && console && e.model) {
         console.log(tx.toString());
-        tx.changes.each(function(c) {
-          if (c.model) console.log("  " + c.toString());
-        });
-      }
+		
+		if (tx.name != "Move") {
+			tx.changes.each(function(c) {
+			 
+			  if (c.model) {
+				if ( c.model === c.object ) { // deemed insertion or removal
+					if (c.newValue != null && c.oldValue == null) {  // insertion infered
+						
+					}
+					else if (c.newValue == null && c.oldValue != null) { // removal infered
+					
+					}
+					else {
+						alert("Could not resolve this transaction case: "+tx);
+					}
+				}
+				else {  // deemed modifying of data within model
+					
+				}
+				
+				console.log( c.object," " +c.modelChange + ","+c.propertyName+","+c.oldParam +", "+c.newParam );
+				console.log("OldValue:", c.oldValue);
+				console.log("NewValue:", c.newValue);
+				
+				//console.log( model.toIncrementalJson(e) );
+			  }
+			});
+		  }
+		  else  {
+
+				console.log( e.model.toIncrementalJson(e) );
+				var moveJson = e.model.toIncrementalJson(e);
+				moveJson = JSON.parse(moveJson);
+				var modData = moveJson.modifiedNodeData;
+				console.log( );
+				var i = modData.length;
+				var o;
+				while(--i > -1) {
+					o = modData[i]
+					//= o.loc.x;
+					//= o.loc.y;
+				}
+				
+		  }
+	  }
+	  
     }
   });
 } // end init

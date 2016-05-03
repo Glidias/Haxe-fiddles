@@ -2826,6 +2826,9 @@ textifician_mapping_LocationPacket.prototype = {
 	,x: null
 	,y: null
 	,z: null
+	,getLabel: function() {
+		if(this.defOverwrites != null && this.defOverwrites.label != null) return this.defOverwrites.label; else return this.def.label;
+	}
 	,__class__: textifician_mapping_LocationPacket
 };
 var textifician_mapping_LocationState = $hx_exports.textifician.mapping.LocationState = function() {

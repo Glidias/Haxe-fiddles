@@ -24,8 +24,18 @@
 
 <script id="code">
 (function() {
-
-	var textficianWorld = new textifician.mapping.TextificianWorld();
+	function exposeHxMappingClassesToGlobalNamespace() {
+		var p;
+		var arr = [];
+		for (p in textifician.mapping) {
+			window[p] = textifician.mapping[p];
+		}
+	}
+	exposeHxMappingClassesToGlobalNamespace();
+	var TJSON = tjson.TJSON;
+	
+	var world = new TextificianWorld();
+	world.setupDefaultNew();
 	
 	
 	window.init = init;
@@ -60,7 +70,7 @@
     myDiagram.nodeTemplateMap.add("", // default category
       GO(go.Node, "Vertical",
         { locationSpot: go.Spot.Center },
-        new go.Binding("location", "loc", go.Point.parse).makeTwoWay(go.Point.stringify),
+        new go.Binding("location", "loc").makeTwoWay(),
 		
 			//$(go.Panel, "Auto", 
 			GO(go.TextBlock,
@@ -73,7 +83,7 @@
 				font: "bold 7pt Arial, sans-serif",
 				name: "TEXT" 
 				},
-				new go.Binding("text", "text").makeTwoWay()
+				new go.Binding("text", "node", function(n) { return n != null ? n.val.getLabel() : n.text } )
 			)
 			,
 			GO(go.Shape, "Ellipse",
@@ -110,19 +120,112 @@
 	);
 		  
 	
+  myDiagram.model.linkKeyProperty = "key";
+  myDiagram.model.addChangedListener(function(e) {
+    if (e.isTransactionFinished) {
+      var tx = e.object;
+	  
+      if (tx instanceof go.Transaction && console && e.model) {
+        console.log(tx.toString());
+		
+		if (true || tx.name != "Move") {
+			var nodesToAdd = [];
+			tx.changes.each(function(c) {
+			 
+			  if (c.model) {
+				if ( c.model === c.object ) { // deemed insertion or removal
+					if (c.newValue != null && c.oldValue == null) {  // insertion infered
+					
+						if (c.propertyName == "nodeDataArray") {  // insert node
+							nodesToAdd.push( c.newValue );
+							
+						}
+						else if (c.propertyName == "linkDataArray") {  // create link
+							
+						}
+					}
+					else if (c.newValue == null && c.oldValue != null) { // removal infered
+					
+					}
+					else {
+						console.log	("Could not resolve this transaction case: "+tx);
+					}
+				}
+				else {  // deemed modifying of data within model
+					if (c.propertyName === "loc") {   // moving 
+						var n = c.object.node;
+						n.val.x = c.newValue.x;
+						n.val.y = c.newValue.y;
+					//	console.log("loc:", n.val );
+					}
+					else if (c.propertyName === "linkable") {
+						// irreleavant. do nothing
+					}
+					else { //
+					  alert("could not resolve:"+c.propertyName);
+					}
+				}
+				
+			
+				
+				//console.log( c.object," " +c.modelChange + ","+c.propertyName+","+c.oldParam +", "+c.newParam );
+				//console.log("OldValue:", c.oldValue);
+				//console.log("NewValue:", c.newValue);
+				
+				//console.log( model.toIncrementalJson(e) );
+			  }
+			});
+			
+				var i = 0;
+				var o;
+				for (i=0; i<nodesToAdd.length; i++) {
+					o =nodesToAdd[i];
+					e.model.setDataProperty(o,"node", world.addLocationNode(world.getLocationDef(o.text) ));
+					//console.log( JSON.stringify(o.node) );
+				}
+				
+				
+		  }
+		//  /*
+		  else  {   // DEPRECIATED atm due to recursion problem with toIncrementalJSON
+			//	/*
+				console.log( e.model.toIncrementalJson(e) );
+				var moveJson = e.model.toIncrementalJson(e);
+				moveJson = JSON.parse(moveJson);
+				var modData = moveJson.modifiedNodeData;
+				
+				var i =modData ?  modData.length : 0;
+				var o;
+				while(--i > -1) { // readonly
+					o = modData[i];
+					//= o.loc.x;
+					//= o.loc.y;
+					
+				}
+				//*/
 	
+				
+				
+		  }
+		//  */
+	  }
+	  
+    }
+  });
 		  
-		  
+	function classify(instance) {
+		instance["class"] = "awawaawtwaaw";
+		return instance;
+	}
 
 
     // initialize the Palette that is in a floating, draggable HTML container
     myPalette = new go.Palette("myPaletteDiv");  // must name or refer to the DIV HTML element
     myPalette.nodeTemplateMap = myDiagram.nodeTemplateMap;
     myPalette.model = new go.GraphLinksModel([
-      { text: "Lake", fill: fill1, stroke: brush1, figure: "Hexagon" },
-      { text: "Ocean", fill: fill2, stroke: brush2, figure: "Rectangle" },
-      { text: "Sand", fill: fill3, stroke: brush3, figure: "Diamond" },
-      { text: "Goldfish", fill: fill4, stroke: brush4, figure: "Octagon" }
+      { text: "Point", fill: fill1, stroke: brush1, figure: "Hexagon", node:{val:{getLabel:function() {return "~Point"}}}  },
+      { text: "Path", fill: fill2, stroke: brush2, figure: "Rectangle", node:{val:{getLabel:function() {return "~Path"}}} },
+      { text: "Region", fill: fill3, stroke: brush3, figure: "Diamond", node:{val:{getLabel:function() {return "~Region"}}} }
     ]);
 	
 	jQuery(window).keydown( function(e) {
@@ -160,8 +263,8 @@
             resetButton: true,
             propertyNames: {
               "Node": ["location", "background", "scale", "angle", "isShadowed", "resizable"],
-              "#SHAPE": ["fill", "stroke", "strokeWidth", "figure"],
-              "#TEXT": ["text", "font"]
+              "#SHAPE": ["fill", "stroke", "strokeWidth", "figure"]
+        //      "#TEXT": ["text", "font", "packet"]
             }
           });
         });

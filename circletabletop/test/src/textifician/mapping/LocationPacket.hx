@@ -12,6 +12,10 @@ class LocationPacket implements IXYZ
 	public var x:Float;
 	public var y:Float;
 	public var z:Float;
+	
+	public function getLabel():String {
+		return defOverwrites != null && defOverwrites.label != null ? defOverwrites.label : def.label;
+	}
 
 	public function new() 
 	{
