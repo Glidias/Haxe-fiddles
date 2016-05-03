@@ -99,7 +99,8 @@
 			  
 			  new go.Binding("figure", "figure"),
 			  new go.Binding("fill", "fill"),
-			  new go.Binding("stroke", "stroke")
+			  new go.Binding("stroke", "stroke"),
+			   new go.Binding("desiredSize", "size")
 			  
 			  ,
 				   new go.Binding("fromLinkable", "", function(data) {
@@ -223,9 +224,9 @@
     myPalette = new go.Palette("myPaletteDiv");  // must name or refer to the DIV HTML element
     myPalette.nodeTemplateMap = myDiagram.nodeTemplateMap;
     myPalette.model = new go.GraphLinksModel([
-      { text: "Point", fill: fill1, stroke: brush1, figure: "Hexagon", node:{val:{getLabel:function() {return "~Point"}}}  },
-      { text: "Path", fill: fill2, stroke: brush2, figure: "Rectangle", node:{val:{getLabel:function() {return "~Path"}}} },
-      { text: "Region", fill: fill3, stroke: brush3, figure: "Diamond", node:{val:{getLabel:function() {return "~Region"}}} }
+      { text: "Point", fill: fill1, stroke: brush1, figure: "Square", size:new go.Size(5,5), node:{val:{getLabel:function() {return "~Point"}}}  },
+      { text: "Path", fill: fill2, stroke: brush2, figure: "Diamond", size:new go.Size(12,12), node:{val:{getLabel:function() {return "~Path"}}} },
+      { text: "Region", fill: fill3, stroke: brush3, figure: "Circle", node:{val:{getLabel:function() {return "~Region"}}} }
     ]);
 	
 	jQuery(window).keydown( function(e) {
@@ -263,8 +264,8 @@
             resetButton: true,
             propertyNames: {
               "Node": ["location", "background", "scale", "angle", "isShadowed", "resizable"],
-              "#SHAPE": ["fill", "stroke", "strokeWidth", "figure"]
-        //      "#TEXT": ["text", "font", "packet"]
+              "#SHAPE": ["fill", "stroke", "strokeWidth", "figure"],
+              "#TEXT": ["text"]
             }
           });
         });
