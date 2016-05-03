@@ -1,358 +1,309 @@
 ﻿/*
- *                            _/                                                    _/
- *       _/_/_/      _/_/    _/  _/    _/    _/_/_/    _/_/    _/_/_/      _/_/_/  _/
- *      _/    _/  _/    _/  _/  _/    _/  _/    _/  _/    _/  _/    _/  _/    _/  _/
- *     _/    _/  _/    _/  _/  _/    _/  _/    _/  _/    _/  _/    _/  _/    _/  _/
- *    _/_/_/      _/_/    _/    _/_/_/    _/_/_/    _/_/    _/    _/    _/_/_/  _/
- *   _/                            _/        _/
- *  _/                        _/_/      _/_/
- *
- * POLYGONAL - A HAXE LIBRARY FOR GAME DEVELOPERS
- * Copyright (c) 2009 Michael Baczynski, http://www.polygonal.de
- *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
+Copyright (c) 2008-2016 Michael Baczynski, http://www.polygonal.de
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 package de.polygonal.ds.mem;
 
-import de.polygonal.ds.error.Assert.assert;
+import de.polygonal.ds.tools.Assert.assert;
+import de.polygonal.ds.tools.M;
+import haxe.ds.Vector;
+
+#if (alchemy && !flash)
+"ByteMemory is only available when targeting flash"
+#end
 
 /**
- * <p>A byte array using fast "alchemy-memory" for data storage.</p>
- */
+	A byte array using fast "alchemy-memory" for data storage.
+**/
 class ByteMemory extends MemoryAccess
 {
 	/**
-	 * Converts <code>input</code> in the range &#091;<code>min</code>, <code>max</code>&#093; to a byte array.<br/>
-	 * If no range is specified, all <code>input</code> bytes are copied.</i><br/>
-	 * <warn>The bytes are written in little endian format.</warn>
-	 * @throws de.polygonal.ds.error.AssertError invalid range, invalid <code>input</code> or memory deallocated (debug only).
-	 */
-	#if (flash9 || cpp)
-	public static function toByteArray(input:ByteMemory, min = -1, max = -1):flash.utils.ByteArray
+		Converts `input` in the range [`min`, `max`] to a byte array.
+		If no range is specified, all `input` bytes are copied.</i>
+		<warn>The bytes are written in little endian format.</warn>
+		<assert>invalid range, invalid `input` or memory deallocated</assert>
+	**/
+	#if flash
+	public static function toByteArray(input:ByteMemory, min:Int = -1, max:Int = -1):flash.utils.ByteArray
 	{
-		#if debug
 		assert(input != null, "invalid input");
-		#end
 		
 		if (min == -1) min = 0;
 		if (max == -1) max = input.size;
 		
-		#if debug
 		assert(min >= 0, 'min out of range ($min)');
 		assert(max <= input.size, 'max out of range ($max)');
 		assert(max - min > 0, 'min equals max ($min)');
-		#end
 		
 		var t = min;
 		min = input.getAddr(t);
 		max = input.getAddr(max - 1);
 		
-		var output = new flash.utils.ByteArray();
-		output.endian = flash.utils.Endian.LITTLE_ENDIAN;
+		var out = new flash.utils.ByteArray();
+		out.endian = flash.utils.Endian.LITTLE_ENDIAN;
 		
-		#if alchemy
-		while (min <= max) output.writeByte(flash.Memory.getByte(min++));
-		
+		#if (flash && alchemy)
+		while (min <= max) out.writeByte(flash.Memory.getByte(min++));
 		#else
-		for (i in 0...(max - min) + 1) output.writeByte(input.get(min + i));
+		for (i in 0...(max - min) + 1) out.writeByte(input.get(min + i));
 		#end
-		output.position = 0;
-		return output;
+		out.position = 0;
+		return out;
 	}
-	#end
 	
 	/**
-	 * Converts <code>input</code> in the range &#091;<code>min</code>, <code>max</code>&#093; to a <em>ByteMemory</em> object.<br/>
-	 * If no range is specified, all <code>input</code> bytes are copied.
-	 * @throws de.polygonal.ds.error.AssertError invalid range, invalid <code>input</code> or memory deallocated (debug only).
-	 */
-	#if (flash9 || cpp)
-	public static function ofByteArray(input:flash.utils.ByteArray, min = -1, max = -1):ByteMemory
+		Converts `input` in the range [`min`, `max`] to a `ByteMemory` object.
+		If no range is specified, all `input` bytes are copied.
+		<assert>invalid range, invalid `input` or memory deallocated</assert>
+	**/
+	public static function ofByteArray(input:flash.utils.ByteArray, min:Int = -1, max:Int = -1):ByteMemory
 	{
-		#if debug
 		assert(input != null, "invalid input");
-		#end
 		
 		if (min == -1) min = 0;
 		if (max == -1) max = input.length;
 		
 		input.position = min;
 		
-		#if debug
-		assert(min >= 0, "min >= 0");
+		assert(min >= 0);
 		assert(max <= Std.int(input.length), "max <= input.length");
-		#end
 		
-		var output = new ByteMemory(max - min, "ofByteArray");
-		for (i in min...max) output.set(i - min, input.readByte());
-		return output;
+		var out = new ByteMemory(max - min, "ofByteArray");
+		for (i in min...max) out.set(i - min, input.readByte());
+		return out;
 	}
 	#end
 	
 	/**
-	 * Converts <code>input</code> in the range &#091;<code>min</code>, <code>max</code>&#093; to a <code>BytesData</code> object.<br/>
-	 * If no range is specified, all <code>input</code> bytes are copied.</i><br/>
-	 * <warn>The bytes are written in little endian format.</warn>
-	 * @throws de.polygonal.ds.error.AssertError invalid range, invalid <code>input</code> or memory deallocated (debug only).
-	 */
-	public static function toBytesData(input:ByteMemory, min = -1, max = -1):haxe.io.BytesData
+		Converts `input` in the range [`min`, `max`] to a `BytesData` object.
+		If no range is specified, all `input` bytes are copied.</i>
+		<warn>The bytes are written in little endian format.</warn>
+		<assert>invalid range, invalid `input` or memory deallocated</assert>
+	**/
+	public static function toBytesData(input:ByteMemory, min:Int = -1, max:Int = -1):haxe.io.BytesData
 	{
-		#if debug
 		assert(input != null, "invalid input");
-		#end
 		
 		if (min == -1) min = 0;
 		if (max == -1) max = input.size;
 		
-		#if debug
 		assert(min >= 0, 'min out of range ($min)');
 		assert(max <= input.size, 'max out of range ($max)');
 		assert(max - min > 0, 'min equals max ($min)');
-		#end
 		
-		var output = new haxe.io.BytesBuffer();
-		for (i in 0...max - min) output.addByte(input.get(min + i));
-		return output.getBytes().getData();
+		var out = new haxe.io.BytesBuffer();
+		for (i in 0...max - min) out.addByte(input.get(min + i));
+		return out.getBytes().getData();
 	}
 	
 	/**
-	 * Converts <code>input</code> in the range &#091;<code>min</code>, <code>max</code>&#093; to a <em>ByteMemory</em> object.<br/>
-	 * If no range is specified, all <code>input</code> bytes are copied.
-	 * @throws de.polygonal.ds.error.AssertError invalid range, invalid <code>input</code> or memory deallocated (debug only).
-	 */
-	public static function ofBytesData(input:haxe.io.BytesData, min = -1, max = -1):ByteMemory
+		Converts `input` in the range [`min`, `max`] to a `ByteMemory` object.
+		If no range is specified, all `input` bytes are copied.
+		<assert>invalid range, invalid `input` or memory deallocated</assert>
+	**/
+	public static function ofBytesData(input:haxe.io.BytesData, min:Int = -1, max:Int = -1):ByteMemory
 	{
-		#if debug
 		assert(input != null, "invalid input");
-		#end
 		
 		if (min == -1) min = 0;
 		
 		var bytes = haxe.io.Bytes.ofData(input);
 		if (max == -1) max = bytes.length;
 		
-		#if debug
-		assert(min >= 0, "min >= 0");
+		assert(min >= 0);
 		assert(max <= Std.int(bytes.length), "max <= input.length");
-		#end
 		
-		var output = new ByteMemory(max - min, "ofBytesData");
-		for (i in min...max) output.set(i - min, bytes.get(i));
-		return output;
+		var out = new ByteMemory(max - min, "ofBytesData");
+		for (i in min...max) out.set(i - min, bytes.get(i));
+		return out;
 	}
 	
 	/**
-	 * Converts <code>input</code> in the range &#091;<code>min</code>, <code>max</code>&#093; to an array.<br/>
-	 * If no range is specified, all <code>input</code> bytes are copied.
-	 * @throws de.polygonal.ds.error.AssertError invalid range, invalid <code>input</code> or memory deallocated (debug only).
-	 */
-	public static function toArray(input:ByteMemory, min = -1, max = -1):Array<Int>
+		Converts `input` in the range [`min`, `max`] to an array.
+		If no range is specified, all `input` bytes are copied.
+		<assert>invalid range, invalid `input` or memory deallocated</assert>
+	**/
+	public static function toArray(input:ByteMemory, min:Int = -1, max:Int = -1):Array<Int>
 	{
-		#if debug
 		assert(input != null, "invalid input");
-		#end
 		
 		if (min == -1) min = 0;
 		if (max == -1) max = input.size;
 		
-		#if debug
 		assert(min >= 0, 'min out of range ($min)');
 		assert(max <= input.size, 'max out of range ($max)');
 		assert(max - min > 0, 'min equals max ($min)');
-		#end
 		
-		var output = new Array();
+		var out = new Array();
 		
-		#if alchemy
+		#if (flash && alchemy)
 		min = input.getAddr(min);
 		max = input.getAddr(max - 1);
 		while (min <= max)
 		{
-			output.push(flash.Memory.getByte(min));
+			out.push(flash.Memory.getByte(min));
 			min++;
 		}
 		#else
-		for (i in 0...max - min) output[i] = input.get(min + i);
+		for (i in 0...max - min) out[i] = input.get(min + i);
 		#end
-		
-		return output;
+		return out;
 	}
 	
 	/**
-	 * Converts <code>input</code> in the range &#091;<code>min</code>, <code>max</code>&#093; to a <em>ByteMemory</em> object.<br/>
-	 * If no range is specified, all <code>input</code> bytes are copied.
-	 * @throws de.polygonal.ds.error.AssertError invalid range, invalid <code>input</code> or memory deallocated (debug only).
-	 */
-	public static function ofArray(input:Array<Int>, min = -1, max = -1):ByteMemory
+		Converts `input` in the range [`min`, `max`] to a `ByteMemory` object.
+		If no range is specified, all `input` bytes are copied.
+		<assert>invalid range, invalid `input` or memory deallocated</assert>
+	**/
+	public static function ofArray(input:Array<Int>, min:Int = -1, max:Int = -1):ByteMemory
 	{
-		#if debug
 		assert(input != null, "invalid input");
-		#end
 		
 		if (min == -1) min = 0;
 		if (max == -1) max = input.length;
 		
-		#if debug
-		assert(min >= 0, "min >= 0");
+		assert(min >= 0);
 		assert(max <= Std.int(input.length), "max <= input.length");
-		#end
 		
-		var output = new ByteMemory(max - min, "ofArray");
-		for (i in min...max) output.set(i - min, input[i]);
-		
-		return output;
+		var out = new ByteMemory(max - min, "ofArray");
+		for (i in min...max) out.set(i - min, input[i]);
+		return out;
 	}
 	
-	#if flash10
 	/**
-	 * Converts <code>input</code> in the range &#091;<code>min</code>, <code>max</code>&#093; to a Vector object.<br/>
-	 * If no range is specified, all <code>input</code> bytes are copied.
-	 * @param output the <code>Vector</code> object to write into. If null, a new Vector object is created on-the-fly.
-	 * @throws de.polygonal.ds.error.AssertError invalid range, invalid <code>input</code> or memory deallocated (debug only).
-	 */
-	public static function toVector(input:ByteMemory, min = -1, max = -1, output:flash.Vector<Int> = null):flash.Vector<Int>
+		Converts `input` in the range [`min`, `max`] to a Vector object.
+		If no range is specified, all `input` bytes are copied.
+		@param out the `Vector` object to write into. If null, a new Vector object is created on-the-fly.
+		<assert>invalid range, invalid `input` or memory deallocated</assert>
+	**/
+	public static function toVector(input:ByteMemory, min:Int = -1, max:Int = -1, out:Vector<Int> = null):Vector<Int>
 	{
-		#if debug
 		assert(input != null, "invalid input");
-		#end
 		
 		if (min == -1) min = 0;
 		if (max == -1) max = input.size;
 		
-		#if debug
 		assert(min >= 0, 'min out of range ($min)');
 		assert(max <= input.size, 'max out of range ($max)');
 		assert(max - min > 0, 'min equals max ($min)');
-		#end
 		
 		#if debug
-		if (output != null)
-			if (output.fixed)
-				assert(Std.int(output.length) >= max - min, "output vector is too small");
+		if (out != null) assert(Std.int(out.length) >= max - min, "out vector is too small");
 		#end
 		
-		if (output == null) output = new flash.Vector<Int>(max - min, true);
+		if (out == null) out = new Vector<Int>(max - min);
 		
-		#if alchemy
+		#if (flash && alchemy)
 		min = input.getAddr(min);
 		max = input.getAddr(max - 1);
 		var i = 0;
 		while (min <= max)
 		{
-			output[i++] = flash.Memory.getByte(min);
+			out[i++] = flash.Memory.getByte(min);
 			min++;
 		}
 		#else
-		for (i in 0...max - min) output[i] = input.get(min + i);
+		for (i in 0...max - min) out[i] = input.get(min + i);
 		#end
-		
-		return output;
+		return out;
 	}
 	
 	/**
-	 * Converts <code>input</code> in the range &#091;<code>min</code>, <code>max</code>&#093; to a <em>ByteMemory</em> object.<br/>
-	 * If no range is specified, all <code>input</code> bytes are copied.
-	 * @throws de.polygonal.ds.error.AssertError invalid range, invalid <code>input</code> or memory deallocated (debug only).
-	 */
-	public static function ofVector(input:flash.Vector<Int>, min = -1, max = -1):ByteMemory
+		Converts `input` in the range [`min`, `max`] to a `ByteMemory` object.
+		If no range is specified, all `input` bytes are copied.
+		<assert>invalid range, invalid `input` or memory deallocated</assert>
+	**/
+	public static function ofVector(input:Vector<Int>, min:Int = -1, max:Int = -1):ByteMemory
 	{
-		#if debug
 		assert(input != null, "invalid input");
-		#end
 		
 		if (min == -1) min = 0;
 		if (max == -1) max = input.length;
 		
-		#if debug
-		assert(min >= 0, "min >= 0");
+		assert(min >= 0);
 		assert(max <= Std.int(input.length), "max <= input.length");
-		#end
 		
-		var output = new ByteMemory(max - min, "ofVector");
-		for (i in min...max) output.set(i - min, input[i]);
-		
-		return output;
+		var out = new ByteMemory(max - min, "ofVector");
+		for (i in min...max) out.set(i - min, input[i]);
+		return out;
 	}
-	#end
 	
-	#if !alchemy
-		#if flash9
-		var _data:flash.utils.ByteArray;
+	#if (!flash && alchemy)
+	var mData:haxe.io.Bytes;
+	#else
+		#if flash
+		var mData:flash.utils.ByteArray;
 		#else
-		var _data:haxe.io.Bytes;
+		var mData:haxe.io.Bytes;
 		#end
 	#end
 	
 	/**
-	 * The size measured in bytes.
-	 */
+		The size measured in bytes.
+	**/
 	public var size(default, null):Int;
 	
 	/**
-	 * Creates a byte array capable of storing a total of <code>size</code> bytes.
-	 */
-	public function new(size:Int, name = "?")
+		Creates a byte array capable of storing a total of `size` bytes.
+	**/
+	public function new(size:Int, name:String = "?")
 	{
-	
 		super(this.size = size, name);
 		
 		#if !alchemy
-			#if flash9
-			_data = new flash.utils.ByteArray();
-			_data.length = size;
+			#if flash
+			mData = new flash.utils.ByteArray();
+			mData.length = size;
 			#else
-			_data = haxe.io.Bytes.alloc(size);
+			mData = haxe.io.Bytes.alloc(size);
 			#end
 		#end
-		
-		
 	}
 	
 	#if !alchemy
 	override public function free()
 	{
-		_data = null;
+		mData = null;
 		super.free();
 	}
 	#end
 	
 	/**
-	 * Creates a deep copy of this object.
-	 */
+		Creates a deep copy of this object.
+	**/
 	public function clone():ByteMemory
 	{
 		var c = new ByteMemory(bytes, name);
-		#if alchemy
+		#if (flash && alchemy)
 		var src = getAddr(0);
 		var dst = c.getAddr(0);
 		for (i in 0...size)
 			flash.Memory.setByte(dst + i, flash.Memory.getByte(src + i));
 		#else
-		var t = c._data;
-			#if flash9
-			for (i in 0...size) t[i] = _data[i];
+		var t = c.mData;
+			#if flash
+			for (i in 0...size) t[i] = mData[i];
 			#else
 			for (i in 0...size)
 			{
-				#if flash9
-				t[i] = _data[i];
+				#if flash
+				t[i] = mData[i];
 				#else
-				t.set(i, _data.get(i));
+				t.set(i, mData.get(i));
 				#end
 			}
 			#end
@@ -361,11 +312,11 @@ class ByteMemory extends MemoryAccess
 	}
 	
 	/**
-	 * Sets all bytes to the value <code>x</code>. 
-	 */
-	public function fill(x:Int):ByteMemory
+		Sets all bytes to the value `x`.
+	**/
+	public function setAll(x:Int):ByteMemory
 	{
-		#if alchemy
+		#if (flash && alchemy)
 		var offset = getAddr(0);
 		flash.Memory.setByte(0, x);
 		flash.Memory.setByte(1, x);
@@ -387,109 +338,101 @@ class ByteMemory extends MemoryAccess
 		#else
 		for (i in 0...size) set(i, x);
 		#end
-		
 		return this;
 	}
 	
 	/**
-	 * Adjusts the size of this object so it's capable of storing <code>newSize</code> bytes.
-	 * @throws de.polygonal.ds.error.AssertError invalid size (debug only).
-	 * @throws de.polygonal.ds.error.AssertError memory was already deallocated (debug only).
-	 */
+		Adjusts the size of this object so it's capable of storing `newSize` bytes.
+		<assert>invalid size</assert>
+		<assert>memory was already deallocated</assert>
+	**/
 	override public function resize(newSize:Int)
 	{
-		#if debug
 		assert(newSize >= 0, 'invalid size ($newSize)');
-		#end
 		
 		#if alchemy
 		super.resize(newSize);
 		#else
-			#if flash9
-			var tmp = new flash.utils.ByteArray();
-			tmp.length = newSize;
-			for (i in 0...M.min(newSize, size)) tmp[i] = _data[i];
+			#if flash
+			var t = new flash.utils.ByteArray();
+			t.length = newSize;
+			for (i in 0...M.min(newSize, size)) t[i] = mData[i];
 			#else
-			var tmp = haxe.io.Bytes.alloc(newSize);
-			for (i in 0...M.min(newSize, size)) tmp.set(i, _data.get(i));
+			var t = haxe.io.Bytes.alloc(newSize);
+			for (i in 0...M.min(newSize, size)) t.set(i, mData.get(i));
 			#end
-		_data = tmp;
+		mData = t;
 		#end
 		
 		size = newSize;
 	}
 	
 	/**
-	 * Returns the byte at index <code>i</code>.
-	 * @throws de.polygonal.ds.error.AssertError segmentation Fault (debug only).
-	 * @throws de.polygonal.ds.error.AssertError memory deallocated (debug only).
-	 */
-	inline public function get(i:Int):Int
+		Returns the byte at index `i`.
+		<assert>segmentation Fault</assert>
+		<assert>memory deallocated</assert>
+	**/
+	public inline function get(i:Int):Int
 	{
-		#if alchemy
+		#if (flash && alchemy)
 		return flash.Memory.getByte(getAddr(i));
 		#else
-			#if flash9
-			return _data[i];
+			#if flash
+			return mData[i];
 			#else
-			return _data.get(i);
+			return mData.get(i);
 			#end
 		#end
 	}
 	
 	/**
-	 * Replaces the byte at the index <code>i</code> with the byte <code>x</code>.
-	 * @throws de.polygonal.ds.error.AssertError segmentation Fault (debug only).
-	 * @throws de.polygonal.ds.error.AssertError memory deallocated (debug only).
-	 */
-	inline public function set(i:Int, x:Int)
+		Replaces the byte at the index `i` with the byte `x`.
+		<assert>segmentation Fault</assert>
+		<assert>memory deallocated</assert>
+	**/
+	public inline function set(i:Int, x:Int)
 	{
-		#if alchemy
+		#if (flash && alchemy)
 		flash.Memory.setByte(getAddr(i), x);
-		
 		#else
-			#if flash9
-			_data[i] = x;
+			#if flash
+			mData[i] = x;
 			#else
-			_data.set(i, x);
+			mData.set(i, x);
 			#end
 		#end
 	}
 	
 	/**
-	 * Swaps the byte at the index <code>i</code> with the byte at the index <code>j</code>.
-	 * @throws de.polygonal.ds.error.AssertError <code>i</code> equals <code>j</code> (debug only).
-	 * @throws de.polygonal.ds.error.AssertError segmentation Fault (debug only).
-	 * @throws de.polygonal.ds.error.AssertError memory deallocated (debug only).
-	 */
-	inline public function swp(i:Int, j:Int)
+		Swaps the byte at the index `i` with the byte at the index `j`.
+		<assert>`i` equals `j`</assert>
+		<assert>segmentation Fault</assert>
+		<assert>memory deallocated</assert>
+	**/
+	public inline function swap(i:Int, j:Int)
 	{
-		#if debug
 		assert(i != j, 'i equals j ($i)');
-		#end
 		
-		#if alchemy
+		#if (flash && alchemy)
 		var ai = getAddr(i);
 		var aj = getAddr(j);
-		var tmp = flash.Memory.getByte(ai);
+		var t = flash.Memory.getByte(ai);
 		flash.Memory.setByte(ai, flash.Memory.getByte(aj));
-		flash.Memory.setByte(ai, tmp);
+		flash.Memory.setByte(ai, t);
 		#else
-		var tmp = get(i); set(i, get(j)); set(j, tmp);
+		var t = get(i); set(i, get(j)); set(j, t);
 		#end
 	}
 	
 	/**
-	 * Returns the memory byte offset for the byte at index <code>i</code>.
-	 * @throws de.polygonal.ds.error.AssertError segmentation fault (debug only).
-	 * @throws de.polygonal.ds.error.AssertError memory deallocated (debug only).
-	 */
-	inline public function getAddr(i:Int):Int
+		Returns the memory byte offset for the byte at index `i`.
+		<assert>segmentation fault</assert>
+		<assert>memory deallocated</assert>
+	**/
+	public inline function getAddr(i:Int):Int
 	{
-		#if debug
 		assert(i >= 0 && i < size, 'segfault, index $i');
-		assert(_memory != null, "memory deallocated");
-		#end
+		assert(mMemory != null, "memory deallocated");
 		
 		#if alchemy
 		return offset + i;
@@ -506,34 +449,41 @@ class ByteMemory extends MemoryAccess
 	#end
 	
 	/**
-	 * Returns a string representing the current object.<br/>
-	 * Prints out all elements if compiled with the <em>-debug</em> directive.<br/>
-	 * Example:<br/>
-	 * <pre class="prettyprint">
-	 * var mem = new new de.polygonal.ds.mem.ByteMemory(4);
-	 * for (i in 0...4) {
-	 *     mem.set(i, i);
-	 * }
-	 * trace(mem);</pre>
-	 * <pre class="console">
-	 * { ByteMemory size: 4 }
-	 * [
-	 *   0 -> 0
-	 *   1 -> 1
-	 *   2 -> 2
-	 *   3 -> 3
-	 * ]</pre>
-	 */
+		Returns a string representing the current object.
+		Prints out all elements if compiled with the `-debug` directive.
+		
+		Example:
+		<pre class="prettyprint">
+		var mem = new new de.polygonal.ds.mem.ByteMemory(4);
+		for (i in 0...4) {
+		    mem.set(i, i);
+		}
+		trace(mem);</pre>
+		<pre class="console">
+		{ ByteMemory size: 4 }
+		[
+		  0 -> 0
+		  1 -> 1
+		  2 -> 2
+		  3 -> 3
+		]</pre>
+	**/
 	public function toString():String
 	{
 		#if debug
-		if (_memory == null) return "{ ByteMemory (unassigned) }";
-		var s = '{ ByteMemory size: $size, name: $name }';
-		s += "\n[\n";
+		if (mMemory == null) return "{ ByteMemory (unassigned) }";
+		var b = new StringBuf();
+		b.add('{ ByteMemory size: $size, name: $name }');
+		b.add("\n[\n");
+		var args = new Array<Dynamic>();
 		for (i in 0...size)
-			s += Printf.format("  %3d -> %d\n", [i, get(i)]);
-		s += "\n]";
-		return s;
+		{
+			args[0] = i;
+			args[1] = get(i);
+			b.add(Printf.format("  %3d -> %d\n", args));
+		}
+		b.add("\n]");
+		return b.toString();
 		#else
 		return '{ ByteMemory size: $size, name: $name }';
 		#end

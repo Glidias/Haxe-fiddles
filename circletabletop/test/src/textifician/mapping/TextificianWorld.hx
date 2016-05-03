@@ -1,5 +1,6 @@
 package textifician.mapping ;
 import de.polygonal.ds.Graph;
+import de.polygonal.ds.GraphArc;
 import de.polygonal.ds.GraphNode;
 import de.polygonal.ds.HashableItem;
 import de.polygonal.ds.HashKey;
@@ -68,12 +69,21 @@ class TextificianWorld
 		addZone(zone);
 		addLocationDef( LocationDefinition.createWithMatchingId(LocationDefinition.TYPE_POINT,"Point") ); 
 		addLocationDef( LocationDefinition.createWithMatchingId(LocationDefinition.TYPE_PATH,"Path") ); 
-		addLocationDef( LocationDefinition.createWithMatchingId(LocationDefinition.TYPE_REGION,"Region") );
+		addLocationDef( LocationDefinition.createWithMatchingId(LocationDefinition.TYPE_REGION, "Region") );
+		
+		var a:GraphNode<Dynamic> = graph.addNode( graph.createNode(null) );
+		var b:GraphNode<Dynamic> = graph.addNode( graph.createNode(null) );
+		graph.addGetSingleArc(a, b).val = 331;
 	}
+	
+
 	
 	public static function serialize(world:TextificianWorld):String {
 		var serializer = new Serializer();
+		serializer.useCache = true;
+		//serializer.useEnumIndex = true;
 		serializer.serialize(world);
+		
 		return serializer.toString();
 	}
 	public static function unserialize(str:String):TextificianWorld {
@@ -94,7 +104,6 @@ class TextificianWorld
 	
 	public function getDuplicationLocationDef(def:LocationDefinition, newId:String = ""):LocationDefinition {
 		var serializer = new Serializer();
-		serializer.serialize(def);
 
 		var unserializer = new Unserializer(serializer.toString());
 		var locDef:LocationDefinition = unserializer.unserialize();
@@ -117,6 +126,7 @@ class TextificianWorld
 		locationPacket.x = x;
 		locationPacket.y = y;
 		locationPacket.z = z;
+
 		return graph.addNode(graph.createNode(locationPacket));
 	}
 	public function addZoneNode(zone:Zone):GraphNode<Dynamic> {

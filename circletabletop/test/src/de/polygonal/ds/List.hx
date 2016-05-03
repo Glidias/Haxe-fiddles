@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2008-2016 Michael Baczynski, http://www.polygonal.de
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -18,25 +18,43 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 */
 package de.polygonal.ds;
 
-/**
-	An prioritized object that can be inserted into a PriorityQueue
-**/
-@:allow(de.polygonal.ds.PriorityQueue)
-interface Prioritizable
+import de.polygonal.ds.Collection;
+
+interface List<T> extends Collection<T>
 {
 	/**
-		The priority of this object.
-		
-		By default, a higher number equals a higher priority.
-		
-		<warn>This value should never be changed by the user after being added to a priority queue - use ``PriorityQueue::reprioritize()`` instead.</warn>
+		Returns the value at the given `index`.
 	**/
-	var priority(default, null):Float;
+	function get(index:Int):T;
 	
 	/**
-		Tracks the position inside a binary heap.
-		
-		<warn>This value should never be changed by the user.</warn>
+		Overwrites the value at the given `index` with `val`.
 	**/
-	var position(default, null):Int;
+	function set(index:Int, val:T):Void;
+	
+	/**
+		Adds `val` to the end of the list.
+	**/
+	function add(val:T):Void;
+	
+	/**
+		Inserts an element at the specified index. hint shift, if index == size??
+	**/
+	function insert(index:Int, val:T):Void;
+	
+	/**
+		Removes the value at the given `index`. hint shift
+	**/
+	function removeAt(index:Int):T;
+	
+	/**
+		Returns the index of the first occurrence of `val`, or -1 if this list does not contain `val`.
+	**/
+	function indexOf(val:T):Int;
+	
+	/**
+		Returns a shallow copy of a range of elements in the interval [`fromIndex`, `toIndex`).
+		If `toIndex` is negative, the value represents the number of elements.
+	**/
+	function getRange(fromIndex:Int, toIndex:Int):List<T>;
 }

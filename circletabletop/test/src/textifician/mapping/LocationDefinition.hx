@@ -67,6 +67,7 @@ class LocationDefinition
 		var locDef:LocationDefinition  = new LocationDefinition();
 		locDef.type = type;
 		locDef.label = label;
+		locDef.size = 1;
 		if (id != null) {
 			locDef.id = id;
 		}
@@ -86,7 +87,7 @@ class LocationDefinition
 		var locDef:LocationDefinition  = new LocationDefinition();
 		locDef.type = type;
 		locDef.label = label;
-		
+		locDef.size = 1;
 		if (id != null) {
 			locDef.id = id;
 		}

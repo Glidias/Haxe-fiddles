@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2008-2016 Michael Baczynski, http://www.polygonal.de
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -16,27 +16,39 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-package de.polygonal.ds;
+package de.polygonal.ds.tools;
 
-/**
-	An prioritized object that can be inserted into a PriorityQueue
-**/
-@:allow(de.polygonal.ds.PriorityQueue)
-interface Prioritizable
+import de.polygonal.ds.tools.Assert.assert;
+
+class GrowthRate
 {
-	/**
-		The priority of this object.
-		
-		By default, a higher number equals a higher priority.
-		
-		<warn>This value should never be changed by the user after being added to a priority queue - use ``PriorityQueue::reprioritize()`` instead.</warn>
-	**/
-	var priority(default, null):Float;
+	inline public static var FIXED  =  0;
+	inline public static var MILD   = -1; //1.125x
+	inline public static var NORMAL = -2; //1.5x
+	inline public static var DOUBLE = -3; //2x
 	
-	/**
-		Tracks the position inside a binary heap.
+	public static function compute(rate:Int, capacity:Int):Int
+	{
+		assert(rate >= -3, "invalid growth rate");
 		
-		<warn>This value should never be changed by the user.</warn>
-	**/
-	var position(default, null):Int;
+		if (rate > 0)
+			capacity += rate;
+		else
+		{
+			switch (rate)
+			{
+				case FIXED: throw "out of space";
+				
+				case MILD:
+					var newSize = capacity + 1;
+					capacity = (newSize >> 3) + (newSize < 9 ? 3 : 6);
+					capacity += newSize;
+				
+				case NORMAL: capacity = ((capacity * 3) >> 1) + 1;
+				
+				case DOUBLE: capacity <<= 1;
+			}
+		}
+		return capacity;
+	}
 }

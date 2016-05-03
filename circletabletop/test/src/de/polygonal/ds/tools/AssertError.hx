@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2008-2016 Michael Baczynski, http://www.polygonal.de
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -16,27 +16,25 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-package de.polygonal.ds;
+package de.polygonal.ds.tools;
 
 /**
-	An prioritized object that can be inserted into a PriorityQueue
+	Thrown to indicate that an assertion failed
 **/
-@:allow(de.polygonal.ds.PriorityQueue)
-interface Prioritizable
+class AssertError
 {
-	/**
-		The priority of this object.
-		
-		By default, a higher number equals a higher priority.
-		
-		<warn>This value should never be changed by the user after being added to a priority queue - use ``PriorityQueue::reprioritize()`` instead.</warn>
-	**/
-	var priority(default, null):Float;
+	public var message:String;
 	
-	/**
-		Tracks the position inside a binary heap.
+	public function new(?message:String, ?info:haxe.PosInfos)
+	{
+		if (message == null) message = "";
+		this.message = message;
 		
-		<warn>This value should never be changed by the user.</warn>
-	**/
-	var position(default, null):Int;
+		var stack = haxe.CallStack.toString(haxe.CallStack.callStack());
+		stack = ~/\nCalled from de\.polygonal\.ds\.tools\.AssertError.*$/m.replace(stack, "");
+		
+		this.message = 'Assertation $message failed in file ${info.fileName}, line ${info.lineNumber}, ${info.className}:: ${info.methodName}\nCall stack:${stack}';
+	}
+	
+	public function toString():String return message;
 }

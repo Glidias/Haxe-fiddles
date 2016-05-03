@@ -3,6 +3,7 @@ import de.polygonal.ds.Graph;
 import haxe.Json;
 import haxe.rtti.Meta;
 import haxe.Serializer;
+import haxe.Unserializer;
 import textifician.mapping.IndoorLocationSpecs;
 import textifician.mapping.LocationDefinition;
 import textifician.mapping.LocationPacket;
@@ -40,10 +41,39 @@ class TextificianGoJS
 		trace( Meta.getFields(Type.getClass(location2)) );
 		trace( TJSON.parse( TJSON.encode(location2, "fancy") ) );
 		*/
+		var serializer = new Serializer();
+		serializer.useCache = true;
+		var nestedArr:Array<Dynamic> = [0, 0, 0];
+		var sameArr:Array<Dynamic> = [1, 2, 3, nestedArr];
+		var itest = new InstanceTest();
+		
+	//	serializer.serialize(sameArr);
+		
+		itest.a = sameArr;
+		itest.b = sameArr;
 		
 		
-
+		trace(itest.a == itest.b);  // assert matching reference
+		trace(itest.a != null && itest.a[3] == itest.b[3]);  // assert matching reference
+		serializer.serialize(itest);
+		
+		var unserializer = new Unserializer(serializer.toString());
+		itest = unserializer.unserialize();
+		trace(itest.a==itest.b);  // assert matching reference
+		trace(itest.a[3] == itest.b[3]);  // assert matching reference
 	}
+	
+	public function new() 
+	{
+		
+	}
+	
+}
+
+class InstanceTest {
+	
+	 public var a:Array<Dynamic>;
+	public var b:Array<Dynamic>;
 	
 	public function new() 
 	{

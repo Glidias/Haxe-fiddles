@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2008-2016 Michael Baczynski, http://www.polygonal.de
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -18,25 +18,19 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 */
 package de.polygonal.ds;
 
-/**
-	An prioritized object that can be inserted into a PriorityQueue
-**/
-@:allow(de.polygonal.ds.PriorityQueue)
-interface Prioritizable
-{
-	/**
-		The priority of this object.
-		
-		By default, a higher number equals a higher priority.
-		
-		<warn>This value should never be changed by the user after being added to a priority queue - use ``PriorityQueue::reprioritize()`` instead.</warn>
-	**/
-	var priority(default, null):Float;
-	
-	/**
-		Tracks the position inside a binary heap.
-		
-		<warn>This value should never be changed by the user.</warn>
-	**/
-	var position(default, null):Int;
-}
+typedef NativeArray<T> =
+#if flash10
+	#if (generic && !no_inline)
+	flash.Vector<T>;
+	#else
+	Array<T>;
+	#end
+#elseif neko
+neko.NativeArray<T>;
+#elseif cs
+cs.NativeArray<T>;
+#elseif java
+java.NativeArray<T>;
+#else
+Array<T>;
+#end
