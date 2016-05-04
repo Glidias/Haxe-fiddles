@@ -83,7 +83,7 @@
 				font: "bold 7pt Arial, sans-serif",
 				name: "TEXT" 
 				},
-				new go.Binding("text", "node", function(n) { return n != null ? n.val.getLabel() : n.text } )
+				new go.Binding("text", "text" ).makeTwoWay()
 			)
 			,
 			GO(go.Shape, "Ellipse",
@@ -119,7 +119,101 @@
 			
 		  
 	);
+	
+	function writePropertiesOver(obj, src) {
+		var p;
+		if (src == null) return obj;
+		for(p in src) {
+		
+			obj[p] = src[p];
+		}
+		return obj;
+	}
 		  
+	var textProxy = {
+	   get : function() {
+			return this.node.val.defOverwrites != null && this.node.val.defOverwrites.label  ? this.node.val.defOverwrites.label : this.node.val.def.label;
+	   },
+	   set : function(val) {
+			var prefix = val.charAt(0);
+			if (prefix=== "#") {	// lookup location definition
+				val = val.slice(1);
+				var tryDef = world.getLocationDef( val );
+				if (tryDef != null) {
+					this.node.val.def = tryDef;
+					this.node.val.defOverwrites = null;
+					this.isProto =  val =="Point" || val ==="Path" || val === "Region";
+				}
+				else {
+					alert("Failed to find location definition: "+val);
+				}
+			}
+			else if (prefix === "~") {  // write label directly into location definition
+				if (this.isProto || val =="Point" || val ==="Path" || val === "Region") {
+					alert("Sorry, cannot write label directly into prototype location definition id! Save it first with * prefix!");
+					return;
+				}
+				val = val.slice(1);
+				if (this.node.val.defOverwrites != null) {
+					delete this.node.val.defOverwrites["label"];
+				}
+				this.node.val.def.label = val;
+			}
+			else if (prefix === "*") { // save location definition
+				val = val.slice(1);
+				//
+				var dupLoc;
+				
+				if (val.charAt(0) === "#") {
+					val = val.slice(1);
+					dupLoc = writePropertiesOver( world.getDuplicationLocationDef(this.node.val.def, val) , this.node.val.defOverwrites);
+				}
+				else {
+					if (this.node.val.defOverwrites == null) this.node.val.defOverwrites = {};
+					this.node.val.defOverwrites.label = val;
+					dupLoc = writePropertiesOver( world.getDuplicationLocationDef(this.node.val.def, val) , this.node.val.defOverwrites);
+				}
+			
+				try {
+					world.addLocationDef(dupLoc);
+					this.node.val.defOverwrites = null;
+					this.node.val.def = dupLoc;
+					this.isProto = false;
+				}
+				catch(err) {
+					alert(err);
+				}
+				
+			}
+			else {  // write label overwrite
+				if (val =="Point" || val ==="Path" || val === "Region") {
+					alert("Sorry, prototype id value reserved");
+					return;
+				}
+				if (this.node.val.defOverwrites == null) {
+					this.node.val.defOverwrites = { label: val };
+				}
+				else this.node.val.defOverwrites.label = val;
+				//this.node.val.def.label = val;
+			
+			}
+	   }
+	};
+	
+	
+					
+	function updateRelatedNodesOfModel(model, def, prop) {
+		var nodeDataArr = model.nodeDataArray;
+		var i = nodeDataArr.length;
+		var o;
+		while(--i > -1) {
+			o = nodeDataArr[i];
+			if (o.node && o.node.val.def === def) model.updateTargetBindings(nodeDataArr[i], prop);
+		}
+	}
+	
+	
+	
 	
   myDiagram.model.linkKeyProperty = "key";
   myDiagram.model.addChangedListener(function(e) {
@@ -130,6 +224,8 @@
         console.log(tx.toString());
 		
 		if (true || tx.name != "Move") {
+		
+			var methodToCalls = [];
 			var nodesToAdd = [];
 			tx.changes.each(function(c) {
 			 
@@ -139,14 +235,19 @@
 					
 						if (c.propertyName == "nodeDataArray") {  // insert node
 							nodesToAdd.push( c.newValue );
-							
 						}
 						else if (c.propertyName == "linkDataArray") {  // create link
 							
 						}
 					}
 					else if (c.newValue == null && c.oldValue != null) { // removal infered
-					
+						if (c.propertyName == "nodeDataArray") {  // remove node
+							alert("REMOVE NODE");
+							
+						}
+						else if (c.propertyName == "linkDataArray") {  // remove link
+							alert("REMOVE LINK");
+						}
 					}
 					else {
 						console.log	("Could not resolve this transaction case: "+tx);
@@ -155,12 +256,20 @@
 				else {  // deemed modifying of data within model
 					if (c.propertyName === "loc") {   // moving 
 						var n = c.object.node;
-						n.val.x = c.newValue.x;
-						n.val.y = c.newValue.y;
-					//	console.log("loc:", n.val );
+						if (n != null) {
+							n.val.x = c.newValue.x;
+							n.val.y = c.newValue.y;
+						}
 					}
 					else if (c.propertyName === "linkable") {
 						// irreleavant. do nothing
+					}
+					else if (c.propertyName === "text") {
+						methodToCalls.push(updateRelatedNodesOfModel, [e.model, c.object.node.val.def, "text"]);
+						methodToCalls.push(updateRelatedNodesOfModel, [myPalette.model, c.object.node.val.def, "text"]);
+					}
+					else if (c.propertyName === "size") {
+						// todo: reflect c
 					}
 					else { //
 					  alert("could not resolve:"+c.propertyName);
@@ -169,23 +278,43 @@
 				
 			
 				
-				//console.log( c.object," " +c.modelChange + ","+c.propertyName+","+c.oldParam +", "+c.newParam );
-				//console.log("OldValue:", c.oldValue);
-				//console.log("NewValue:", c.newValue);
+				console.log( c.object," " +c.modelChange + ","+c.propertyName+","+c.oldParam +", "+c.newParam );
+				console.log("OldValue:", c.oldValue);
+				console.log("NewValue:", c.newValue);
 				
 				//console.log( model.toIncrementalJson(e) );
 			  }
 			});
 			
-				var i = 0;
+			var i;
+			for(i=0; i< methodToCalls.length; i+=2) {
+				methodToCalls[i].apply(null, methodToCalls[i+1]);
+			
+			}
+			
+			// creation of nodes
+				i = 0;
+					var v;
 				var o;
 				for (i=0; i<nodesToAdd.length; i++) {
 					o =nodesToAdd[i];
-					e.model.setDataProperty(o,"node", world.addLocationNode(world.getLocationDef(o.text) ));
-					//console.log( JSON.stringify(o.node) );
+					if (o.node != null) {  // DUPLICATE NODE CASE
+						//alert(flagDownKeys );
+						e.model.setDataProperty(o,"node",v= world.addLocationNode(world.getLocationDef(o.node.val.def.id), o.loc.x, o.loc.y, 0, null, ( false ? o.node.val.cloneOverwrites() : o.node.val.defOverwrites) ));
+					}
+					else {  // NEW NODE CASE
+					
+						e.model.setDataProperty(o,"node",v= world.addLocationNode(world.getLocationDef(o.locid), o.loc.x, o.loc.y, 0, null, null ));
+					}
+					
+					if (o.text != textProxy) {
+						Object.defineProperty(o,"text",textProxy);
+						e.model.updateTargetBindings(o, "text");
+					}
+			
+
 				}
-				
-				
+	
 		  }
 		//  /*
 		  else  {   // DEPRECIATED atm due to recursion problem with toIncrementalJSON
@@ -224,22 +353,30 @@
     myPalette = new go.Palette("myPaletteDiv");  // must name or refer to the DIV HTML element
     myPalette.nodeTemplateMap = myDiagram.nodeTemplateMap;
     myPalette.model = new go.GraphLinksModel([
-      { text: "Point", fill: fill1, stroke: brush1, figure: "Square", size:new go.Size(5,5), node:{val:{getLabel:function() {return "~Point"}}}  },
-      { text: "Path", fill: fill2, stroke: brush2, figure: "Diamond", size:new go.Size(12,12), node:{val:{getLabel:function() {return "~Path"}}} },
-      { text: "Region", fill: fill3, stroke: brush3, figure: "Circle", node:{val:{getLabel:function() {return "~Region"}}} }
+      { locid:"Point", isProto:true, text:"Point",  fill: fill1, stroke: brush1, figure: "Square", size:new go.Size(5,5)   },
+      { locid:"Path", isProto:true, text:"Path",  fill: fill2, stroke: brush2, figure: "Diamond", size:new go.Size(12,12) },
+      { locid:"Region", isProto:true,  text:"Region",  fill: fill3, stroke: brush3, figure: "Circle" }
     ]);
 	
-	jQuery(window).keydown( function(e) {
-		if (e.keyCode === 16) {	
+	var FLAG_SHIFT_DOWN = 1;
+	var flagDownKeys = 0;
 	
+	jQuery(window).keydown( function(e) {
+		if (e.keyCode === 16) {	 // shift
+			flagDownKeys |= FLAG_SHIFT_DOWN;
 			myDiagram.model.setDataProperty(myDiagram.model.modelData, "linkable", true);
 			
 		}
+		console.log(flagDownKeys);
 	});
 	jQuery(window).keyup( function(e) {
-		if (e.keyCode === 16) {
+		if (e.keyCode === 16) {  // shift
+			flagDownKeys &= ~FLAG_SHIFT_DOWN;
 			myDiagram.model.setDataProperty(myDiagram.model.modelData, "linkable", false);
 		}
+		console.log(flagDownKeys);
+		
+		 
 	});
 
     myPalette.addDiagramListener("InitialLayoutCompleted", function(diagramEvent) {
@@ -260,14 +397,18 @@
 
         var inspector = new Inspector('infoDraggable', myDiagram,
           {
-            acceptButton: true,
-            resetButton: true,
-            propertyNames: {
-              "Node": ["location", "background", "scale", "angle", "isShadowed", "resizable"],
-              "#SHAPE": ["fill", "stroke", "strokeWidth", "figure"],
+            
+		  acceptButton: true,
+            resetButton: true
+          // /*
+			, propertyNames: {
+              //"Node": ["location", "background", "scale", "angle", "isShadowed", "resizable"],
+              //"#SHAPE": ["fill", "stroke", "strokeWidth", "figure"],
               "#TEXT": ["text"]
             }
+			//*/
           });
+		  
         });
 
   }

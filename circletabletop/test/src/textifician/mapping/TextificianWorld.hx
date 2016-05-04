@@ -104,10 +104,9 @@ class TextificianWorld
 	
 	public function getDuplicationLocationDef(def:LocationDefinition, newId:String = ""):LocationDefinition {
 		var serializer = new Serializer();
-
+		serializer.serialize(def);
 		var unserializer = new Unserializer(serializer.toString());
 		var locDef:LocationDefinition = unserializer.unserialize();
-		
 		if (newId != null) {
 			locDef.id = newId != "" ? newId :  null;
 			
@@ -126,6 +125,7 @@ class TextificianWorld
 		locationPacket.x = x;
 		locationPacket.y = y;
 		locationPacket.z = z;
+		locationPacket.defOverwrites = defOverwrites;
 
 		return graph.addNode(graph.createNode(locationPacket));
 	}

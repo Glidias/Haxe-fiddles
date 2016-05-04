@@ -74,6 +74,7 @@ class LocationDefinition
 		return locDef;
 	}
 	
+	
 	public function setSize(val:Float):LocationDefinition {
 		size = val;
 		return this;
@@ -100,6 +101,7 @@ class LocationDefinition
 		//trace(locDef.id);
 		return locDef;
 	}
+	
 	
 	
 	public static inline function slugify(label:String):String

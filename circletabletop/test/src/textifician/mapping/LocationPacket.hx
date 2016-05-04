@@ -16,6 +16,21 @@ class LocationPacket implements IXYZ
 	public function getLabel():String {
 		return defOverwrites != null && defOverwrites.label != null ? defOverwrites.label : def.label;
 	}
+	
+	public function cloneOverwrites():Dynamic {
+		if (defOverwrites == null) {
+				return null;
+		
+		}
+		var obj:Dynamic = { };
+		 // todo: proper clone for non-shallow cases
+		 var fields = 	Reflect.fields(defOverwrites);
+		for (p in fields) {
+			Reflect.setField(obj, p, Reflect.field(defOverwrites, p) );
+			//obj[p] = defOverwrites[p];
+		}
+		return obj;
+	}
 
 	public function new() 
 	{

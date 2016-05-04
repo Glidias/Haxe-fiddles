@@ -2,6 +2,8 @@ package textifician.mapping ;
 import de.polygonal.ds.Graph;
 import de.polygonal.ds.GraphArc;
 import de.polygonal.ds.GraphNode;
+import textifician.mapping.TextificianUtil.PropertyChainHolder;
+
 
 /**
  * Generic mapping/measurement methods used by Textifician engine
@@ -37,6 +39,108 @@ class TextificianUtil
 		return Math.sqrt(dx * dx + dy * dy);
 	}
 	
+	public static function getPropertyChainObj(src:Dynamic, property:Dynamic):PropertyChainHolder {
+		var me:PropertyChainHolder = new PropertyChainHolder();
+		me.setupProperty(src,property);
+		return me;
+	}
+	
+	
+	
+}
+
+
+class PropertyChainHolder {
+	private var _src:Dynamic;
+	
+    @:isVar public var value(get, set):Float;
+	public var propertyChain:Array<String>;
+	
+	public function new() {
+		
+		
+		#if js
+		untyped Object.defineProperty(this,"value",{
+           get : get_value,
+           set : set_value
+        });
+		#end
+		
+	}
+	public  function setupProperty(src:Dynamic, property:Dynamic=null):Void {
+		_src = src;
+		
+		if (property == null) {
+
+			return;
+		}
+		if (Std.is(property, String)) {
+			var str:String = property;
+			propertyChain = str.split(".");
+		}
+		else { // assumed array
+			propertyChain = property;
+		}
+	}
+	
+	private  function getPropertyChainValue():Dynamic {
+		var len:Int = propertyChain.length;
+		var cur = _src;
+		
+		for (i in 0...len) {
+			var propToGet = propertyChain[i];
+			cur = getPropertyOf(cur, propToGet );
+			if (cur == null) {
+				
+				return null;
+			}
+		}
+		return cur;
+	}
+	
+	
+	private  function setPropertyChainValue(val:Dynamic):Dynamic {
+		
+		if (_src == null) {
+			_src = { };
+		}
+		var cur = _src;
+		
+		var len:Int = propertyChain.length;
+		for (i in 0...len) {
+			var propToSet = propertyChain[i];
+			cur = setPropertyOf(cur, propToSet, (i < len - 1 ? null : val) );
+		}
+		return cur;
+	}
+	
+	private  function setPropertyOf(obj:Dynamic, prop:String, val:Dynamic):Dynamic {
+		
+		if (val == null) {
+			var reflectProp = val = Reflect.getProperty(obj, prop);
+			if (reflectProp == null) Reflect.setProperty(obj, prop, (reflectProp={ }) );
+			val =  reflectProp;
+		}
+
+		Reflect.setProperty(obj, prop, val);
+		return val;
+	}
+	
+	private  inline function getPropertyOf(obj:Dynamic, prop:String):Dynamic {
+
+		var reflectProp = Reflect.getProperty(obj, prop);
+		return reflectProp != null ? reflectProp : null;
+	}
+	
+	@:getter function get_value():Dynamic 
+	{
+		return propertyChain!= null && _src != null ? getPropertyChainValue() : null;
+	}
+	
+	@:setter function set_value(v:Dynamic):Dynamic 
+	{
+		return propertyChain!= null ? setPropertyChainValue(v) : null;
+	}
 	
 	
 }

@@ -147,6 +147,17 @@ Reflect.field = function(o,field) {
 		return null;
 	}
 };
+Reflect.setField = function(o,field,value) {
+	o[field] = value;
+};
+Reflect.getProperty = function(o,field) {
+	var tmp;
+	if(o == null) return null; else if(o.__properties__ && (tmp = o.__properties__["get_" + field])) return o[tmp](); else return o[field];
+};
+Reflect.setProperty = function(o,field,value) {
+	var tmp;
+	if(o.__properties__ && (tmp = o.__properties__["set_" + field])) o[tmp](value); else o[field] = value;
+};
 Reflect.callMethod = function(o,func,args) {
 	return func.apply(o,args);
 };
@@ -225,9 +236,32 @@ TextificianGoJS.main = function() {
 	textifician_mapping_LocationDefinition;
 	textifician_mapping_TextificianWorld;
 	textifician_mapping_TextificianUtil;
+	var serializer = new haxe_Serializer();
+	serializer.useCache = true;
+	var nestedArr = [0,0,0];
+	var sameArr = [1,2,3,nestedArr];
+	var itest = new InstanceTest();
+	itest.a = sameArr;
+	itest.b = sameArr;
+	console.log(itest.a == itest.b);
+	console.log(itest.a != null && itest.a[3] == itest.b[3]);
+	serializer.serialize(itest);
+	var unserializer = new haxe_Unserializer(serializer.toString());
+	itest = unserializer.unserialize();
+	console.log(itest.a == itest.b);
+	console.log(itest.a[3] == itest.b[3]);
 };
 TextificianGoJS.prototype = {
 	__class__: TextificianGoJS
+};
+var InstanceTest = function() {
+};
+$hxClasses["InstanceTest"] = InstanceTest;
+InstanceTest.__name__ = ["InstanceTest"];
+InstanceTest.prototype = {
+	a: null
+	,b: null
+	,__class__: InstanceTest
 };
 var ValueType = $hxClasses["ValueType"] = { __ename__ : ["ValueType"], __constructs__ : ["TNull","TInt","TFloat","TBool","TObject","TFunction","TClass","TEnum","TUnknown"] };
 ValueType.TNull = ["TNull",0];
@@ -277,32 +311,6 @@ Type.resolveEnum = function(name) {
 	var e = $hxClasses[name];
 	if(e == null || !e.__ename__) return null;
 	return e;
-};
-Type.createInstance = function(cl,args) {
-	var _g = args.length;
-	switch(_g) {
-	case 0:
-		return new cl();
-	case 1:
-		return new cl(args[0]);
-	case 2:
-		return new cl(args[0],args[1]);
-	case 3:
-		return new cl(args[0],args[1],args[2]);
-	case 4:
-		return new cl(args[0],args[1],args[2],args[3]);
-	case 5:
-		return new cl(args[0],args[1],args[2],args[3],args[4]);
-	case 6:
-		return new cl(args[0],args[1],args[2],args[3],args[4],args[5]);
-	case 7:
-		return new cl(args[0],args[1],args[2],args[3],args[4],args[5],args[6]);
-	case 8:
-		return new cl(args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7]);
-	default:
-		throw new js__$Boot_HaxeError("Too many arguments");
-	}
-	return null;
 };
 Type.createEmptyInstance = function(cl) {
 	function empty() {}; empty.prototype = cl.prototype;
@@ -355,227 +363,12 @@ Type["typeof"] = function(v) {
 		return ValueType.TUnknown;
 	}
 };
-var de_polygonal_ds_ArrayUtil = function() { };
-$hxClasses["de.polygonal.ds.ArrayUtil"] = de_polygonal_ds_ArrayUtil;
-de_polygonal_ds_ArrayUtil.__name__ = ["de","polygonal","ds","ArrayUtil"];
-de_polygonal_ds_ArrayUtil.alloc = function(x) {
-	var a;
-	a = new Array(x);
-	return a;
-};
-de_polygonal_ds_ArrayUtil.shrink = function(a,x) {
-	if(a.length > x) a.length = x;
-	return a;
-};
-de_polygonal_ds_ArrayUtil.copy = function(src,dst,min,max) {
-	if(max == null) max = -1;
-	if(min == null) min = 0;
-	if(max == -1) max = src.length;
-	var j = 0;
-	var _g = min;
-	while(_g < max) {
-		var i = _g++;
-		dst[j++] = src[i];
-	}
-	return dst;
-};
-de_polygonal_ds_ArrayUtil.fill = function(dst,x,k) {
-	if(k == null) k = -1;
-	if(k == -1) k = dst.length;
-	var _g = 0;
-	while(_g < k) {
-		var i = _g++;
-		dst[i] = x;
-	}
-};
-de_polygonal_ds_ArrayUtil.assign = function(dst,C,args,k) {
-	if(k == null) k = -1;
-	if(k == -1) k = dst.length;
-	if(args == null) args = [];
-	var _g = 0;
-	while(_g < k) {
-		var i = _g++;
-		dst[i] = Type.createInstance(C,args);
-	}
-};
-de_polygonal_ds_ArrayUtil.memmove = function(a,destination,source,n) {
-	if(source == destination) return; else if(source <= destination) {
-		var i = source + n;
-		var j = destination + n;
-		var _g = 0;
-		while(_g < n) {
-			var k = _g++;
-			i--;
-			j--;
-			a[j] = a[i];
-		}
-	} else {
-		var i1 = source;
-		var j1 = destination;
-		var _g1 = 0;
-		while(_g1 < n) {
-			var k1 = _g1++;
-			a[j1] = a[i1];
-			i1++;
-			j1++;
-		}
-	}
-};
-de_polygonal_ds_ArrayUtil.bsearchComparator = function(a,x,min,max,comparator) {
-	var l = min;
-	var m;
-	var h = max + 1;
-	while(l < h) {
-		m = l + (h - l >> 1);
-		if(comparator(a[m],x) < 0) l = m + 1; else h = m;
-	}
-	if(l <= max && comparator(a[l],x) == 0) return l; else return ~l;
-};
-de_polygonal_ds_ArrayUtil.bsearchInt = function(a,x,min,max) {
-	var l = min;
-	var m;
-	var h = max + 1;
-	while(l < h) {
-		m = l + (h - l >> 1);
-		if(a[m] < x) l = m + 1; else h = m;
-	}
-	if(l <= max && a[l] == x) return l; else return ~l;
-};
-de_polygonal_ds_ArrayUtil.bsearchFloat = function(a,x,min,max) {
-	var l = min;
-	var m;
-	var h = max + 1;
-	while(l < h) {
-		m = l + (h - l >> 1);
-		if(a[m] < x) l = m + 1; else h = m;
-	}
-	if(l <= max && a[l] == x) return l; else return ~l;
-};
-de_polygonal_ds_ArrayUtil.shuffle = function(a,rval) {
-	var s = a.length;
-	if(rval == null) {
-		var m = Math;
-		while(--s > 1) {
-			var i = Std["int"](m.random() * s);
-			var t = a[s];
-			a[s] = a[i];
-			a[i] = t;
-		}
-	} else {
-		var j = 0;
-		while(--s > 1) {
-			var i1 = Std["int"](rval[j++] * s);
-			var t1 = a[s];
-			a[s] = a[i1];
-			a[i1] = t1;
-		}
-	}
-};
-de_polygonal_ds_ArrayUtil.sortRange = function(a,compare,useInsertionSort,first,count) {
-	var k = a.length;
-	if(k > 1) {
-		if(useInsertionSort) de_polygonal_ds_ArrayUtil._insertionSort(a,first,count,compare); else de_polygonal_ds_ArrayUtil._quickSort(a,first,count,compare);
-	}
-};
-de_polygonal_ds_ArrayUtil.quickPerm = function(n) {
-	var results = [];
-	var a = [];
-	var p = [];
-	var i;
-	var j;
-	var tmp;
-	var _g = 0;
-	while(_g < n) {
-		var i1 = _g++;
-		a[i1] = i1 + 1;
-		p[i1] = 0;
-	}
-	results.push(a.slice());
-	i = 1;
-	while(i < n) if(p[i] < i) {
-		j = i % 2 * p[i];
-		tmp = a[j];
-		a[j] = a[i];
-		a[i] = tmp;
-		results.push(a.slice());
-		p[i]++;
-		i = 1;
-	} else {
-		p[i] = 0;
-		i++;
-	}
-	return results;
-};
-de_polygonal_ds_ArrayUtil.equals = function(a,b) {
-	if(a.length != b.length) return false;
-	var _g1 = 0;
-	var _g = a.length;
-	while(_g1 < _g) {
-		var i = _g1++;
-		if(a[i] != b[i]) return false;
-	}
-	return true;
-};
-de_polygonal_ds_ArrayUtil.split = function(a,n,k) {
-	var output = [];
-	var b = null;
-	var _g = 0;
-	while(_g < n) {
-		var i = _g++;
-		if(i % k == 0) output[i / k | 0] = b = [];
-		b.push(a[i]);
-	}
-	return output;
-};
-de_polygonal_ds_ArrayUtil._insertionSort = function(a,first,k,cmp) {
-	var _g1 = first + 1;
-	var _g = first + k;
-	while(_g1 < _g) {
-		var i = _g1++;
-		var x = a[i];
-		var j = i;
-		while(j > first) {
-			var y = a[j - 1];
-			if(cmp(y,x) > 0) {
-				a[j] = y;
-				j--;
-			} else break;
-		}
-		a[j] = x;
-	}
-};
-de_polygonal_ds_ArrayUtil._quickSort = function(a,first,k,cmp) {
-	var last = first + k - 1;
-	var lo = first;
-	var hi = last;
-	if(k > 1) {
-		var i0 = first;
-		var i1 = i0 + (k >> 1);
-		var i2 = i0 + k - 1;
-		var t0 = a[i0];
-		var t1 = a[i1];
-		var t2 = a[i2];
-		var mid;
-		var t = cmp(t0,t2);
-		if(t < 0 && cmp(t0,t1) < 0) if(cmp(t1,t2) < 0) mid = i1; else mid = i2; else if(cmp(t1,t0) < 0 && cmp(t1,t2) < 0) if(t < 0) mid = i0; else mid = i2; else if(cmp(t2,t0) < 0) mid = i1; else mid = i0;
-		var pivot = a[mid];
-		a[mid] = a[first];
-		while(lo < hi) {
-			while(cmp(pivot,a[hi]) < 0 && lo < hi) hi--;
-			if(hi != lo) {
-				a[lo] = a[hi];
-				lo++;
-			}
-			while(cmp(pivot,a[lo]) > 0 && lo < hi) lo++;
-			if(hi != lo) {
-				a[hi] = a[lo];
-				hi--;
-			}
-		}
-		a[lo] = pivot;
-		de_polygonal_ds_ArrayUtil._quickSort(a,first,lo - first,cmp);
-		de_polygonal_ds_ArrayUtil._quickSort(a,lo + 1,last - lo,cmp);
-	}
+var de_polygonal_ds_Cloneable = function() { };
+$hxClasses["de.polygonal.ds.Cloneable"] = de_polygonal_ds_Cloneable;
+de_polygonal_ds_Cloneable.__name__ = ["de","polygonal","ds","Cloneable"];
+de_polygonal_ds_Cloneable.prototype = {
+	clone: null
+	,__class__: de_polygonal_ds_Cloneable
 };
 var de_polygonal_ds_Hashable = function() { };
 $hxClasses["de.polygonal.ds.Hashable"] = de_polygonal_ds_Hashable;
@@ -589,48 +382,52 @@ $hxClasses["de.polygonal.ds.Collection"] = de_polygonal_ds_Collection;
 de_polygonal_ds_Collection.__name__ = ["de","polygonal","ds","Collection"];
 de_polygonal_ds_Collection.__interfaces__ = [de_polygonal_ds_Hashable];
 de_polygonal_ds_Collection.prototype = {
-	free: null
+	get_size: null
+	,free: null
 	,contains: null
 	,remove: null
 	,clear: null
 	,iterator: null
 	,isEmpty: null
-	,size: null
 	,toArray: null
 	,clone: null
 	,__class__: de_polygonal_ds_Collection
+	,__properties__: {get_size:"get_size"}
 };
-var de_polygonal_ds_Graph = function(maxSize) {
-	if(maxSize == null) maxSize = -1;
-	this.maxSize = -1;
-	this.clear();
-	this._size = 0;
-	this._iterator = null;
+var de_polygonal_ds_Graph = function() {
+	this.mQueSize = 16;
+	this.mStackSize = 16;
+	this.mIterator = null;
+	this.mSize = 0;
+	this.mNodeList = null;
+	this.reuseIterator = false;
 	this.autoClearMarks = false;
 	this.key = de_polygonal_ds_HashKey._counter++;
-	this.reuseIterator = false;
+	this.mStack = new Array(this.mStackSize);
+	this.mQue = new Array(this.mQueSize);
 };
 $hxClasses["de.polygonal.ds.Graph"] = de_polygonal_ds_Graph;
 de_polygonal_ds_Graph.__name__ = ["de","polygonal","ds","Graph"];
 de_polygonal_ds_Graph.__interfaces__ = [de_polygonal_ds_Collection];
 de_polygonal_ds_Graph.prototype = {
 	key: null
-	,maxSize: null
 	,autoClearMarks: null
 	,reuseIterator: null
 	,borrowArc: null
 	,returnArc: null
-	,_nodeList: null
-	,_size: null
-	,_stack: null
-	,_que: null
-	,_iterator: null
+	,mNodeList: null
+	,mSize: null
+	,mIterator: null
+	,mStack: null
+	,mStackSize: null
+	,mQue: null
+	,mQueSize: null
 	,getNodeList: function() {
-		return this._nodeList;
+		return this.mNodeList;
 	}
 	,findNode: function(x) {
 		var found = false;
-		var n = this._nodeList;
+		var n = this.mNodeList;
 		while(n != null) {
 			if(n.val == x) {
 				found = true;
@@ -644,26 +441,26 @@ de_polygonal_ds_Graph.prototype = {
 		return new de_polygonal_ds_GraphNode(this,x);
 	}
 	,addNode: function(x) {
-		this._size++;
-		x.next = this._nodeList;
+		this.mSize++;
+		x.next = this.mNodeList;
 		if(x.next != null) x.next.prev = x;
-		this._nodeList = x;
+		this.mNodeList = x;
 		return x;
 	}
 	,removeNode: function(x) {
 		this.unlink(x);
 		if(x.prev != null) x.prev.next = x.next;
 		if(x.next != null) x.next.prev = x.prev;
-		if(this._nodeList == x) this._nodeList = x.next;
-		this._size--;
+		if(this.mNodeList == x) this.mNodeList = x.next;
+		this.mSize--;
 	}
 	,addSingleArc: function(source,target,cost) {
 		if(cost == null) cost = 1.;
-		var walker = this._nodeList;
+		var walker = this.mNodeList;
 		while(walker != null) {
 			if(walker == source) {
 				var sourceNode = walker;
-				walker = this._nodeList;
+				walker = this.mNodeList;
 				while(walker != null) {
 					if(walker == target) {
 						sourceNode.addArc(walker,cost);
@@ -676,13 +473,23 @@ de_polygonal_ds_Graph.prototype = {
 			walker = walker.next;
 		}
 	}
+	,addGetSingleArc: function(source,target,cost) {
+		if(cost == null) cost = 1.;
+		this.addSingleArc(source,target,cost);
+		return source.getArc(target);
+	}
+	,addMutualArcs: function(source,target,cost) {
+		if(cost == null) cost = 1.;
+		this.addMutualArc(source,target,cost);
+		return [source.getArc(target),target.getArc(source)];
+	}
 	,addMutualArc: function(source,target,cost) {
 		if(cost == null) cost = 1.;
-		var walker = this._nodeList;
+		var walker = this.mNodeList;
 		while(walker != null) {
 			if(walker == source) {
 				var sourceNode = walker;
-				walker = this._nodeList;
+				walker = this.mNodeList;
 				while(walker != null) {
 					if(walker == target) {
 						sourceNode.addArc(walker,cost);
@@ -724,14 +531,14 @@ de_polygonal_ds_Graph.prototype = {
 		return node;
 	}
 	,clearMarks: function() {
-		var node = this._nodeList;
+		var node = this.mNodeList;
 		while(node != null) {
 			node.marked = false;
 			node = node.next;
 		}
 	}
 	,clearParent: function() {
-		var node = this._nodeList;
+		var node = this.mNodeList;
 		while(node != null) {
 			node.parent = null;
 			node = node.next;
@@ -740,25 +547,28 @@ de_polygonal_ds_Graph.prototype = {
 	,DFS: function(preflight,seed,process,userData,recursive) {
 		if(recursive == null) recursive = false;
 		if(preflight == null) preflight = false;
-		if(this._size == 0) return;
+		var _g = this;
+		if(this.mSize == 0) return;
 		if(this.autoClearMarks) this.clearMarks();
 		var c = 1;
-		if(seed == null) seed = this._nodeList;
-		this._stack[0] = seed;
+		if(seed == null) seed = this.mNodeList;
+		var max = this.mStackSize;
+		var s = this.mStack;
+		s[0] = seed;
 		seed.parent = seed;
 		seed.depth = 0;
 		if(preflight) {
 			if(process == null) {
 				if(recursive) {
 					var v = seed.val;
-					if(v.visit(true,userData)) this._DFSRecursiveVisit(seed,true,userData);
+					if(v.visit(true,userData)) this.dFSRecursiveVisit(seed,true,userData);
 				} else {
 					var v1 = null;
-					var n = this._stack[0];
+					var n = s[0];
 					v1 = n.val;
 					if(!v1.visit(true,userData)) return;
 					while(c > 0) {
-						var n1 = this._stack[--c];
+						var n1 = de_polygonal_ds_tools_NativeArrayTools.get(s,--c);
 						if(n1.marked) continue;
 						n1.marked = true;
 						v1 = n1.val;
@@ -768,18 +578,21 @@ de_polygonal_ds_Graph.prototype = {
 							v1 = n1.val;
 							a.node.parent = n1;
 							a.node.depth = n1.depth + 1;
-							if(v1.visit(true,userData)) this._stack[c++] = a.node;
+							if(v1.visit(true,userData)) {
+								if(c == max) _g.resizeStack(max = max * 2);
+								de_polygonal_ds_tools_NativeArrayTools.set(s,c++,a.node);
+							}
 							a = a.next;
 						}
 					}
 				}
 			} else if(recursive) {
-				if(process(seed,true,userData)) this._DFSRecursiveProcess(seed,process,true,userData);
+				if(process(seed,true,userData)) this.dFSRecursiveProcess(seed,process,true,userData);
 			} else {
-				var n2 = this._stack[0];
+				var n2 = s[0];
 				if(!process(n2,true,userData)) return;
 				while(c > 0) {
-					var n3 = this._stack[--c];
+					var n3 = de_polygonal_ds_tools_NativeArrayTools.get(s,--c);
 					if(n3.marked) continue;
 					n3.marked = true;
 					if(!process(n3,false,userData)) break;
@@ -787,37 +600,42 @@ de_polygonal_ds_Graph.prototype = {
 					while(a1 != null) {
 						a1.node.parent = n3;
 						a1.node.depth = n3.depth + 1;
-						if(process(a1.node,true,userData)) this._stack[c++] = a1.node;
+						if(process(a1.node,true,userData)) {
+							if(c == max) _g.resizeStack(max = max * 2);
+							de_polygonal_ds_tools_NativeArrayTools.set(s,c++,a1.node);
+						}
 						a1 = a1.next;
 					}
 				}
 			}
 		} else if(process == null) {
-			if(recursive) this._DFSRecursiveVisit(seed,false,userData); else {
+			if(recursive) this.dFSRecursiveVisit(seed,false,userData); else {
 				var v2 = null;
 				while(c > 0) {
-					var n4 = this._stack[--c];
+					var n4 = de_polygonal_ds_tools_NativeArrayTools.get(s,--c);
 					if(n4.marked) continue;
 					n4.marked = true;
 					v2 = n4.val;
 					if(!v2.visit(false,userData)) break;
 					var a2 = n4.arcList;
 					while(a2 != null) {
-						this._stack[c++] = a2.node;
+						if(c == max) _g.resizeStack(max = max * 2);
+						de_polygonal_ds_tools_NativeArrayTools.set(s,c++,a2.node);
 						a2.node.parent = n4;
 						a2.node.depth = n4.depth + 1;
 						a2 = a2.next;
 					}
 				}
 			}
-		} else if(recursive) this._DFSRecursiveProcess(seed,process,false,userData); else while(c > 0) {
-			var n5 = this._stack[--c];
+		} else if(recursive) this.dFSRecursiveProcess(seed,process,false,userData); else while(c > 0) {
+			var n5 = de_polygonal_ds_tools_NativeArrayTools.get(s,--c);
 			if(n5.marked) continue;
 			n5.marked = true;
 			if(!process(n5,false,userData)) break;
 			var a3 = n5.arcList;
 			while(a3 != null) {
-				this._stack[c++] = a3.node;
+				if(c == max) _g.resizeStack(max = max * 2);
+				de_polygonal_ds_tools_NativeArrayTools.set(s,c++,a3.node);
 				a3.node.parent = n5;
 				a3.node.depth = n5.depth + 1;
 				a3 = a3.next;
@@ -826,23 +644,26 @@ de_polygonal_ds_Graph.prototype = {
 	}
 	,BFS: function(preflight,seed,process,userData) {
 		if(preflight == null) preflight = false;
-		if(this._size == 0) return;
+		var _g = this;
+		if(this.mSize == 0) return;
 		if(this.autoClearMarks) this.clearMarks();
 		var front = 0;
 		var c = 1;
-		if(seed == null) seed = this._nodeList;
-		this._que[0] = seed;
+		var q = this.mQue;
+		var max = this.mQueSize;
+		if(seed == null) seed = this.mNodeList;
+		q[0] = seed;
 		seed.marked = true;
 		seed.parent = seed;
 		seed.depth = 0;
 		if(preflight) {
 			if(process == null) {
 				var v = null;
-				var n = this._que[front];
+				var n = q[front];
 				v = n.val;
 				if(!v.visit(true,userData)) return;
 				while(c > 0) {
-					n = this._que[front];
+					n = q[front];
 					v = n.val;
 					if(!v.visit(false,userData)) return;
 					var a = n.arcList;
@@ -856,17 +677,24 @@ de_polygonal_ds_Graph.prototype = {
 						m.parent = n;
 						m.depth = n.depth + 1;
 						v = m.val;
-						if(v.visit(true,userData)) this._que[c++ + front] = m;
+						if(v.visit(true,userData)) {
+							var i = c++ + front;
+							if(i == max) {
+								_g.resizeQue(max = max * 2);
+								q = _g.mQue;
+							}
+							q[i] = m;
+						}
 						a = a.next;
 					}
 					front++;
 					c--;
 				}
 			} else {
-				var n1 = this._que[front];
+				var n1 = q[front];
 				if(!process(n1,true,userData)) return;
 				while(c > 0) {
-					n1 = this._que[front];
+					n1 = q[front];
 					if(!process(n1,false,userData)) return;
 					var a1 = n1.arcList;
 					while(a1 != null) {
@@ -878,7 +706,14 @@ de_polygonal_ds_Graph.prototype = {
 						m1.marked = true;
 						m1.parent = n1;
 						m1.depth = n1.depth + 1;
-						if(process(m1,true,userData)) this._que[c++ + front] = m1;
+						if(process(m1,true,userData)) {
+							var i1 = c++ + front;
+							if(i1 == max) {
+								_g.resizeQue(max = max * 2);
+								q = _g.mQue;
+							}
+							q[i1] = m1;
+						}
 						a1 = a1.next;
 					}
 					front++;
@@ -888,7 +723,7 @@ de_polygonal_ds_Graph.prototype = {
 		} else if(process == null) {
 			var v1 = null;
 			while(c > 0) {
-				var n2 = this._que[front];
+				var n2 = q[front];
 				v1 = n2.val;
 				if(!v1.visit(false,userData)) return;
 				var a2 = n2.arcList;
@@ -901,14 +736,19 @@ de_polygonal_ds_Graph.prototype = {
 					m2.marked = true;
 					m2.parent = n2;
 					m2.depth = n2.depth + 1;
-					this._que[c++ + front] = m2;
+					var i2 = c++ + front;
+					if(i2 == max) {
+						_g.resizeQue(max = max * 2);
+						q = _g.mQue;
+					}
+					q[i2] = m2;
 					a2 = a2.next;
 				}
 				front++;
 				c--;
 			}
 		} else while(c > 0) {
-			var n3 = this._que[front];
+			var n3 = q[front];
 			if(!process(n3,false,userData)) return;
 			var a3 = n3.arcList;
 			while(a3 != null) {
@@ -920,7 +760,12 @@ de_polygonal_ds_Graph.prototype = {
 				m3.marked = true;
 				m3.parent = n3;
 				m3.depth = n3.depth + 1;
-				this._que[c++ + front] = m3;
+				var i3 = c++ + front;
+				if(i3 == max) {
+					_g.resizeQue(max = max * 2);
+					q = _g.mQue;
+				}
+				q[i3] = m3;
 				a3 = a3.next;
 			}
 			front++;
@@ -929,27 +774,30 @@ de_polygonal_ds_Graph.prototype = {
 	}
 	,DLBFS: function(maxDepth,preflight,seed,process,userData) {
 		if(preflight == null) preflight = false;
-		if(this._size == 0) return;
+		var _g = this;
+		if(this.mSize == 0) return;
 		if(this.autoClearMarks) this.clearMarks();
 		var front = 0;
 		var c = 1;
-		var node = this._nodeList;
+		var q = this.mQue;
+		var max = this.mQueSize;
+		var node = this.mNodeList;
 		while(node != null) {
 			node.depth = 0;
 			node = node.next;
 		}
-		if(seed == null) seed = this._nodeList;
-		this._que[0] = seed;
+		if(seed == null) seed = this.mNodeList;
 		seed.marked = true;
 		seed.parent = seed;
+		q[0] = seed;
 		if(preflight) {
 			if(process == null) {
 				var v = null;
-				var n = this._que[front];
+				var n = q[front];
 				v = n.val;
 				if(!v.visit(true,userData)) return;
 				while(c > 0) {
-					n = this._que[front];
+					n = q[front];
 					v = n.val;
 					if(!v.visit(false,userData)) return;
 					var a = n.arcList;
@@ -964,7 +812,14 @@ de_polygonal_ds_Graph.prototype = {
 						m.depth = n.depth + 1;
 						if(m.depth <= maxDepth) {
 							v = m.val;
-							if(v.visit(true,userData)) this._que[c++ + front] = m;
+							if(v.visit(true,userData)) {
+								var i = c++ + front;
+								if(i == max) {
+									_g.resizeQue(max = max * 2);
+									q = _g.mQue;
+								}
+								q[i] = m;
+							}
 						}
 						a = a.next;
 					}
@@ -972,10 +827,10 @@ de_polygonal_ds_Graph.prototype = {
 					c--;
 				}
 			} else {
-				var n1 = this._que[front];
+				var n1 = q[front];
 				if(!process(n1,true,userData)) return;
 				while(c > 0) {
-					n1 = this._que[front];
+					n1 = q[front];
 					if(!process(n1,false,userData)) return;
 					var a1 = n1.arcList;
 					while(a1 != null) {
@@ -988,7 +843,14 @@ de_polygonal_ds_Graph.prototype = {
 						m1.parent = n1;
 						m1.depth = n1.depth + 1;
 						if(m1.depth <= maxDepth) {
-							if(process(m1,true,userData)) this._que[c++ + front] = m1;
+							if(process(m1,true,userData)) {
+								var i1 = c++ + front;
+								if(i1 == max) {
+									_g.resizeQue(max = max * 2);
+									q = _g.mQue;
+								}
+								q[i1] = m1;
+							}
 						}
 						a1 = a1.next;
 					}
@@ -999,7 +861,7 @@ de_polygonal_ds_Graph.prototype = {
 		} else if(process == null) {
 			var v1 = null;
 			while(c > 0) {
-				var n2 = this._que[front];
+				var n2 = q[front];
 				v1 = n2.val;
 				if(!v1.visit(false,userData)) return;
 				var a2 = n2.arcList;
@@ -1012,14 +874,21 @@ de_polygonal_ds_Graph.prototype = {
 					m2.marked = true;
 					m2.depth = n2.depth + 1;
 					m2.parent = n2.parent;
-					if(m2.depth <= maxDepth) this._que[c++ + front] = m2;
+					if(m2.depth <= maxDepth) {
+						var i2 = c++ + front;
+						if(i2 == max) {
+							_g.resizeQue(max = max * 2);
+							q = _g.mQue;
+						}
+						q[i2] = m2;
+					}
 					a2 = a2.next;
 				}
 				front++;
 				c--;
 			}
 		} else while(c > 0) {
-			var n3 = this._que[front];
+			var n3 = q[front];
 			if(n3.depth > maxDepth) continue;
 			if(!process(n3,false,userData)) return;
 			var a3 = n3.arcList;
@@ -1032,7 +901,14 @@ de_polygonal_ds_Graph.prototype = {
 				m3.marked = true;
 				m3.depth = n3.depth + 1;
 				m3.parent = n3.parent;
-				if(m3.depth <= maxDepth) this._que[c++ + front] = m3;
+				if(m3.depth <= maxDepth) {
+					var i3 = c++ + front;
+					if(i3 == max) {
+						_g.resizeQue(max = max * 2);
+						q = _g.mQue;
+					}
+					q[i3] = m3;
+				}
 				a3 = a3.next;
 			}
 			front++;
@@ -1040,19 +916,23 @@ de_polygonal_ds_Graph.prototype = {
 		}
 	}
 	,toString: function() {
-		var s = "{ Graph size: " + this._size + " }";
-		if(this._size == 0) return s;
-		s += "\n[\n";
-		var node = this._nodeList;
+		var b = new StringBuf();
+		b.b += Std.string("{ Graph size: " + this.mSize + " }");
+		if(this.mSize == 0) return b.b;
+		b.b += "\n[\n";
+		var node = this.mNodeList;
 		while(node != null) {
-			s += "  " + node.toString() + "\n";
+			b.add("  " + node.toString() + "\n");
 			node = node.next;
 		}
-		s += "]";
-		return s;
+		b.b += "]";
+		return b.b;
+	}
+	,get_size: function() {
+		return this.mSize;
 	}
 	,free: function() {
-		var node = this._nodeList;
+		var node = this.mNodeList;
 		while(node != null) {
 			var nextNode = node.next;
 			var arc = node.arcList;
@@ -1065,26 +945,19 @@ de_polygonal_ds_Graph.prototype = {
 			node.free();
 			node = nextNode;
 		}
-		this._nodeList = null;
-		var _g1 = 0;
-		var _g = this._stack.length;
-		while(_g1 < _g) {
-			var i = _g1++;
-			this._stack[i] = null;
+		this.mNodeList = null;
+		de_polygonal_ds_tools_NativeArrayTools.nullify(this.mStack);
+		this.mStack = null;
+		de_polygonal_ds_tools_NativeArrayTools.nullify(this.mQue);
+		this.mQue = null;
+		if(this.mIterator != null) {
+			this.mIterator.free();
+			this.mIterator = null;
 		}
-		this._stack = null;
-		var _g11 = 0;
-		var _g2 = this._que.length;
-		while(_g11 < _g2) {
-			var i1 = _g11++;
-			this._que[i1] = null;
-		}
-		this._que = null;
-		this._iterator = null;
 	}
 	,contains: function(x) {
 		var found = false;
-		var node = this._nodeList;
+		var node = this.mNodeList;
 		while(node != null) {
 			if(node.val == x) return true;
 			node = node.next;
@@ -1093,25 +966,26 @@ de_polygonal_ds_Graph.prototype = {
 	}
 	,remove: function(x) {
 		var found = false;
-		var node = this._nodeList;
+		var node = this.mNodeList;
 		while(node != null) {
 			var nextNode = node.next;
 			if(node.val == x) {
 				this.unlink(node);
+				if(node == this.mNodeList) this.mNodeList = nextNode;
 				node.val = null;
 				node.next = node.prev = null;
 				node.arcList = null;
 				found = true;
-				this._size--;
+				this.mSize--;
 			}
 			node = nextNode;
 		}
 		return found;
 	}
-	,clear: function(purge) {
-		if(purge == null) purge = false;
-		if(purge) {
-			var node = this._nodeList;
+	,clear: function(gc) {
+		if(gc == null) gc = false;
+		if(gc) {
+			var node = this.mNodeList;
 			while(node != null) {
 				var hook = node.next;
 				var arc = node.arcList;
@@ -1123,16 +997,16 @@ de_polygonal_ds_Graph.prototype = {
 				node.free();
 				node = hook;
 			}
+			de_polygonal_ds_tools_NativeArrayTools.nullify(this.mStack);
+			de_polygonal_ds_tools_NativeArrayTools.nullify(this.mQue);
 		}
-		this._nodeList = null;
-		this._size = 0;
-		this._stack = [];
-		this._que = [];
+		this.mNodeList = null;
+		this.mSize = 0;
 	}
 	,iterator: function() {
 		if(this.reuseIterator) {
-			if(this._iterator == null) this._iterator = new de_polygonal_ds_GraphIterator(this); else this._iterator.reset();
-			return this._iterator;
+			if(this.mIterator == null) this.mIterator = new de_polygonal_ds_GraphIterator(this); else this.mIterator.reset();
+			return this.mIterator;
 		} else return new de_polygonal_ds_GraphIterator(this);
 	}
 	,nodeIterator: function() {
@@ -1141,59 +1015,56 @@ de_polygonal_ds_Graph.prototype = {
 	,arcIterator: function() {
 		return new de_polygonal_ds_GraphArcIterator(this);
 	}
-	,size: function() {
-		return this._size;
-	}
 	,isEmpty: function() {
-		return this._size == 0;
+		return this.mSize == 0;
 	}
 	,toArray: function() {
-		var a = de_polygonal_ds_ArrayUtil.alloc(this._size);
-		var node = this._nodeList;
+		if(this.mSize == 0) return [];
+		var i = 0;
+		var out = de_polygonal_ds_tools_ArrayTools.alloc(this.mSize);
+		var node = this.mNodeList;
 		while(node != null) {
-			a.push(node.val);
+			out[i++] = node.val;
 			node = node.next;
 		}
-		return a;
+		return out;
 	}
 	,clone: function(assign,copier) {
 		if(assign == null) assign = true;
-		var copy = new de_polygonal_ds_Graph(this.maxSize);
-		if(this._nodeList == null) return copy;
+		var copy = new de_polygonal_ds_Graph();
+		if(this.mNodeList == null) return copy;
 		var t = [];
 		var i = 0;
-		var n = this._nodeList;
+		var n = this.mNodeList;
+		var m;
 		if(assign) while(n != null) {
-			var m = copy.addNode(copy.createNode(n.val));
+			m = copy.addNode(copy.createNode(n.val));
 			t[i++] = m;
 			n = n.next;
-		} else if(copier == null) {
-			var c = null;
-			while(n != null) {
-				c = n.val;
-				var m1 = copy.addNode(copy.createNode(c.clone()));
-				t[i++] = m1;
-				n = n.next;
-			}
+		} else if(copier == null) while(n != null) {
+			m = copy.addNode(copy.createNode((js_Boot.__cast(n.val , de_polygonal_ds_Cloneable)).clone()));
+			t[i++] = m;
+			n = n.next;
 		} else while(n != null) {
-			var m2 = copy.addNode(copy.createNode(copier(n.val)));
-			t[i++] = m2;
+			m = copy.addNode(copy.createNode(copier(n.val)));
+			t[i++] = m;
 			n = n.next;
 		}
 		i = 0;
-		n = this._nodeList;
+		n = this.mNodeList;
+		var a;
 		while(n != null) {
-			var m3 = t[i++];
-			var a = n.arcList;
+			m = t[i++];
+			a = n.arcList;
 			while(a != null) {
-				m3.addArc(a.node,a.cost);
+				m.addArc(a.node,a.cost);
 				a = a.next;
 			}
 			n = n.next;
 		}
 		return copy;
 	}
-	,_DFSRecursiveVisit: function(node,preflight,userData) {
+	,dFSRecursiveVisit: function(node,preflight,userData) {
 		node.marked = true;
 		var v = node.val;
 		if(!v.visit(false,userData)) return false;
@@ -1209,14 +1080,14 @@ de_polygonal_ds_Graph.prototype = {
 			if(preflight) {
 				v = m.val;
 				if(v.visit(true,userData)) {
-					if(!this._DFSRecursiveVisit(m,true,userData)) return false;
+					if(!this.dFSRecursiveVisit(m,true,userData)) return false;
 				}
-			} else if(!this._DFSRecursiveVisit(m,false,userData)) return false;
+			} else if(!this.dFSRecursiveVisit(m,false,userData)) return false;
 			a = a.next;
 		}
 		return true;
 	}
-	,_DFSRecursiveProcess: function(node,process,preflight,userData) {
+	,dFSRecursiveProcess: function(node,process,preflight,userData) {
 		node.marked = true;
 		if(!process(node,false,userData)) return false;
 		var a = node.arcList;
@@ -1230,14 +1101,27 @@ de_polygonal_ds_Graph.prototype = {
 			a.node.depth = node.depth + 1;
 			if(preflight) {
 				if(process(m,true,userData)) {
-					if(!this._DFSRecursiveProcess(m,process,true,userData)) return false;
+					if(!this.dFSRecursiveProcess(m,process,true,userData)) return false;
 				}
-			} else if(!this._DFSRecursiveProcess(m,process,false,userData)) return false;
+			} else if(!this.dFSRecursiveProcess(m,process,false,userData)) return false;
 			a = a.next;
 		}
 		return true;
 	}
+	,resizeStack: function(newSize) {
+		var t = new Array(newSize);
+		de_polygonal_ds_tools_NativeArrayTools.blit(this.mStack,0,t,0,this.mStackSize);
+		this.mStack = t;
+		this.mStackSize = newSize;
+	}
+	,resizeQue: function(newSize) {
+		var t = new Array(newSize);
+		de_polygonal_ds_tools_NativeArrayTools.blit(this.mQue,0,t,0,this.mQueSize);
+		this.mQue = t;
+		this.mQueSize = newSize;
+	}
 	,__class__: de_polygonal_ds_Graph
+	,__properties__: {get_size:"get_size"}
 };
 var de_polygonal_ds_Itr = function() { };
 $hxClasses["de.polygonal.ds.Itr"] = de_polygonal_ds_Itr;
@@ -1249,10 +1133,10 @@ de_polygonal_ds_Itr.prototype = {
 	,reset: null
 	,__class__: de_polygonal_ds_Itr
 };
-var de_polygonal_ds_GraphIterator = function(f) {
-	this._f = f;
+var de_polygonal_ds_GraphIterator = function(x) {
+	this.mObject = x;
 	{
-		this._node = this._f._nodeList;
+		this.mNode = this.mObject.mNodeList;
 		this;
 	}
 };
@@ -1260,32 +1144,33 @@ $hxClasses["de.polygonal.ds.GraphIterator"] = de_polygonal_ds_GraphIterator;
 de_polygonal_ds_GraphIterator.__name__ = ["de","polygonal","ds","GraphIterator"];
 de_polygonal_ds_GraphIterator.__interfaces__ = [de_polygonal_ds_Itr];
 de_polygonal_ds_GraphIterator.prototype = {
-	_f: null
-	,_node: null
+	mObject: null
+	,mNode: null
+	,free: function() {
+		this.mObject = null;
+		this.mNode = null;
+	}
 	,reset: function() {
-		this._node = this._f._nodeList;
+		this.mNode = this.mObject.mNodeList;
 		return this;
 	}
 	,hasNext: function() {
-		return this._node != null;
+		return this.mNode != null;
 	}
 	,next: function() {
-		var x = this._node.val;
-		this._node = this._node.next;
+		var x = this.mNode.val;
+		this.mNode = this.mNode.next;
 		return x;
 	}
 	,remove: function() {
 		throw new js__$Boot_HaxeError("unsupported operation");
 	}
-	,__nodeList: function(f) {
-		return f._nodeList;
-	}
 	,__class__: de_polygonal_ds_GraphIterator
 };
-var de_polygonal_ds_GraphNodeIterator = function(f) {
-	this._f = f;
+var de_polygonal_ds_GraphNodeIterator = function(x) {
+	this.mObject = x;
 	{
-		this._node = this._f._nodeList;
+		this.mNode = this.mObject.mNodeList;
 		this;
 	}
 };
@@ -1293,33 +1178,30 @@ $hxClasses["de.polygonal.ds.GraphNodeIterator"] = de_polygonal_ds_GraphNodeItera
 de_polygonal_ds_GraphNodeIterator.__name__ = ["de","polygonal","ds","GraphNodeIterator"];
 de_polygonal_ds_GraphNodeIterator.__interfaces__ = [de_polygonal_ds_Itr];
 de_polygonal_ds_GraphNodeIterator.prototype = {
-	_f: null
-	,_node: null
+	mObject: null
+	,mNode: null
 	,reset: function() {
-		this._node = this._f._nodeList;
+		this.mNode = this.mObject.mNodeList;
 		return this;
 	}
 	,hasNext: function() {
-		return this._node != null;
+		return this.mNode != null;
 	}
 	,next: function() {
-		var x = this._node;
-		this._node = this._node.next;
+		var x = this.mNode;
+		this.mNode = this.mNode.next;
 		return x;
 	}
 	,remove: function() {
 		throw new js__$Boot_HaxeError("unsupported operation");
 	}
-	,__nodeList: function(f) {
-		return f._nodeList;
-	}
 	,__class__: de_polygonal_ds_GraphNodeIterator
 };
-var de_polygonal_ds_GraphArcIterator = function(f) {
-	this._f = f;
+var de_polygonal_ds_GraphArcIterator = function(x) {
+	this.mObject = x;
 	{
-		this._node = this._f._nodeList;
-		this._arc = this._node.arcList;
+		this.mNode = this.mObject.mNodeList;
+		this.mArc = this.mNode.arcList;
 		this;
 	}
 };
@@ -1327,40 +1209,37 @@ $hxClasses["de.polygonal.ds.GraphArcIterator"] = de_polygonal_ds_GraphArcIterato
 de_polygonal_ds_GraphArcIterator.__name__ = ["de","polygonal","ds","GraphArcIterator"];
 de_polygonal_ds_GraphArcIterator.__interfaces__ = [de_polygonal_ds_Itr];
 de_polygonal_ds_GraphArcIterator.prototype = {
-	_f: null
-	,_node: null
-	,_arc: null
+	mObject: null
+	,mNode: null
+	,mArc: null
 	,reset: function() {
-		this._node = this._f._nodeList;
-		this._arc = this._node.arcList;
+		this.mNode = this.mObject.mNodeList;
+		this.mArc = this.mNode.arcList;
 		return this;
 	}
 	,hasNext: function() {
-		return this._arc != null && this._node != null;
+		return this.mArc != null && this.mNode != null;
 	}
 	,next: function() {
-		var x = this._arc;
-		this._arc = this._arc.next;
-		if(this._arc == null) {
-			this._node = this._node.next;
-			if(this._node != null) this._arc = this._node.arcList;
+		var x = this.mArc;
+		this.mArc = this.mArc.next;
+		if(this.mArc == null) {
+			this.mNode = this.mNode.next;
+			if(this.mNode != null) this.mArc = this.mNode.arcList;
 		}
 		return x;
 	}
 	,remove: function() {
 		throw new js__$Boot_HaxeError("unsupported operation");
 	}
-	,__nodeList: function(f) {
-		return f._nodeList;
-	}
 	,__class__: de_polygonal_ds_GraphArcIterator
 };
 var de_polygonal_ds_GraphArc = function(node,cost) {
+	this.key = de_polygonal_ds_HashKey._counter++;
 	this.node = node;
 	this.cost = cost;
 	this.next = null;
 	this.prev = null;
-	this.key = de_polygonal_ds_HashKey._counter++;
 };
 $hxClasses["de.polygonal.ds.GraphArc"] = de_polygonal_ds_GraphArc;
 de_polygonal_ds_GraphArc.__name__ = ["de","polygonal","ds","GraphArc"];
@@ -1371,21 +1250,20 @@ de_polygonal_ds_GraphArc.prototype = {
 	,cost: null
 	,next: null
 	,prev: null
+	,val: null
 	,free: function() {
 		this.node = null;
 		this.next = this.prev = null;
 	}
-	,val: function() {
-		return this.node.val;
-	}
 	,__class__: de_polygonal_ds_GraphArc
 };
 var de_polygonal_ds_GraphNode = function(graph,x) {
+	this.numArcs = 0;
+	this.key = de_polygonal_ds_HashKey._counter++;
 	this.val = x;
 	this.arcList = null;
 	this.marked = false;
-	this.key = de_polygonal_ds_HashKey._counter++;
-	this._graph = graph;
+	this.mGraph = graph;
 };
 $hxClasses["de.polygonal.ds.GraphNode"] = de_polygonal_ds_GraphNode;
 de_polygonal_ds_GraphNode.__name__ = ["de","polygonal","ds","GraphNode"];
@@ -1399,12 +1277,13 @@ de_polygonal_ds_GraphNode.prototype = {
 	,prev: null
 	,arcList: null
 	,marked: null
-	,_graph: null
+	,numArcs: null
+	,mGraph: null
 	,free: function() {
 		this.val = null;
 		this.next = this.prev = null;
 		this.arcList = null;
-		this._graph = null;
+		this.mGraph = null;
 	}
 	,iterator: function() {
 		return new de_polygonal_ds_NodeValIterator(this);
@@ -1428,12 +1307,13 @@ de_polygonal_ds_GraphNode.prototype = {
 		if(found) return a; else return null;
 	}
 	,addArc: function(target,cost) {
-		if(cost == null) cost = 1.;
+		if(cost == null) cost = 1;
 		var arc;
-		if(this._graph.borrowArc != null) arc = this._graph.borrowArc(target,cost); else arc = new de_polygonal_ds_GraphArc(target,cost);
+		if(this.mGraph.borrowArc != null) arc = this.mGraph.borrowArc(target,cost); else arc = new de_polygonal_ds_GraphArc(target,cost);
 		arc.next = this.arcList;
 		if(this.arcList != null) this.arcList.prev = arc;
 		this.arcList = arc;
+		this.numArcs++;
 	}
 	,removeArc: function(target) {
 		var arc = this.getArc(target);
@@ -1444,7 +1324,8 @@ de_polygonal_ds_GraphNode.prototype = {
 			arc.next = null;
 			arc.prev = null;
 			arc.node = null;
-			if(this._graph.returnArc != null) this._graph.returnArc(arc);
+			if(this.mGraph.returnArc != null) this.mGraph.returnArc(arc);
+			this.numArcs--;
 			return true;
 		}
 		return false;
@@ -1455,6 +1336,7 @@ de_polygonal_ds_GraphNode.prototype = {
 			this.removeArc(arc.node);
 			arc = arc.next;
 		}
+		this.numArcs = 0;
 	}
 	,removeMutualArcs: function() {
 		var arc = this.arcList;
@@ -1464,20 +1346,13 @@ de_polygonal_ds_GraphNode.prototype = {
 			arc = arc.next;
 		}
 		this.arcList = null;
-	}
-	,getArcCount: function() {
-		var c = 0;
-		var arc = this.arcList;
-		while(arc != null) {
-			c++;
-			arc = arc.next;
-		}
-		return c;
+		this.numArcs = 0;
 	}
 	,toString: function() {
 		var t = [];
+		var arc;
 		if(this.arcList != null) {
-			var arc = this.arcList;
+			arc = this.arcList;
 			while(arc != null) {
 				t.push(Std.string(arc.node.val));
 				arc = arc.next;
@@ -1487,10 +1362,10 @@ de_polygonal_ds_GraphNode.prototype = {
 	}
 	,__class__: de_polygonal_ds_GraphNode
 };
-var de_polygonal_ds_NodeValIterator = function(node) {
-	this._node = node;
+var de_polygonal_ds_NodeValIterator = function(x) {
+	this.mObject = x;
 	{
-		this._arcList = this._node.arcList;
+		this.mArcList = this.mObject.arcList;
 		this;
 	}
 };
@@ -1498,18 +1373,18 @@ $hxClasses["de.polygonal.ds.NodeValIterator"] = de_polygonal_ds_NodeValIterator;
 de_polygonal_ds_NodeValIterator.__name__ = ["de","polygonal","ds","NodeValIterator"];
 de_polygonal_ds_NodeValIterator.__interfaces__ = [de_polygonal_ds_Itr];
 de_polygonal_ds_NodeValIterator.prototype = {
-	_node: null
-	,_arcList: null
+	mObject: null
+	,mArcList: null
 	,reset: function() {
-		this._arcList = this._node.arcList;
+		this.mArcList = this.mObject.arcList;
 		return this;
 	}
 	,hasNext: function() {
-		return this._arcList != null;
+		return this.mArcList != null;
 	}
 	,next: function() {
-		var val = this._arcList.node.val;
-		this._arcList = this._arcList.next;
+		var val = this.mArcList.node.val;
+		this.mArcList = this.mArcList.next;
 		return val;
 	}
 	,remove: function() {
@@ -1533,9 +1408,375 @@ de_polygonal_ds_HashableItem.prototype = {
 	key: null
 	,__class__: de_polygonal_ds_HashableItem
 };
-var de_polygonal_ds_error_Assert = function() { };
-$hxClasses["de.polygonal.ds.error.Assert"] = de_polygonal_ds_error_Assert;
-de_polygonal_ds_error_Assert.__name__ = ["de","polygonal","ds","error","Assert"];
+var de_polygonal_ds_tools_ArrayTools = function() { };
+$hxClasses["de.polygonal.ds.tools.ArrayTools"] = de_polygonal_ds_tools_ArrayTools;
+de_polygonal_ds_tools_ArrayTools.__name__ = ["de","polygonal","ds","tools","ArrayTools"];
+de_polygonal_ds_tools_ArrayTools.alloc = function(x) {
+	var a;
+	a = new Array(x);
+	return a;
+};
+de_polygonal_ds_tools_ArrayTools.shrink = function(a,x) {
+	if(a.length > x) {
+		a.length = x;
+		return a;
+	} else return a;
+};
+de_polygonal_ds_tools_ArrayTools.copy = function(source,destination,min,max) {
+	if(max == null) max = -1;
+	if(min == null) min = 0;
+	if(max == -1) max = source.length;
+	var j = 0;
+	var _g = min;
+	while(_g < max) {
+		var i = _g++;
+		destination[j++] = source[i];
+	}
+	return destination;
+};
+de_polygonal_ds_tools_ArrayTools.init = function(destination,x,k) {
+	if(k == null) k = -1;
+	if(k == -1) k = destination.length;
+	var _g = 0;
+	while(_g < k) {
+		var i = _g++;
+		destination[i] = x;
+	}
+};
+de_polygonal_ds_tools_ArrayTools.memmove = function(a,destination,source,n) {
+	if(source == destination) return; else if(source <= destination) {
+		var i = source + n;
+		var j = destination + n;
+		var _g = 0;
+		while(_g < n) {
+			var k = _g++;
+			i--;
+			j--;
+			a[j] = a[i];
+		}
+	} else {
+		var i1 = source;
+		var j1 = destination;
+		var _g1 = 0;
+		while(_g1 < n) {
+			var k1 = _g1++;
+			a[j1] = a[i1];
+			i1++;
+			j1++;
+		}
+	}
+};
+de_polygonal_ds_tools_ArrayTools.bsearchComparator = function(a,x,min,max,comparator) {
+	var l = min;
+	var m;
+	var h = max + 1;
+	while(l < h) {
+		m = l + (h - l >> 1);
+		if(comparator(a[m],x) < 0) l = m + 1; else h = m;
+	}
+	if(l <= max && comparator(a[l],x) == 0) return l; else return ~l;
+};
+de_polygonal_ds_tools_ArrayTools.bsearchInt = function(a,x,min,max) {
+	var l = min;
+	var m;
+	var h = max + 1;
+	while(l < h) {
+		m = l + (h - l >> 1);
+		if(a[m] < x) l = m + 1; else h = m;
+	}
+	if(l <= max && a[l] == x) return l; else return ~l;
+};
+de_polygonal_ds_tools_ArrayTools.bsearchFloat = function(a,x,min,max) {
+	var l = min;
+	var m;
+	var h = max + 1;
+	while(l < h) {
+		m = l + (h - l >> 1);
+		if(a[m] < x) l = m + 1; else h = m;
+	}
+	if(l <= max && a[l] == x) return l; else return ~l;
+};
+de_polygonal_ds_tools_ArrayTools.shuffle = function(a,rvals) {
+	var s = a.length;
+	if(rvals == null) {
+		var m = Math;
+		while(--s > 1) {
+			var i = Std["int"](m.random() * s);
+			var t = a[s];
+			a[s] = a[i];
+			a[i] = t;
+		}
+	} else {
+		var j = 0;
+		while(--s > 1) {
+			var i1 = Std["int"](rvals[j++] * s);
+			var t1 = a[s];
+			a[s] = a[i1];
+			a[i1] = t1;
+		}
+	}
+};
+de_polygonal_ds_tools_ArrayTools.sortRange = function(a,compare,useInsertionSort,first,count) {
+	var k = a.length;
+	if(k > 1) {
+		if(useInsertionSort) de_polygonal_ds_tools_ArrayTools._insertionSort(a,first,count,compare); else de_polygonal_ds_tools_ArrayTools._quickSort(a,first,count,compare);
+	}
+};
+de_polygonal_ds_tools_ArrayTools.quickPerm = function(n) {
+	var results = [];
+	var a = [];
+	var p = [];
+	var i;
+	var j;
+	var t;
+	var _g = 0;
+	while(_g < n) {
+		var i1 = _g++;
+		a[i1] = i1 + 1;
+		p[i1] = 0;
+	}
+	results.push(a.slice());
+	i = 1;
+	while(i < n) if(p[i] < i) {
+		j = i % 2 * p[i];
+		t = a[j];
+		a[j] = a[i];
+		a[i] = t;
+		results.push(a.slice());
+		p[i]++;
+		i = 1;
+	} else {
+		p[i] = 0;
+		i++;
+	}
+	return results;
+};
+de_polygonal_ds_tools_ArrayTools.equals = function(a,b) {
+	if(a.length != b.length) return false;
+	var _g1 = 0;
+	var _g = a.length;
+	while(_g1 < _g) {
+		var i = _g1++;
+		if(a[i] != b[i]) return false;
+	}
+	return true;
+};
+de_polygonal_ds_tools_ArrayTools.split = function(a,n,k) {
+	var out = [];
+	var b = null;
+	var _g = 0;
+	while(_g < n) {
+		var i = _g++;
+		if(i % k == 0) out[i / k | 0] = b = [];
+		b.push(a[i]);
+	}
+	return out;
+};
+de_polygonal_ds_tools_ArrayTools._insertionSort = function(a,first,k,cmp) {
+	var _g1 = first + 1;
+	var _g = first + k;
+	while(_g1 < _g) {
+		var i = _g1++;
+		var x = a[i];
+		var j = i;
+		while(j > first) {
+			var y = a[j - 1];
+			if(cmp(y,x) > 0) {
+				a[j] = y;
+				j--;
+			} else break;
+		}
+		a[j] = x;
+	}
+};
+de_polygonal_ds_tools_ArrayTools._quickSort = function(a,first,k,cmp) {
+	var last = first + k - 1;
+	var lo = first;
+	var hi = last;
+	if(k > 1) {
+		var i0 = first;
+		var i1 = i0 + (k >> 1);
+		var i2 = i0 + k - 1;
+		var t0 = a[i0];
+		var t1 = a[i1];
+		var t2 = a[i2];
+		var mid;
+		var t = cmp(t0,t2);
+		if(t < 0 && cmp(t0,t1) < 0) if(cmp(t1,t2) < 0) mid = i1; else mid = i2; else if(cmp(t1,t0) < 0 && cmp(t1,t2) < 0) if(t < 0) mid = i0; else mid = i2; else if(cmp(t2,t0) < 0) mid = i1; else mid = i0;
+		var pivot = a[mid];
+		a[mid] = a[first];
+		while(lo < hi) {
+			while(cmp(pivot,a[hi]) < 0 && lo < hi) hi--;
+			if(hi != lo) {
+				a[lo] = a[hi];
+				lo++;
+			}
+			while(cmp(pivot,a[lo]) > 0 && lo < hi) lo++;
+			if(hi != lo) {
+				a[hi] = a[lo];
+				hi--;
+			}
+		}
+		a[lo] = pivot;
+		de_polygonal_ds_tools_ArrayTools._quickSort(a,first,lo - first,cmp);
+		de_polygonal_ds_tools_ArrayTools._quickSort(a,lo + 1,last - lo,cmp);
+	}
+};
+var de_polygonal_ds_tools_Assert = function() { };
+$hxClasses["de.polygonal.ds.tools.Assert"] = de_polygonal_ds_tools_Assert;
+de_polygonal_ds_tools_Assert.__name__ = ["de","polygonal","ds","tools","Assert"];
+var de_polygonal_ds_tools_NativeArrayTools = function() { };
+$hxClasses["de.polygonal.ds.tools.NativeArrayTools"] = de_polygonal_ds_tools_NativeArrayTools;
+de_polygonal_ds_tools_NativeArrayTools.__name__ = ["de","polygonal","ds","tools","NativeArrayTools"];
+de_polygonal_ds_tools_NativeArrayTools.alloc = function(len) {
+	return new Array(len);
+};
+de_polygonal_ds_tools_NativeArrayTools.get = function(x,i) {
+	return x[i];
+};
+de_polygonal_ds_tools_NativeArrayTools.set = function(x,i,v) {
+	x[i] = v;
+};
+de_polygonal_ds_tools_NativeArrayTools.size = function(x) {
+	return x.length;
+};
+de_polygonal_ds_tools_NativeArrayTools.toArray = function(x,first,count) {
+	if(count == 0) return [];
+	var out = de_polygonal_ds_tools_ArrayTools.alloc(count);
+	if(first == 0) {
+		var _g = 0;
+		while(_g < count) {
+			var i = _g++;
+			out[i] = x[i];
+		}
+	} else {
+		var j;
+		var _g1 = first;
+		var _g2 = first + count;
+		while(_g1 < _g2) {
+			var i1 = _g1++;
+			out[i1 - first] = x[i1];
+		}
+	}
+	return out;
+};
+de_polygonal_ds_tools_NativeArrayTools.ofArray = function(x) {
+	return x.slice(0,x.length);
+};
+de_polygonal_ds_tools_NativeArrayTools.blit = function(src,srcPos,dst,dstPos,len) {
+	if(len > 0) {
+		if(src == dst) {
+			if(srcPos < dstPos) {
+				var i = srcPos + len;
+				var j = dstPos + len;
+				var _g = 0;
+				while(_g < len) {
+					var k = _g++;
+					i--;
+					j--;
+					src[j] = src[i];
+				}
+			} else if(srcPos > dstPos) {
+				var i1 = srcPos;
+				var j1 = dstPos;
+				var _g1 = 0;
+				while(_g1 < len) {
+					var k1 = _g1++;
+					src[j1] = src[i1];
+					i1++;
+					j1++;
+				}
+			}
+		} else if(srcPos == 0 && dstPos == 0) {
+			var _g2 = 0;
+			while(_g2 < len) {
+				var i2 = _g2++;
+				dst[i2] = src[i2];
+			}
+		} else if(srcPos == 0) {
+			var _g3 = 0;
+			while(_g3 < len) {
+				var i3 = _g3++;
+				dst[dstPos + i3] = src[i3];
+			}
+		} else if(dstPos == 0) {
+			var _g4 = 0;
+			while(_g4 < len) {
+				var i4 = _g4++;
+				dst[i4] = src[srcPos + i4];
+			}
+		} else {
+			var _g5 = 0;
+			while(_g5 < len) {
+				var i5 = _g5++;
+				dst[dstPos + i5] = src[srcPos + i5];
+			}
+		}
+	}
+};
+de_polygonal_ds_tools_NativeArrayTools.copy = function(src) {
+	return src.slice(0);
+};
+de_polygonal_ds_tools_NativeArrayTools.zero = function(dst,first,len) {
+	var val = 0;
+	var _g1 = first;
+	var _g = first + len;
+	while(_g1 < _g) {
+		var i = _g1++;
+		dst[i] = val;
+	}
+	return dst;
+};
+de_polygonal_ds_tools_NativeArrayTools.init = function(dst,x,first,k) {
+	if(first == null) first = 0;
+	if(k == null) k = dst.length;
+	var _g1 = first;
+	var _g = first + k;
+	while(_g1 < _g) {
+		var i = _g1++;
+		dst[i] = x;
+	}
+	return dst;
+};
+de_polygonal_ds_tools_NativeArrayTools.nullify = function(dst,count) {
+	if(count == null) count = 0;
+	if(count == 0) count = dst.length;
+	var _g = 0;
+	while(_g < count) {
+		var i = _g++;
+		dst[i] = null;
+	}
+};
+de_polygonal_ds_tools_NativeArrayTools.binarySearchCmp = function(v,x,min,max,cmp) {
+	var l = min;
+	var m;
+	var h = max + 1;
+	while(l < h) {
+		m = l + (h - l >> 1);
+		if(cmp(v[m],x) < 0) l = m + 1; else h = m;
+	}
+	if(l <= max && cmp(v[l],x) == 0) return l; else return ~l;
+};
+de_polygonal_ds_tools_NativeArrayTools.binarySearchf = function(v,x,min,max) {
+	var l = min;
+	var m;
+	var h = max + 1;
+	while(l < h) {
+		m = l + (h - l >> 1);
+		if(v[m] < x) l = m + 1; else h = m;
+	}
+	if(l <= max && v[l] == x) return l; else return ~l;
+};
+de_polygonal_ds_tools_NativeArrayTools.binarySearchi = function(v,x,min,max) {
+	var l = min;
+	var m;
+	var h = max + 1;
+	while(l < h) {
+		m = l + (h - l >> 1);
+		if(v[m] < x) l = m + 1; else h = m;
+	}
+	if(l <= max && v[l] == x) return l; else return ~l;
+};
 var haxe_IMap = function() { };
 $hxClasses["haxe.IMap"] = haxe_IMap;
 haxe_IMap.__name__ = ["haxe","IMap"];
@@ -2701,6 +2942,7 @@ textifician_mapping_LocationDefinition.create = function(type,label,id) {
 	var locDef = new textifician_mapping_LocationDefinition();
 	locDef.type = type;
 	locDef.label = label;
+	locDef.size = 1;
 	if(id != null) locDef.id = id;
 	return locDef;
 };
@@ -2710,6 +2952,7 @@ textifician_mapping_LocationDefinition.createWithMatchingId = function(type,labe
 	var locDef = new textifician_mapping_LocationDefinition();
 	locDef.type = type;
 	locDef.label = label;
+	locDef.size = 1;
 	if(id != null) locDef.id = id; else {
 		if(!doSlugify) locDef.id = label; else locDef.id = new EReg("-+$","").replace(new EReg("^-+","").replace(new EReg("\\-\\-+","g").replace(new EReg("[^\\w\\-]+","g").replace(new EReg("\\s+","g").replace(label.toString().toLowerCase(),"-"),""),"-"),""),"");
 		if(doSlugify && camelCase) locDef.id = textifician_mapping_LocationDefinition.camelizeSlug(locDef.id);
@@ -2829,6 +3072,18 @@ textifician_mapping_LocationPacket.prototype = {
 	,getLabel: function() {
 		if(this.defOverwrites != null && this.defOverwrites.label != null) return this.defOverwrites.label; else return this.def.label;
 	}
+	,cloneOverwrites: function() {
+		if(this.defOverwrites == null) return null;
+		var obj = { };
+		var fields = Reflect.fields(this.defOverwrites);
+		var _g = 0;
+		while(_g < fields.length) {
+			var p = fields[_g];
+			++_g;
+			Reflect.setField(obj,p,Reflect.field(this.defOverwrites,p));
+		}
+		return obj;
+	}
 	,__class__: textifician_mapping_LocationPacket
 };
 var textifician_mapping_LocationState = $hx_exports.textifician.mapping.LocationState = function() {
@@ -2893,6 +3148,74 @@ textifician_mapping_TextificianUtil.distancePtToPt = function(pt,pt2) {
 	var dy = pt2.y - pt.y;
 	return Math.sqrt(dx * dx + dy * dy);
 };
+textifician_mapping_TextificianUtil.getPropertyChainObj = function(src,property) {
+	var me = new textifician_mapping_PropertyChainHolder();
+	me.setupProperty(src,property);
+	return me;
+};
+var textifician_mapping_PropertyChainHolder = function() {
+	Object.defineProperty(this,"value",{ get : $bind(this,this.get_value), set : $bind(this,this.set_value)});
+};
+$hxClasses["textifician.mapping.PropertyChainHolder"] = textifician_mapping_PropertyChainHolder;
+textifician_mapping_PropertyChainHolder.__name__ = ["textifician","mapping","PropertyChainHolder"];
+textifician_mapping_PropertyChainHolder.prototype = {
+	_src: null
+	,value: null
+	,propertyChain: null
+	,setupProperty: function(src,property) {
+		this._src = src;
+		if(property == null) return;
+		if(typeof(property) == "string") {
+			var str = property;
+			this.propertyChain = str.split(".");
+		} else this.propertyChain = property;
+	}
+	,getPropertyChainValue: function() {
+		var len = this.propertyChain.length;
+		var cur = this._src;
+		var _g = 0;
+		while(_g < len) {
+			var i = _g++;
+			var propToGet = this.propertyChain[i];
+			cur = this.getPropertyOf(cur,propToGet);
+			if(cur == null) return null;
+		}
+		return cur;
+	}
+	,setPropertyChainValue: function(val) {
+		if(this._src == null) this._src = { };
+		var cur = this._src;
+		var len = this.propertyChain.length;
+		var _g = 0;
+		while(_g < len) {
+			var i = _g++;
+			var propToSet = this.propertyChain[i];
+			cur = this.setPropertyOf(cur,propToSet,i < len - 1?null:val);
+		}
+		return cur;
+	}
+	,setPropertyOf: function(obj,prop,val) {
+		if(val == null) {
+			var reflectProp = val = Reflect.getProperty(obj,prop);
+			if(reflectProp == null) Reflect.setProperty(obj,prop,reflectProp = { });
+			val = reflectProp;
+		}
+		Reflect.setProperty(obj,prop,val);
+		return val;
+	}
+	,getPropertyOf: function(obj,prop) {
+		var reflectProp = Reflect.getProperty(obj,prop);
+		if(reflectProp != null) return reflectProp; else return null;
+	}
+	,get_value: function() {
+		if(this.propertyChain != null && this._src != null) return this.getPropertyChainValue(); else return null;
+	}
+	,set_value: function(v) {
+		if(this.propertyChain != null) return this.setPropertyChainValue(v); else return null;
+	}
+	,__class__: textifician_mapping_PropertyChainHolder
+	,__properties__: {set_value:"set_value",get_value:"get_value"}
+};
 var textifician_mapping_TextificianWorld = $hx_exports.textifician.mapping.TextificianWorld = function() {
 	textifician_rpg_ICharacter;
 	textifician_rpg_IParty;
@@ -2906,6 +3229,7 @@ $hxClasses["textifician.mapping.TextificianWorld"] = textifician_mapping_Textifi
 textifician_mapping_TextificianWorld.__name__ = ["textifician","mapping","TextificianWorld"];
 textifician_mapping_TextificianWorld.serialize = function(world) {
 	var serializer = new haxe_Serializer();
+	serializer.useCache = true;
 	serializer.serialize(world);
 	return serializer.toString();
 };
@@ -2933,6 +3257,9 @@ textifician_mapping_TextificianWorld.prototype = {
 		this.addLocationDef(textifician_mapping_LocationDefinition.createWithMatchingId(0,"Point"));
 		this.addLocationDef(textifician_mapping_LocationDefinition.createWithMatchingId(1,"Path"));
 		this.addLocationDef(textifician_mapping_LocationDefinition.createWithMatchingId(2,"Region"));
+		var a = this.graph.addNode(this.graph.createNode(null));
+		var b = this.graph.addNode(this.graph.createNode(null));
+		this.graph.addGetSingleArc(a,b).val = 331;
 	}
 	,getDuplicationLocationDef: function(def,newId) {
 		if(newId == null) newId = "";
@@ -2953,6 +3280,7 @@ textifician_mapping_TextificianWorld.prototype = {
 		locationPacket.x = x;
 		locationPacket.y = y;
 		locationPacket.z = z;
+		locationPacket.defOverwrites = defOverwrites;
 		return this.graph.addNode(this.graph.createNode(locationPacket));
 	}
 	,addZoneNode: function(zone) {
