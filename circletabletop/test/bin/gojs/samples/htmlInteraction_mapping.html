@@ -166,9 +166,27 @@
 				
 				if (val.charAt(0) === "#") {
 					val = val.slice(1);
+					if (val === "") {
+						if (this.isProto || this.node.val.def.id =="Point" || this.node.val.def.id ==="Path" || this.node.val.def.id === "Region") {
+							alert("Sorry, cannot write directly into prototype location definition! Save it first with * prefix!");
+							return;
+						}
+						else writePropertiesOver(this.node.val.def , this.node.val.defOverwrites);
+						this.node.val.defOverwrites = null;
+						return;
+					}
 					dupLoc = writePropertiesOver( world.getDuplicationLocationDef(this.node.val.def, val) , this.node.val.defOverwrites);
 				}
 				else {
+					if (val === "") {
+						if (this.isProto || this.node.val.def.id =="Point" || this.node.val.def.id ==="Path" || this.node.val.def.id === "Region") {
+							alert("Sorry, cannot write directly into prototype location definition! Save it first with * prefix!");
+							return;
+						}
+						else writePropertiesOver(this.node.val.def , this.node.val.defOverwrites);
+						this.node.val.defOverwrites = null;
+						return;
+					}
 					if (this.node.val.defOverwrites == null) this.node.val.defOverwrites = {};
 					this.node.val.defOverwrites.label = val;
 					dupLoc = writePropertiesOver( world.getDuplicationLocationDef(this.node.val.def, val) , this.node.val.defOverwrites);
@@ -188,6 +206,16 @@
 			else {  // write label overwrite
 				if (val =="Point" || val ==="Path" || val === "Region") {
 					alert("Sorry, prototype id value reserved");
+					return;
+				}
+				if (val === "") {
+					if (this.node.val.defOverwrites != null) {
+						delete this.node.val.defOverwrites["label"];
+						
+						
+					}
+					val = this.node.val.def.label;
+					this.isProto =  val =="Point" || val ==="Path" || val === "Region";
 					return;
 				}
 				if (this.node.val.defOverwrites == null) {
@@ -242,11 +270,11 @@
 					}
 					else if (c.newValue == null && c.oldValue != null) { // removal infered
 						if (c.propertyName == "nodeDataArray") {  // remove node
-							alert("REMOVE NODE");
+							//alert("REMOVE NODE");
 							
 						}
 						else if (c.propertyName == "linkDataArray") {  // remove link
-							alert("REMOVE LINK");
+							//alert("REMOVE LINK");
 						}
 					}
 					else {
@@ -479,8 +507,19 @@ with allowances for the title (top) and the resize handle (bottom)
       <div id="myDiagramDiv" style="background-color: whitesmoke; border: solid 1px black; height: 400px"></div>
     </div>
 
-    <div id="infoDraggable" style="display: inline-block; vertical-align: top; padding: 5px;">
+    <div id="infoDraggable" style="position:relative; display: inline-block; vertical-align: top; padding: 5px;">
       <div id="myInfo">Selecting nodes in the main Diagram will display information here</div>
+	  <div id="infoDraggableInstruct" style="position:absolute;bottom:0;left:0;padding:5px;">
+		 <h4>TEXT prefix legend:</h4>
+		 <p>
+		"" (no prefix) - <i>Writes text as label into location definition overwrites</i> <hr/>
+		"~" - <i>Writes text as label directly into LocationDefinition.</i><hr/>
+		"#" - <i>Load content by LocationDefinitionID. Cancels any current location definition overwrites.</i><hr/>
+		"*" - <i>Save out current overwrites over new LocationDefinition using text as both label and LocationDefinitionID.</i><hr/>
+		"*#" - <i>Save out current overwrites over new LocationDefinition, using text as LocationDefinitionID</i><hr/>
+		<i>NOTE: When saving, if text is an empty string, will save all existing overwrites over current LocationDefinitionID.</i>
+</p>
+	  </div>
     </div>
 
     <p>
