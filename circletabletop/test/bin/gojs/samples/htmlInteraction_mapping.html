@@ -52,7 +52,31 @@
 		 	"undoManager.isEnabled": true,
                     "toolManager.hoverDelay": 100  // how quickly tooltips are shown
 		 
-		 });  // must be true to accept drops from the Palette
+		 }
+		 
+		);  // must be true to accept drops from the Palette
+	myDiagram.mouseDrop = function(e, node) {
+
+		  var it = myDiagram.toolManager.draggingTool.copiedParts;
+		  if (it == null) {
+			return;
+		  }
+		  it = it.iterator;
+		  while (it.next()) {
+				if (it.key instanceof go.Node) { 
+					scaleNode(it.key, myDiagram.scale);
+				}
+				else if (it.key instanceof go.Link) {
+					scaleLink(it.key, myDiagram.scale);
+				}
+		  }
+		  
+
+	}
+	
+	//myDiagram.linkTemplate.curve = go.Link.Bezier;
+	myDiagram.linkTemplate.curviness = 1;
+	//myDiagram.linkTemplate.bind(new go.Binding("curviness", "curviness"));
 
     // define several shared Brushes
     var fill1 = "rgb(105,210,231)"
@@ -66,16 +90,19 @@
 
     var fill4 = "rgb(243,134,48)"
     var brush4 = "rgb(203,84,08)";
-
-    myDiagram.nodeTemplateMap.add("", // default category
-      GO(go.Node, "Vertical",
+	
+	var TEXTLABEL_BASEWIDTH = 80;
+	
+	
+	function getNodeTemplate(figure, fill, stroke, maxSize) {
+		return GO(go.Node, "Vertical",
         { locationSpot: go.Spot.Center },
         new go.Binding("location", "loc").makeTwoWay(),
 		
 			//$(go.Panel, "Auto", 
 			GO(go.TextBlock,
 				{ 
-				maxSize: new go.Size(50, NaN),
+				maxSize: new go.Size(TEXTLABEL_BASEWIDTH, NaN),
 				wrap: go.TextBlock.WrapFit,
 				textAlign: "center",
 				editable: false,
@@ -89,7 +116,10 @@
 			GO(go.Shape, "Ellipse",
 			  { strokeWidth: 2, fill: fill1, name: "SHAPE"
 			 , desiredSize: new go.Size(16, 16)
-			  
+				,maxSize:  new go.Size(maxSize ? maxSize : NaN, maxSize  ? maxSize : NaN)
+				,figure:figure
+				,fill:fill
+				,stroke:stroke
 				,portId: "", cursor: "pointer",  // the Shape is the port, not the whole Node
 				// allow all kinds of links from and to this port
 			  fromLinkableSelfNode: false, fromLinkableDuplicates: false,
@@ -97,10 +127,12 @@
 			   
 			  },
 			  
-			  new go.Binding("figure", "figure"),
-			  new go.Binding("fill", "fill"),
-			  new go.Binding("stroke", "stroke"),
-			   new go.Binding("desiredSize", "size")
+			 // new go.Binding("figure", "figure"),
+			  
+			 //new go.Binding("fill", "fill"),
+			 // new go.Binding("stroke", "stroke"),
+			   
+			 new go.Binding("desiredSize", "size")
 			  
 			  ,
 				   new go.Binding("fromLinkable", "", function(data) {
@@ -115,10 +147,66 @@
 				
 				
 			//)
-		)
+		);
+	}
+
+
+
+	 myDiagram.nodeTemplateMap.add("point", getNodeTemplate("Square",fill1,brush1));
+	  myDiagram.nodeTemplateMap.add("path", getNodeTemplate("Diamond",fill2,brush2));
+	  myDiagram.nodeTemplateMap.add("region",getNodeTemplate("Circle",fill3,brush3));
+
+	  function scaleLink(link, newscale) {
+		link.curviness = 1 * origscale/newscale;
+	  }
+	  function scaleNode(node, newscale) {
+	  	//origscale / newscale;
 			
+			var text = node.findObject("TEXT");
+			text.scale =  origscale / newscale;//newscale < .5 ? origscale / newscale*.5 : 1;
+			text.visible = newscale >= .1 ? true : false; 
+			text.maxSize.width = TEXTLABEL_BASEWIDTH * origscale / newscale;
+			if (node.category === "point") {
+				var shape = node.findObject("SHAPE");
+				shape.scale =  newscale >= .2 ? 1 :  origscale / newscale * .2;
+			}
+	  }
+	  
+	  // This code keeps all nodes at a constant size in the viewport,
+      // by adjusting for any scaling done by zooming in or out.
+      // This code ignores simple Parts;
+      // Links will automatically be rerouted as Nodes change size.
+      var origscale = NaN;
+      var oldscale = NaN;
+      myDiagram.addDiagramListener("InitialLayoutCompleted", function(e) { origscale = oldscale = myDiagram.scale; });
+      myDiagram.addDiagramListener("ViewportBoundsChanged", function(e) {
+        if (isNaN(origscale)) return;
+        var newscale = myDiagram.scale;
+        if (oldscale === newscale) return;  // optimization: don't scale Nodes when just scrolling/panning
+        oldscale = newscale; 
+        myDiagram.skipsUndoManager = true;
+        myDiagram.startTransaction("scale Nodes");
+		
+		//myDiagram.linkTemplate = myDiagram.linkTemplate;
+		
+        myDiagram.nodes.each(function(node) {  // consider todo: only perform for nodes within visibility set? need to form visibilty set per scroll though.
+		
+			scaleNode(node, newscale);
+			
+          });
 		  
-	);
+		   myDiagram.links.each(function(link) {  // consider todo: only perform for nodes within visibility set? need to form visibilty set per scroll though.
+		
+			scaleLink(link, newscale);
+			
+          });
+		  
+		  
+        myDiagram.commitTransaction("scale Nodes");
+        myDiagram.skipsUndoManager = false;
+      });
+	  
+	  
 	
 	function writePropertiesOver(obj, src) {
 		var p;
@@ -256,7 +344,7 @@
 			var methodToCalls = [];
 			var nodesToAdd = [];
 			tx.changes.each(function(c) {
-			 
+			
 			  if (c.model) {
 				if ( c.model === c.object ) { // deemed insertion or removal
 					if (c.newValue != null && c.oldValue == null) {  // insertion infered
@@ -299,6 +387,9 @@
 					else if (c.propertyName === "size") {
 						// todo: reflect c
 					}
+					else if (c.propertyName === "node") {
+						// irrelavant
+					}
 					else { //
 					  alert("could not resolve:"+c.propertyName);
 					}
@@ -306,9 +397,9 @@
 				
 			
 				
-				console.log( c.object," " +c.modelChange + ","+c.propertyName+","+c.oldParam +", "+c.newParam );
-				console.log("OldValue:", c.oldValue);
-				console.log("NewValue:", c.newValue);
+			//	console.log( c.object," " +c.modelChange + ","+c.propertyName+","+c.oldParam +", "+c.newParam );
+				//console.log("OldValue:", c.oldValue);
+				//console.log("NewValue:", c.newValue);
 				
 				//console.log( model.toIncrementalJson(e) );
 			  }
@@ -379,11 +470,19 @@
 
     // initialize the Palette that is in a floating, draggable HTML container
     myPalette = new go.Palette("myPaletteDiv");  // must name or refer to the DIV HTML element
-    myPalette.nodeTemplateMap = myDiagram.nodeTemplateMap;
+	myPalette.allowZoom = false;
+	
+//	palTemplate.findObject("SHAPE").maxSize = new go.Size(20,20);
+	myPalette.nodeTemplateMap.add("point", getNodeTemplate("Square",fill1,brush1,20));
+	 myPalette.nodeTemplateMap.add("path", getNodeTemplate("Diamond",fill2,brush2,20));
+	 myPalette.nodeTemplateMap.add("region",getNodeTemplate("Circle",fill3,brush3,20));
+	  
+  	
+	  
     myPalette.model = new go.GraphLinksModel([
-      { locid:"Point", isProto:true, text:"Point",  fill: fill1, stroke: brush1, figure: "Square", size:new go.Size(5,5)   },
-      { locid:"Path", isProto:true, text:"Path",  fill: fill2, stroke: brush2, figure: "Diamond", size:new go.Size(12,12) },
-      { locid:"Region", isProto:true,  text:"Region",  fill: fill3, stroke: brush3, figure: "Circle" }
+      { locid:"Point", isProto:true, text:"Point", category:"point",  size:new go.Size(5,5)   },
+      { locid:"Path", isProto:true, text:"Path",  category:"path",  size:new go.Size(12,12) },
+      { locid:"Region", isProto:true,  text:"Region",  category:"region", size:new go.Size(30,30) }
     ]);
 	
 	var FLAG_SHIFT_DOWN = 1;
@@ -395,14 +494,14 @@
 			myDiagram.model.setDataProperty(myDiagram.model.modelData, "linkable", true);
 			
 		}
-		console.log(flagDownKeys);
+		//console.log(flagDownKeys);
 	});
 	jQuery(window).keyup( function(e) {
 		if (e.keyCode === 16) {  // shift
 			flagDownKeys &= ~FLAG_SHIFT_DOWN;
 			myDiagram.model.setDataProperty(myDiagram.model.modelData, "linkable", false);
 		}
-		console.log(flagDownKeys);
+	//	console.log(flagDownKeys);
 		
 		 
 	});
