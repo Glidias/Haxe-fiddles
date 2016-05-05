@@ -94,26 +94,40 @@
 	var TEXTLABEL_BASEWIDTH = 80;
 	
 	
-	function getNodeTemplate(figure, fill, stroke, maxSize) {
-		return GO(go.Node, "Vertical",
-        { locationSpot: go.Spot.Center },
-        new go.Binding("location", "loc").makeTwoWay(),
+	function getNodeTemplate(figure, fill, stroke, maxSize, layout) {
+	
+		var panelLayout = layout ? layout :  go.Panel.Vertical;
+	 
+		var textBlockParams = [go.TextBlock,
+			{ 
+			maxSize: new go.Size(TEXTLABEL_BASEWIDTH, NaN),
+			wrap: go.TextBlock.WrapFit,
+			textAlign: "center",
+			editable: false,
+			
+			
+			font: "bold 7pt Arial, sans-serif",
+			name: "TEXT" , portId:""
+			},
+			new go.Binding("text", "text" ).makeTwoWay()
 		
-			//$(go.Panel, "Auto", 
-			GO(go.TextBlock,
-				{ 
-				maxSize: new go.Size(TEXTLABEL_BASEWIDTH, NaN),
-				wrap: go.TextBlock.WrapFit,
-				textAlign: "center",
-				editable: false,
+		];
+			
+		if (panelLayout === go.Panel.Spot) {
+			textBlockParams.push(
+				   new go.Binding("fromLinkable", "", function(data) {
+						return myDiagram.model.modelData.linkable;
+				  }),
+					new go.Binding("toLinkable", "", function(data) {
+						return myDiagram.model.modelData.linkable;
+				  })
+		  );
+		}
+		var textBlock  =  GO.apply(null, textBlockParams);
+
+
 				
-				font: "bold 7pt Arial, sans-serif",
-				name: "TEXT" 
-				},
-				new go.Binding("text", "text" ).makeTwoWay()
-			)
-			,
-			GO(go.Shape, "Ellipse",
+		var shape = GO(go.Shape, "Ellipse",
 			  { strokeWidth: 2, fill: fill1, name: "SHAPE"
 			 , desiredSize: new go.Size(16, 16)
 				,maxSize:  new go.Size(maxSize ? maxSize : NaN, maxSize  ? maxSize : NaN)
@@ -142,19 +156,22 @@
 						return myDiagram.model.modelData.linkable;
 				  })
 			  
-			  )
+			  );
+			 
+		var goParams = [go.Node, panelLayout,
+        { locationSpot: go.Spot.Center },
+        new go.Binding("location", "loc").makeTwoWay()];
 			
-				
-				
-			//)
-		);
+		if (panelLayout == go.Panel.Spot)  goParams.push(shape, textBlock);
+		else goParams.push(textBlock, shape);
+		return GO.apply(null, goParams);
 	}
 
 
 
 	 myDiagram.nodeTemplateMap.add("point", getNodeTemplate("Square",fill1,brush1));
 	  myDiagram.nodeTemplateMap.add("path", getNodeTemplate("Diamond",fill2,brush2));
-	  myDiagram.nodeTemplateMap.add("region",getNodeTemplate("Circle",fill3,brush3));
+	  myDiagram.nodeTemplateMap.add("region",getNodeTemplate("Circle",fill3,brush3, null, go.Panel.Spot));
 
 	  function scaleLink(link, newscale) {
 		link.curviness = 1 * origscale/newscale;
