@@ -2,8 +2,10 @@ package ;
 import de.polygonal.ds.Graph;
 import haxe.Json;
 import haxe.rtti.Meta;
+import haxe.rtti.Rtti;
 import haxe.Serializer;
 import haxe.Unserializer;
+import dat.gui.DatUtil;
 import textifician.mapping.IndoorLocationSpecs;
 import textifician.mapping.LocationDefinition;
 import textifician.mapping.LocationPacket;
@@ -61,6 +63,11 @@ class TextificianGoJS
 		itest = unserializer.unserialize();
 		trace(itest.a==itest.b);  // assert matching reference
 		trace(itest.a[3] == itest.b[3]);  // assert matching reference
+		
+		var fields;
+		
+		var somethingGood = DatUtil.setup( new LocationDefinition(), null);
+		trace(somethingGood);
 	}
 	
 	public function new() 

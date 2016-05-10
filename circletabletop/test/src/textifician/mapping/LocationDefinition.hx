@@ -5,6 +5,7 @@ package textifician.mapping;
  * Reusable generic location data definition for a Location node's LocationPacket.
  * @author Glenn Ko
  */
+@:rtti
 @:expose
 class LocationDefinition 
 {
@@ -25,7 +26,7 @@ class LocationDefinition
 	//public static inline var ENV_SUNKEN:Int =  (1 << 4);
 	
 	
-	public static inline var LIGHTING_NONE_OR_OUTDOOR:Int =  0;
+	public static inline var LIGHTING_NONE_OR_OUT:Int =  0;
 	public static inline var LIGHTING_DIM:Int =  1;
 	public static inline var LIGHTING_NORMAL:Int =  2;
 	public static inline var LIGHTING_BRIGHT:Int =  3;
@@ -42,25 +43,27 @@ class LocationDefinition
 	public static inline var SHELTER_HALF:Int = 2;
 	public static inline var SHELTER_FULL:Int = 3;
 
-	@readonly public var id:String;
+	public var id:String;
 	
-	public var label:String;
-	public var description:String;
-	@bitmask("FLAG") public var flags:Int;
-	public var size:Float; // convention for now: radius for TYPE_REGION, TYPE_POINT N/A, and TYPE_PATH size determines width of path 
-	@values("TYPE") public var type:Int;
+	@inspect public var label:String;
+	@inspect({display:"textarea"}) public var description:String;
+	@inspect @bitmask("FLAG") public var flags:Int;
+	@inspect public var size:Float; // convention for now: radius for TYPE_REGION, TYPE_POINT N/A, and TYPE_PATH size determines width of path 
+	@inspect({display:"selector", choices:[0,1,2]}) @choices("TYPE") public var type:Int;
 	
-	@bitmask("ENV") public var envFlags:Int;
+	@inspect @bitmask("ENV") public var envFlags:Int;
 	public var indoorLocationSpecs:IndoorLocationSpecs;
-	@range("LIGHTING") public var defaultLighting:Int;
+	@inspect({display:"range", value:2}) @range("LIGHTING") public var defaultLighting:Int;
 	
 	// procedural generation
 	public var generalFixtures:Array<String>;  // array of fixture definitions 
-	@range("DENSITY") public var fixtureDensity:Int;  // density of fixtures
+	@inspect({display:"range"}) @range("DENSITY") public var fixtureDensity:Int;  // density of fixtures
 	
 
 	// variable that might be useful for point to point distance/breakpoint arc resolution
-	public var priorityIndex:Int;
+	@inspect public var priorityIndex:Int;
+	
+	@inspect public var testbool:Bool;
 	
 
 	public static function create(type:Int, label:String, id:String=null):LocationDefinition {

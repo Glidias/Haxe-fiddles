@@ -20,6 +20,8 @@
 <link rel='stylesheet' href='../extensions/inspector.css' />
 <script src="../extensions/inspector.js"></script>
 <script src="../extensions/ExtendedBrush.js"></script>
+<script src="../../dat.gui.js"></script>
+<script src="../../guiGlue.js"></script>
 <script src="../../index.js"></script>
 
 <script id="code">
@@ -34,6 +36,7 @@
 	exposeHxMappingClassesToGlobalNamespace();
 	var TJSON = tjson.TJSON;
 	
+	var DatUtil = dat.gui.DatUtil;
 	var world = new TextificianWorld();
 	world.setupDefaultNew();
 	
@@ -41,6 +44,12 @@
 	window.init = init;
   function init() {
   
+	//DATGUI
+	var specsLocationDefinition = DatUtil.setup( new LocationDefinition() );
+	var params = guiGlue(specsLocationDefinition);
+	console.log(params);
+  
+	// GOJS
     if (window.goSamples) goSamples();  // init for these samples -- you don't need to call this
 
     // Note that we do not use $ here as an alias for go.GraphObject.make because we are using $ for jQuery
@@ -104,16 +113,23 @@
 			wrap: go.TextBlock.WrapFit,
 			textAlign: "center",
 			editable: false,
-			
-			
+			pickable: false,
+			portId:"",
 			font: "bold 7pt Arial, sans-serif",
 			name: "TEXT" , portId:""
 			},
 			new go.Binding("text", "text" ).makeTwoWay()
 		
 		];
+		
+		textBlockParams.push(
+				   new go.Binding("pickable", "", function(data) {
+						return myDiagram.zoom < 1;
+				  })
+		  );
 			
-		if (panelLayout === go.Panel.Spot) {
+		///*
+		//if (panelLayout === go.Panel.Spot) {
 			textBlockParams.push(
 				   new go.Binding("fromLinkable", "", function(data) {
 						return myDiagram.model.modelData.linkable;
@@ -122,7 +138,8 @@
 						return myDiagram.model.modelData.linkable;
 				  })
 		  );
-		}
+		//}
+		//*/
 		var textBlock  =  GO.apply(null, textBlockParams);
 
 
@@ -169,7 +186,7 @@
 
 
 
-	 myDiagram.nodeTemplateMap.add("point", getNodeTemplate("Square",fill1,brush1));
+	 myDiagram.nodeTemplateMap.add("point", getNodeTemplate("Square",fill1,brush1, 5));
 	  myDiagram.nodeTemplateMap.add("path", getNodeTemplate("Diamond",fill2,brush2));
 	  myDiagram.nodeTemplateMap.add("region",getNodeTemplate("Circle",fill3,brush3, null, go.Panel.Spot));
 
@@ -219,8 +236,10 @@
           });
 		  
 		  
+		 // myDiagram.model.updateTargetBindings("
         myDiagram.commitTransaction("scale Nodes");
         myDiagram.skipsUndoManager = false;
+		
       });
 	  
 	  
@@ -414,7 +433,7 @@
 				
 			
 				
-			//	console.log( c.object," " +c.modelChange + ","+c.propertyName+","+c.oldParam +", "+c.newParam );
+				console.log( c.object," " +c.modelChange + ","+c.propertyName+","+c.oldParam +", "+c.newParam );
 				//console.log("OldValue:", c.oldValue);
 				//console.log("NewValue:", c.newValue);
 				
@@ -439,8 +458,8 @@
 						e.model.setDataProperty(o,"node",v= world.addLocationNode(world.getLocationDef(o.node.val.def.id), o.loc.x, o.loc.y, 0, null, ( false ? o.node.val.cloneOverwrites() : o.node.val.defOverwrites) ));
 					}
 					else {  // NEW NODE CASE
-					
-						e.model.setDataProperty(o,"node",v= world.addLocationNode(world.getLocationDef(o.locid), o.loc.x, o.loc.y, 0, null, null ));
+						
+						e.model.setDataProperty(o,"node",v= world.addLocationNode(world.getLocationDef(o.locid).setSize(o.size.width), o.loc.x, o.loc.y, 0, null, null ));
 					}
 					
 					if (o.text != textProxy) {
@@ -546,6 +565,7 @@
             resetButton: true
           // /*
 			, propertyNames: {
+		//		"Node": ["category"],
               //"Node": ["location", "background", "scale", "angle", "isShadowed", "resizable"],
               //"#SHAPE": ["fill", "stroke", "strokeWidth", "figure"],
               "#TEXT": ["text"]
@@ -560,6 +580,8 @@
 })();
 </script>
 
+
+
 <style type="text/css">
 .draggable {
   display: inline-block;
@@ -572,6 +594,13 @@
   top: 20px;
   left: 120px;
   z-index: 500;
+}
+
+.dg textarea {
+	font-size:12px;
+}
+.dg input[type=text] {
+	font-size:12px;
 }
 
 .handle {

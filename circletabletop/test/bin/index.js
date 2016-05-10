@@ -2,6 +2,8 @@
 $hx_exports.tjson = $hx_exports.tjson || {};
 $hx_exports.textifician = $hx_exports.textifician || {};
 $hx_exports.textifician.mapping = $hx_exports.textifician.mapping || {};
+$hx_exports.dat = $hx_exports.dat || {};
+$hx_exports.dat.gui = $hx_exports.dat.gui || {};
 var $hxClasses = {},$estr = function() { return js_Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
@@ -111,8 +113,47 @@ List.prototype = {
 		this.q = x;
 		this.length++;
 	}
+	,last: function() {
+		if(this.q == null) return null; else return this.q[0];
+	}
+	,remove: function(v) {
+		var prev = null;
+		var l = this.h;
+		while(l != null) {
+			if(l[0] == v) {
+				if(prev == null) this.h = l[1]; else prev[1] = l[1];
+				if(this.q == l) this.q = prev;
+				this.length--;
+				return true;
+			}
+			prev = l;
+			l = l[1];
+		}
+		return false;
+	}
 	,iterator: function() {
 		return new _$List_ListIterator(this.h);
+	}
+	,join: function(sep) {
+		var s = new StringBuf();
+		var first = true;
+		var l = this.h;
+		while(l != null) {
+			if(first) first = false; else if(sep == null) s.b += "null"; else s.b += "" + sep;
+			s.add(l[0]);
+			l = l[1];
+		}
+		return s.b;
+	}
+	,map: function(f) {
+		var b = new List();
+		var l = this.h;
+		while(l != null) {
+			var v = l[0];
+			l = l[1];
+			b.add(f(v));
+		}
+		return b;
 	}
 	,__class__: List
 };
@@ -212,13 +253,39 @@ StringBuf.prototype = {
 	,add: function(x) {
 		this.b += Std.string(x);
 	}
+	,addSub: function(s,pos,len) {
+		if(len == null) this.b += HxOverrides.substr(s,pos,null); else this.b += HxOverrides.substr(s,pos,len);
+	}
 	,__class__: StringBuf
 };
 var StringTools = function() { };
 $hxClasses["StringTools"] = StringTools;
 StringTools.__name__ = ["StringTools"];
+StringTools.htmlEscape = function(s,quotes) {
+	s = s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
+	if(quotes) return s.split("\"").join("&quot;").split("'").join("&#039;"); else return s;
+};
 StringTools.startsWith = function(s,start) {
 	return s.length >= start.length && HxOverrides.substr(s,0,start.length) == start;
+};
+StringTools.isSpace = function(s,pos) {
+	var c = HxOverrides.cca(s,pos);
+	return c > 8 && c < 14 || c == 32;
+};
+StringTools.ltrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,r)) r++;
+	if(r > 0) return HxOverrides.substr(s,r,l - r); else return s;
+};
+StringTools.rtrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,l - r - 1)) r++;
+	if(r > 0) return HxOverrides.substr(s,0,l - r); else return s;
+};
+StringTools.trim = function(s) {
+	return StringTools.ltrim(StringTools.rtrim(s));
 };
 StringTools.replace = function(s,sub,by) {
 	return s.split(sub).join(by);
@@ -250,6 +317,9 @@ TextificianGoJS.main = function() {
 	itest = unserializer.unserialize();
 	console.log(itest.a == itest.b);
 	console.log(itest.a[3] == itest.b[3]);
+	var fields;
+	var somethingGood = dat_gui_DatUtil.setup(new textifician_mapping_LocationDefinition(),null);
+	console.log(somethingGood);
 };
 TextificianGoJS.prototype = {
 	__class__: TextificianGoJS
@@ -362,6 +432,279 @@ Type["typeof"] = function(v) {
 	default:
 		return ValueType.TUnknown;
 	}
+};
+var Xml = function(nodeType) {
+	this.nodeType = nodeType;
+	this.children = [];
+	this.attributeMap = new haxe_ds_StringMap();
+};
+$hxClasses["Xml"] = Xml;
+Xml.__name__ = ["Xml"];
+Xml.parse = function(str) {
+	return haxe_xml_Parser.parse(str);
+};
+Xml.createElement = function(name) {
+	var xml = new Xml(Xml.Element);
+	if(xml.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element but found " + xml.nodeType);
+	xml.nodeName = name;
+	return xml;
+};
+Xml.createPCData = function(data) {
+	var xml = new Xml(Xml.PCData);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + xml.nodeType);
+	xml.nodeValue = data;
+	return xml;
+};
+Xml.createCData = function(data) {
+	var xml = new Xml(Xml.CData);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + xml.nodeType);
+	xml.nodeValue = data;
+	return xml;
+};
+Xml.createComment = function(data) {
+	var xml = new Xml(Xml.Comment);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + xml.nodeType);
+	xml.nodeValue = data;
+	return xml;
+};
+Xml.createDocType = function(data) {
+	var xml = new Xml(Xml.DocType);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + xml.nodeType);
+	xml.nodeValue = data;
+	return xml;
+};
+Xml.createProcessingInstruction = function(data) {
+	var xml = new Xml(Xml.ProcessingInstruction);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + xml.nodeType);
+	xml.nodeValue = data;
+	return xml;
+};
+Xml.createDocument = function() {
+	return new Xml(Xml.Document);
+};
+Xml.prototype = {
+	nodeType: null
+	,nodeName: null
+	,nodeValue: null
+	,parent: null
+	,children: null
+	,attributeMap: null
+	,get_nodeName: function() {
+		if(this.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element but found " + this.nodeType);
+		return this.nodeName;
+	}
+	,get: function(att) {
+		if(this.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element but found " + this.nodeType);
+		return this.attributeMap.get(att);
+	}
+	,set: function(att,value) {
+		if(this.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element but found " + this.nodeType);
+		this.attributeMap.set(att,value);
+	}
+	,exists: function(att) {
+		if(this.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element but found " + this.nodeType);
+		return this.attributeMap.exists(att);
+	}
+	,attributes: function() {
+		if(this.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element but found " + this.nodeType);
+		return this.attributeMap.keys();
+	}
+	,iterator: function() {
+		if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element or Document but found " + this.nodeType);
+		return HxOverrides.iter(this.children);
+	}
+	,elements: function() {
+		if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element or Document but found " + this.nodeType);
+		var ret;
+		var _g = [];
+		var _g1 = 0;
+		var _g2 = this.children;
+		while(_g1 < _g2.length) {
+			var child = _g2[_g1];
+			++_g1;
+			if(child.nodeType == Xml.Element) _g.push(child);
+		}
+		ret = _g;
+		return HxOverrides.iter(ret);
+	}
+	,elementsNamed: function(name) {
+		if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element or Document but found " + this.nodeType);
+		var ret;
+		var _g = [];
+		var _g1 = 0;
+		var _g2 = this.children;
+		while(_g1 < _g2.length) {
+			var child = _g2[_g1];
+			++_g1;
+			if(child.nodeType == Xml.Element && (function($this) {
+				var $r;
+				if(child.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element but found " + child.nodeType);
+				$r = child.nodeName;
+				return $r;
+			}(this)) == name) _g.push(child);
+		}
+		ret = _g;
+		return HxOverrides.iter(ret);
+	}
+	,firstElement: function() {
+		if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element or Document but found " + this.nodeType);
+		var _g = 0;
+		var _g1 = this.children;
+		while(_g < _g1.length) {
+			var child = _g1[_g];
+			++_g;
+			if(child.nodeType == Xml.Element) return child;
+		}
+		return null;
+	}
+	,addChild: function(x) {
+		if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element or Document but found " + this.nodeType);
+		if(x.parent != null) x.parent.removeChild(x);
+		this.children.push(x);
+		x.parent = this;
+	}
+	,removeChild: function(x) {
+		if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element or Document but found " + this.nodeType);
+		if(HxOverrides.remove(this.children,x)) {
+			x.parent = null;
+			return true;
+		}
+		return false;
+	}
+	,__class__: Xml
+	,__properties__: {get_nodeName:"get_nodeName"}
+};
+var dat_gui_DatUtil = $hx_exports.dat.gui.DatUtil = function() { };
+$hxClasses["dat.gui.DatUtil"] = dat_gui_DatUtil;
+dat_gui_DatUtil.__name__ = ["dat","gui","DatUtil"];
+dat_gui_DatUtil.setup = function(instance,classe,options) {
+	if(classe == null) classe = Type.getClass(instance);
+	if(options == null) options = { };
+	var ignoreInspectMeta = Reflect.field(options,"ignoreInspectMeta");
+	var rtti = haxe_rtti_Rtti.getRtti(classe);
+	var meta = haxe_rtti_Meta.getFields(classe);
+	var fieldHash = { };
+	var fields = rtti.fields;
+	var fieldsI = new _$List_ListIterator(fields.h);
+	var cur;
+	var curVal;
+	var _g = fieldsI;
+	while(_g.head != null) {
+		var f;
+		f = (function($this) {
+			var $r;
+			_g.val = _g.head[0];
+			_g.head = _g.head[1];
+			$r = _g.val;
+			return $r;
+		}(this));
+		var fieldMeta = Reflect.field(meta,f.name);
+		if(haxe_rtti_TypeApi.isVar(f.type) && (!ignoreInspectMeta?fieldMeta != null && Object.prototype.hasOwnProperty.call(fieldMeta,"inspect"):true)) {
+			cur = Reflect.field(fieldMeta,"inspect");
+			if(cur == null) cur = { }; else cur = cur[0];
+			if(Object.prototype.hasOwnProperty.call(cur,"value")) curVal = Reflect.field(cur,"value"); else curVal = Reflect.getProperty(instance,f.name);
+			var typeStr = haxe_rtti_CTypeTools.toString(f.type);
+			if(typeStr == "Int" || typeStr == "UInt" || typeStr == "Float") {
+				if(curVal == null) curVal = 0;
+				cur.value = curVal;
+				if(typeStr == "Int" || typeStr == "UInt") {
+					if(Object.prototype.hasOwnProperty.call(fieldMeta,"bitmask")) {
+					} else {
+						if(!Object.prototype.hasOwnProperty.call(cur,"step")) cur.step = 1;
+						if(typeStr == "UInt" && !Object.prototype.hasOwnProperty.call(cur,"min")) cur.min = 0;
+						fieldHash[f.name] = cur;
+						cur._isLeaf = true;
+					}
+				} else {
+					fieldHash[f.name] = cur;
+					cur._isLeaf = true;
+				}
+			} else if(typeStr == "String") {
+				if(curVal == null) curVal = "";
+				cur.value = curVal;
+				fieldHash[f.name] = cur;
+				cur._isLeaf = true;
+			} else if(typeStr == "Bool") {
+				if(curVal == null) curVal = false;
+				cur.value = curVal;
+				fieldHash[f.name] = cur;
+				cur._isLeaf = true;
+			} else console.log("TODO: Could not resolve data type at the moment for:" + typeStr + ", " + f.name);
+			var frParams;
+			var frValue;
+			var frPrefix = null;
+			var frStatics;
+			var frI;
+			if(Object.prototype.hasOwnProperty.call(fieldMeta,"range")) {
+				frParams = Reflect.field(fieldMeta,"range");
+				if(frParams != null && frParams.length > 0) {
+					frValue = frParams[0];
+					if(typeof(frValue) == "string") {
+						var frEnum = { };
+						var min = 1e20;
+						var max = -1e20;
+						frStatics = new _$List_ListIterator(rtti.statics.h);
+						var _g1 = frStatics;
+						while(_g1.head != null) {
+							var f1;
+							f1 = (function($this) {
+								var $r;
+								_g1.val = _g1.head[0];
+								_g1.head = _g1.head[1];
+								$r = _g1.val;
+								return $r;
+							}(this));
+							frI = f1.name.indexOf("_");
+							if(frI >= 0) {
+								frPrefix = f1.name.substring(0,frI);
+								if(frPrefix == frValue) {
+									var v;
+									v = Reflect.field(classe,f1.name);
+									if(v > max) max = v;
+									if(v < min) min = v;
+									Reflect.setField(frEnum,f1.name.substring(frI + 1),v);
+								}
+							}
+						}
+						cur.enumeration = frEnum;
+						cur.min = min;
+						cur.max = max;
+					} else {
+						Reflect.setField(cur,"min",Object.prototype.hasOwnProperty.call(frValue,"min")?Reflect.field(frValue,"min"):0);
+						Reflect.setField(cur,"max",Object.prototype.hasOwnProperty.call(frValue,"max")?Reflect.field(frValue,"max"):Reflect.field(frValue,"min") + 1);
+					}
+				}
+			}
+			if(Object.prototype.hasOwnProperty.call(fieldMeta,"choices")) {
+				frParams = Reflect.field(fieldMeta,"choices");
+				if(frParams != null && frParams.length > 0) {
+					frValue = frParams[0];
+					if(typeof(frValue) == "string") {
+						var frChoices = { };
+						frStatics = new _$List_ListIterator(rtti.statics.h);
+						var _g2 = frStatics;
+						while(_g2.head != null) {
+							var f2;
+							f2 = (function($this) {
+								var $r;
+								_g2.val = _g2.head[0];
+								_g2.head = _g2.head[1];
+								$r = _g2.val;
+								return $r;
+							}(this));
+							frI = f2.name.indexOf("_");
+							if(frI >= 0) {
+								frPrefix = f2.name.substring(0,frI);
+								if(frPrefix == frValue) Reflect.setField(frChoices,f2.name.substring(frI + 1),Reflect.field(classe,f2.name));
+							}
+						}
+						cur.choices = frChoices;
+					} else cur.choices = frValue;
+				}
+			}
+		}
+	}
+	return fieldHash;
 };
 var de_polygonal_ds_Cloneable = function() { };
 $hxClasses["de.polygonal.ds.Cloneable"] = de_polygonal_ds_Cloneable;
@@ -2546,6 +2889,1068 @@ haxe_io_FPHelper.doubleToI64 = function(v) {
 	}
 	return i64;
 };
+var haxe_rtti_CType = $hxClasses["haxe.rtti.CType"] = { __ename__ : ["haxe","rtti","CType"], __constructs__ : ["CUnknown","CEnum","CClass","CTypedef","CFunction","CAnonymous","CDynamic","CAbstract"] };
+haxe_rtti_CType.CUnknown = ["CUnknown",0];
+haxe_rtti_CType.CUnknown.toString = $estr;
+haxe_rtti_CType.CUnknown.__enum__ = haxe_rtti_CType;
+haxe_rtti_CType.CEnum = function(name,params) { var $x = ["CEnum",1,name,params]; $x.__enum__ = haxe_rtti_CType; $x.toString = $estr; return $x; };
+haxe_rtti_CType.CClass = function(name,params) { var $x = ["CClass",2,name,params]; $x.__enum__ = haxe_rtti_CType; $x.toString = $estr; return $x; };
+haxe_rtti_CType.CTypedef = function(name,params) { var $x = ["CTypedef",3,name,params]; $x.__enum__ = haxe_rtti_CType; $x.toString = $estr; return $x; };
+haxe_rtti_CType.CFunction = function(args,ret) { var $x = ["CFunction",4,args,ret]; $x.__enum__ = haxe_rtti_CType; $x.toString = $estr; return $x; };
+haxe_rtti_CType.CAnonymous = function(fields) { var $x = ["CAnonymous",5,fields]; $x.__enum__ = haxe_rtti_CType; $x.toString = $estr; return $x; };
+haxe_rtti_CType.CDynamic = function(t) { var $x = ["CDynamic",6,t]; $x.__enum__ = haxe_rtti_CType; $x.toString = $estr; return $x; };
+haxe_rtti_CType.CAbstract = function(name,params) { var $x = ["CAbstract",7,name,params]; $x.__enum__ = haxe_rtti_CType; $x.toString = $estr; return $x; };
+var haxe_rtti_Rights = $hxClasses["haxe.rtti.Rights"] = { __ename__ : ["haxe","rtti","Rights"], __constructs__ : ["RNormal","RNo","RCall","RMethod","RDynamic","RInline"] };
+haxe_rtti_Rights.RNormal = ["RNormal",0];
+haxe_rtti_Rights.RNormal.toString = $estr;
+haxe_rtti_Rights.RNormal.__enum__ = haxe_rtti_Rights;
+haxe_rtti_Rights.RNo = ["RNo",1];
+haxe_rtti_Rights.RNo.toString = $estr;
+haxe_rtti_Rights.RNo.__enum__ = haxe_rtti_Rights;
+haxe_rtti_Rights.RCall = function(m) { var $x = ["RCall",2,m]; $x.__enum__ = haxe_rtti_Rights; $x.toString = $estr; return $x; };
+haxe_rtti_Rights.RMethod = ["RMethod",3];
+haxe_rtti_Rights.RMethod.toString = $estr;
+haxe_rtti_Rights.RMethod.__enum__ = haxe_rtti_Rights;
+haxe_rtti_Rights.RDynamic = ["RDynamic",4];
+haxe_rtti_Rights.RDynamic.toString = $estr;
+haxe_rtti_Rights.RDynamic.__enum__ = haxe_rtti_Rights;
+haxe_rtti_Rights.RInline = ["RInline",5];
+haxe_rtti_Rights.RInline.toString = $estr;
+haxe_rtti_Rights.RInline.__enum__ = haxe_rtti_Rights;
+var haxe_rtti_TypeTree = $hxClasses["haxe.rtti.TypeTree"] = { __ename__ : ["haxe","rtti","TypeTree"], __constructs__ : ["TPackage","TClassdecl","TEnumdecl","TTypedecl","TAbstractdecl"] };
+haxe_rtti_TypeTree.TPackage = function(name,full,subs) { var $x = ["TPackage",0,name,full,subs]; $x.__enum__ = haxe_rtti_TypeTree; $x.toString = $estr; return $x; };
+haxe_rtti_TypeTree.TClassdecl = function(c) { var $x = ["TClassdecl",1,c]; $x.__enum__ = haxe_rtti_TypeTree; $x.toString = $estr; return $x; };
+haxe_rtti_TypeTree.TEnumdecl = function(e) { var $x = ["TEnumdecl",2,e]; $x.__enum__ = haxe_rtti_TypeTree; $x.toString = $estr; return $x; };
+haxe_rtti_TypeTree.TTypedecl = function(t) { var $x = ["TTypedecl",3,t]; $x.__enum__ = haxe_rtti_TypeTree; $x.toString = $estr; return $x; };
+haxe_rtti_TypeTree.TAbstractdecl = function(a) { var $x = ["TAbstractdecl",4,a]; $x.__enum__ = haxe_rtti_TypeTree; $x.toString = $estr; return $x; };
+var haxe_rtti_TypeApi = function() { };
+$hxClasses["haxe.rtti.TypeApi"] = haxe_rtti_TypeApi;
+haxe_rtti_TypeApi.__name__ = ["haxe","rtti","TypeApi"];
+haxe_rtti_TypeApi.isVar = function(t) {
+	switch(t[1]) {
+	case 4:
+		return false;
+	default:
+		return true;
+	}
+};
+var haxe_rtti_CTypeTools = function() { };
+$hxClasses["haxe.rtti.CTypeTools"] = haxe_rtti_CTypeTools;
+haxe_rtti_CTypeTools.__name__ = ["haxe","rtti","CTypeTools"];
+haxe_rtti_CTypeTools.toString = function(t) {
+	switch(t[1]) {
+	case 0:
+		return "unknown";
+	case 2:
+		var params = t[3];
+		var name = t[2];
+		return haxe_rtti_CTypeTools.nameWithParams(name,params);
+	case 1:
+		var params1 = t[3];
+		var name1 = t[2];
+		return haxe_rtti_CTypeTools.nameWithParams(name1,params1);
+	case 3:
+		var params2 = t[3];
+		var name2 = t[2];
+		return haxe_rtti_CTypeTools.nameWithParams(name2,params2);
+	case 7:
+		var params3 = t[3];
+		var name3 = t[2];
+		return haxe_rtti_CTypeTools.nameWithParams(name3,params3);
+	case 4:
+		var ret = t[3];
+		var args = t[2];
+		if(args.length == 0) return "Void -> " + haxe_rtti_CTypeTools.toString(ret); else return args.map(haxe_rtti_CTypeTools.functionArgumentName).join(" -> ");
+		break;
+	case 6:
+		var d = t[2];
+		if(d == null) return "Dynamic"; else return "Dynamic<" + haxe_rtti_CTypeTools.toString(d) + ">";
+		break;
+	case 5:
+		var fields = t[2];
+		return "{ " + fields.map(haxe_rtti_CTypeTools.classField).join(", ");
+	}
+};
+haxe_rtti_CTypeTools.nameWithParams = function(name,params) {
+	if(params.length == 0) return name;
+	return name + "<" + params.map(haxe_rtti_CTypeTools.toString).join(", ") + ">";
+};
+haxe_rtti_CTypeTools.functionArgumentName = function(arg) {
+	return (arg.opt?"?":"") + arg.name + ":" + haxe_rtti_CTypeTools.toString(arg.t) + (arg.value == null?"":" = " + arg.value);
+};
+haxe_rtti_CTypeTools.classField = function(cf) {
+	return cf.name + ":" + haxe_rtti_CTypeTools.toString(cf.type);
+};
+var haxe_rtti_Meta = function() { };
+$hxClasses["haxe.rtti.Meta"] = haxe_rtti_Meta;
+haxe_rtti_Meta.__name__ = ["haxe","rtti","Meta"];
+haxe_rtti_Meta.getMeta = function(t) {
+	return t.__meta__;
+};
+haxe_rtti_Meta.getFields = function(t) {
+	var meta = haxe_rtti_Meta.getMeta(t);
+	if(meta == null || meta.fields == null) return { }; else return meta.fields;
+};
+var haxe_rtti_Rtti = function() { };
+$hxClasses["haxe.rtti.Rtti"] = haxe_rtti_Rtti;
+haxe_rtti_Rtti.__name__ = ["haxe","rtti","Rtti"];
+haxe_rtti_Rtti.getRtti = function(c) {
+	var rtti = Reflect.field(c,"__rtti");
+	if(rtti == null) throw new js__$Boot_HaxeError("Class " + Type.getClassName(c) + " has no RTTI information, consider adding @:rtti");
+	var x = Xml.parse(rtti).firstElement();
+	var infos = new haxe_rtti_XmlParser().processElement(x);
+	{
+		var t = infos;
+		switch(infos[1]) {
+		case 1:
+			var c1 = infos[2];
+			return c1;
+		default:
+			throw new js__$Boot_HaxeError("Enum mismatch: expected TClassDecl but found " + Std.string(t));
+		}
+	}
+};
+var haxe_rtti_XmlParser = function() {
+	this.root = [];
+};
+$hxClasses["haxe.rtti.XmlParser"] = haxe_rtti_XmlParser;
+haxe_rtti_XmlParser.__name__ = ["haxe","rtti","XmlParser"];
+haxe_rtti_XmlParser.prototype = {
+	root: null
+	,curplatform: null
+	,mkPath: function(p) {
+		return p;
+	}
+	,mkTypeParams: function(p) {
+		var pl = p.split(":");
+		if(pl[0] == "") return [];
+		return pl;
+	}
+	,mkRights: function(r) {
+		switch(r) {
+		case "null":
+			return haxe_rtti_Rights.RNo;
+		case "method":
+			return haxe_rtti_Rights.RMethod;
+		case "dynamic":
+			return haxe_rtti_Rights.RDynamic;
+		case "inline":
+			return haxe_rtti_Rights.RInline;
+		default:
+			return haxe_rtti_Rights.RCall(r);
+		}
+	}
+	,xerror: function(c) {
+		throw new js__$Boot_HaxeError("Invalid " + c.get_name());
+	}
+	,processElement: function(x) {
+		var c = new haxe_xml_Fast(x);
+		var _g = c.get_name();
+		switch(_g) {
+		case "class":
+			return haxe_rtti_TypeTree.TClassdecl(this.xclass(c));
+		case "enum":
+			return haxe_rtti_TypeTree.TEnumdecl(this.xenum(c));
+		case "typedef":
+			return haxe_rtti_TypeTree.TTypedecl(this.xtypedef(c));
+		case "abstract":
+			return haxe_rtti_TypeTree.TAbstractdecl(this.xabstract(c));
+		default:
+			return this.xerror(c);
+		}
+	}
+	,xmeta: function(x) {
+		var ml = [];
+		var _g = x.nodes.resolve("m").iterator();
+		while(_g.head != null) {
+			var m;
+			m = (function($this) {
+				var $r;
+				_g.val = _g.head[0];
+				_g.head = _g.head[1];
+				$r = _g.val;
+				return $r;
+			}(this));
+			var pl = [];
+			var _g1 = m.nodes.resolve("e").iterator();
+			while(_g1.head != null) {
+				var p;
+				p = (function($this) {
+					var $r;
+					_g1.val = _g1.head[0];
+					_g1.head = _g1.head[1];
+					$r = _g1.val;
+					return $r;
+				}(this));
+				pl.push(p.get_innerHTML());
+			}
+			ml.push({ name : m.att.resolve("n"), params : pl});
+		}
+		return ml;
+	}
+	,xoverloads: function(x) {
+		var l = new List();
+		var $it0 = x.get_elements();
+		while( $it0.hasNext() ) {
+			var m = $it0.next();
+			l.add(this.xclassfield(m));
+		}
+		return l;
+	}
+	,xpath: function(x) {
+		var path = this.mkPath(x.att.resolve("path"));
+		var params = new List();
+		var $it0 = x.get_elements();
+		while( $it0.hasNext() ) {
+			var c = $it0.next();
+			params.add(this.xtype(c));
+		}
+		return { path : path, params : params};
+	}
+	,xclass: function(x) {
+		var csuper = null;
+		var doc = null;
+		var tdynamic = null;
+		var interfaces = new List();
+		var fields = new List();
+		var statics = new List();
+		var meta = [];
+		var $it0 = x.get_elements();
+		while( $it0.hasNext() ) {
+			var c = $it0.next();
+			var _g = c.get_name();
+			switch(_g) {
+			case "haxe_doc":
+				doc = c.get_innerData();
+				break;
+			case "extends":
+				csuper = this.xpath(c);
+				break;
+			case "implements":
+				interfaces.add(this.xpath(c));
+				break;
+			case "haxe_dynamic":
+				tdynamic = this.xtype(new haxe_xml_Fast(c.x.firstElement()));
+				break;
+			case "meta":
+				meta = this.xmeta(c);
+				break;
+			default:
+				if(c.x.exists("static")) statics.add(this.xclassfield(c)); else fields.add(this.xclassfield(c));
+			}
+		}
+		return { file : x.has.resolve("file")?x.att.resolve("file"):null, path : this.mkPath(x.att.resolve("path")), module : x.has.resolve("module")?this.mkPath(x.att.resolve("module")):null, doc : doc, isPrivate : x.x.exists("private"), isExtern : x.x.exists("extern"), isInterface : x.x.exists("interface"), params : this.mkTypeParams(x.att.resolve("params")), superClass : csuper, interfaces : interfaces, fields : fields, statics : statics, tdynamic : tdynamic, platforms : this.defplat(), meta : meta};
+	}
+	,xclassfield: function(x,defPublic) {
+		if(defPublic == null) defPublic = false;
+		var e = x.get_elements();
+		var t = this.xtype(e.next());
+		var doc = null;
+		var meta = [];
+		var overloads = null;
+		while( e.hasNext() ) {
+			var c = e.next();
+			var _g = c.get_name();
+			switch(_g) {
+			case "haxe_doc":
+				doc = c.get_innerData();
+				break;
+			case "meta":
+				meta = this.xmeta(c);
+				break;
+			case "overloads":
+				overloads = this.xoverloads(c);
+				break;
+			default:
+				this.xerror(c);
+			}
+		}
+		return { name : x.get_name(), type : t, isPublic : x.x.exists("public") || defPublic, isOverride : x.x.exists("override"), line : x.has.resolve("line")?Std.parseInt(x.att.resolve("line")):null, doc : doc, get : x.has.resolve("get")?this.mkRights(x.att.resolve("get")):haxe_rtti_Rights.RNormal, set : x.has.resolve("set")?this.mkRights(x.att.resolve("set")):haxe_rtti_Rights.RNormal, params : x.has.resolve("params")?this.mkTypeParams(x.att.resolve("params")):[], platforms : this.defplat(), meta : meta, overloads : overloads, expr : x.has.resolve("expr")?x.att.resolve("expr"):null};
+	}
+	,xenum: function(x) {
+		var cl = new List();
+		var doc = null;
+		var meta = [];
+		var $it0 = x.get_elements();
+		while( $it0.hasNext() ) {
+			var c = $it0.next();
+			if(c.get_name() == "haxe_doc") doc = c.get_innerData(); else if(c.get_name() == "meta") meta = this.xmeta(c); else cl.add(this.xenumfield(c));
+		}
+		return { file : x.has.resolve("file")?x.att.resolve("file"):null, path : this.mkPath(x.att.resolve("path")), module : x.has.resolve("module")?this.mkPath(x.att.resolve("module")):null, doc : doc, isPrivate : x.x.exists("private"), isExtern : x.x.exists("extern"), params : this.mkTypeParams(x.att.resolve("params")), constructors : cl, platforms : this.defplat(), meta : meta};
+	}
+	,xenumfield: function(x) {
+		var args = null;
+		var xdoc = x.x.elementsNamed("haxe_doc").next();
+		var meta;
+		if(x.hasNode.resolve("meta")) meta = this.xmeta(x.node.resolve("meta")); else meta = [];
+		if(x.has.resolve("a")) {
+			var names = x.att.resolve("a").split(":");
+			var elts = x.get_elements();
+			args = new List();
+			var _g = 0;
+			while(_g < names.length) {
+				var c = names[_g];
+				++_g;
+				var opt = false;
+				if(c.charAt(0) == "?") {
+					opt = true;
+					c = HxOverrides.substr(c,1,null);
+				}
+				args.add({ name : c, opt : opt, t : this.xtype(elts.next())});
+			}
+		}
+		return { name : x.get_name(), args : args, doc : xdoc == null?null:new haxe_xml_Fast(xdoc).get_innerData(), meta : meta, platforms : this.defplat()};
+	}
+	,xabstract: function(x) {
+		var doc = null;
+		var impl = null;
+		var athis = null;
+		var meta = [];
+		var to = [];
+		var from = [];
+		var $it0 = x.get_elements();
+		while( $it0.hasNext() ) {
+			var c = $it0.next();
+			var _g = c.get_name();
+			switch(_g) {
+			case "haxe_doc":
+				doc = c.get_innerData();
+				break;
+			case "meta":
+				meta = this.xmeta(c);
+				break;
+			case "to":
+				var $it1 = c.get_elements();
+				while( $it1.hasNext() ) {
+					var t = $it1.next();
+					to.push({ t : this.xtype(new haxe_xml_Fast(t.x.firstElement())), field : t.has.resolve("field")?t.att.resolve("field"):null});
+				}
+				break;
+			case "from":
+				var $it2 = c.get_elements();
+				while( $it2.hasNext() ) {
+					var t1 = $it2.next();
+					from.push({ t : this.xtype(new haxe_xml_Fast(t1.x.firstElement())), field : t1.has.resolve("field")?t1.att.resolve("field"):null});
+				}
+				break;
+			case "impl":
+				impl = this.xclass(c.node.resolve("class"));
+				break;
+			case "this":
+				athis = this.xtype(new haxe_xml_Fast(c.x.firstElement()));
+				break;
+			default:
+				this.xerror(c);
+			}
+		}
+		return { file : x.has.resolve("file")?x.att.resolve("file"):null, path : this.mkPath(x.att.resolve("path")), module : x.has.resolve("module")?this.mkPath(x.att.resolve("module")):null, doc : doc, isPrivate : x.x.exists("private"), params : this.mkTypeParams(x.att.resolve("params")), platforms : this.defplat(), meta : meta, athis : athis, to : to, from : from, impl : impl};
+	}
+	,xtypedef: function(x) {
+		var doc = null;
+		var t = null;
+		var meta = [];
+		var $it0 = x.get_elements();
+		while( $it0.hasNext() ) {
+			var c = $it0.next();
+			if(c.get_name() == "haxe_doc") doc = c.get_innerData(); else if(c.get_name() == "meta") meta = this.xmeta(c); else t = this.xtype(c);
+		}
+		var types = new haxe_ds_StringMap();
+		if(this.curplatform != null) types.set(this.curplatform,t);
+		return { file : x.has.resolve("file")?x.att.resolve("file"):null, path : this.mkPath(x.att.resolve("path")), module : x.has.resolve("module")?this.mkPath(x.att.resolve("module")):null, doc : doc, isPrivate : x.x.exists("private"), params : this.mkTypeParams(x.att.resolve("params")), type : t, types : types, platforms : this.defplat(), meta : meta};
+	}
+	,xtype: function(x) {
+		var _g = x.get_name();
+		switch(_g) {
+		case "unknown":
+			return haxe_rtti_CType.CUnknown;
+		case "e":
+			return haxe_rtti_CType.CEnum(this.mkPath(x.att.resolve("path")),this.xtypeparams(x));
+		case "c":
+			return haxe_rtti_CType.CClass(this.mkPath(x.att.resolve("path")),this.xtypeparams(x));
+		case "t":
+			return haxe_rtti_CType.CTypedef(this.mkPath(x.att.resolve("path")),this.xtypeparams(x));
+		case "x":
+			return haxe_rtti_CType.CAbstract(this.mkPath(x.att.resolve("path")),this.xtypeparams(x));
+		case "f":
+			var args = new List();
+			var aname = x.att.resolve("a").split(":");
+			var eargs = HxOverrides.iter(aname);
+			var evalues;
+			if(x.has.resolve("v")) {
+				var _this = x.att.resolve("v").split(":");
+				evalues = HxOverrides.iter(_this);
+			} else evalues = null;
+			var $it0 = x.get_elements();
+			while( $it0.hasNext() ) {
+				var e = $it0.next();
+				var opt = false;
+				var a = eargs.next();
+				if(a == null) a = "";
+				if(a.charAt(0) == "?") {
+					opt = true;
+					a = HxOverrides.substr(a,1,null);
+				}
+				var v;
+				if(evalues == null) v = null; else v = evalues.next();
+				args.add({ name : a, opt : opt, t : this.xtype(e), value : v == ""?null:v});
+			}
+			var ret = args.last();
+			args.remove(ret);
+			return haxe_rtti_CType.CFunction(args,ret.t);
+		case "a":
+			var fields = new List();
+			var $it1 = x.get_elements();
+			while( $it1.hasNext() ) {
+				var f = $it1.next();
+				var f1 = this.xclassfield(f,true);
+				f1.platforms = new List();
+				fields.add(f1);
+			}
+			return haxe_rtti_CType.CAnonymous(fields);
+		case "d":
+			var t = null;
+			var tx = x.x.firstElement();
+			if(tx != null) t = this.xtype(new haxe_xml_Fast(tx));
+			return haxe_rtti_CType.CDynamic(t);
+		default:
+			return this.xerror(x);
+		}
+	}
+	,xtypeparams: function(x) {
+		var p = new List();
+		var $it0 = x.get_elements();
+		while( $it0.hasNext() ) {
+			var c = $it0.next();
+			p.add(this.xtype(c));
+		}
+		return p;
+	}
+	,defplat: function() {
+		var l = new List();
+		if(this.curplatform != null) l.add(this.curplatform);
+		return l;
+	}
+	,__class__: haxe_rtti_XmlParser
+};
+var haxe_xml__$Fast_NodeAccess = function(x) {
+	this.__x = x;
+};
+$hxClasses["haxe.xml._Fast.NodeAccess"] = haxe_xml__$Fast_NodeAccess;
+haxe_xml__$Fast_NodeAccess.__name__ = ["haxe","xml","_Fast","NodeAccess"];
+haxe_xml__$Fast_NodeAccess.prototype = {
+	__x: null
+	,resolve: function(name) {
+		var x = this.__x.elementsNamed(name).next();
+		if(x == null) {
+			var xname;
+			if(this.__x.nodeType == Xml.Document) xname = "Document"; else xname = this.__x.get_nodeName();
+			throw new js__$Boot_HaxeError(xname + " is missing element " + name);
+		}
+		return new haxe_xml_Fast(x);
+	}
+	,__class__: haxe_xml__$Fast_NodeAccess
+};
+var haxe_xml__$Fast_AttribAccess = function(x) {
+	this.__x = x;
+};
+$hxClasses["haxe.xml._Fast.AttribAccess"] = haxe_xml__$Fast_AttribAccess;
+haxe_xml__$Fast_AttribAccess.__name__ = ["haxe","xml","_Fast","AttribAccess"];
+haxe_xml__$Fast_AttribAccess.prototype = {
+	__x: null
+	,resolve: function(name) {
+		if(this.__x.nodeType == Xml.Document) throw new js__$Boot_HaxeError("Cannot access document attribute " + name);
+		var v = this.__x.get(name);
+		if(v == null) throw new js__$Boot_HaxeError(this.__x.get_nodeName() + " is missing attribute " + name);
+		return v;
+	}
+	,__class__: haxe_xml__$Fast_AttribAccess
+};
+var haxe_xml__$Fast_HasAttribAccess = function(x) {
+	this.__x = x;
+};
+$hxClasses["haxe.xml._Fast.HasAttribAccess"] = haxe_xml__$Fast_HasAttribAccess;
+haxe_xml__$Fast_HasAttribAccess.__name__ = ["haxe","xml","_Fast","HasAttribAccess"];
+haxe_xml__$Fast_HasAttribAccess.prototype = {
+	__x: null
+	,resolve: function(name) {
+		if(this.__x.nodeType == Xml.Document) throw new js__$Boot_HaxeError("Cannot access document attribute " + name);
+		return this.__x.exists(name);
+	}
+	,__class__: haxe_xml__$Fast_HasAttribAccess
+};
+var haxe_xml__$Fast_HasNodeAccess = function(x) {
+	this.__x = x;
+};
+$hxClasses["haxe.xml._Fast.HasNodeAccess"] = haxe_xml__$Fast_HasNodeAccess;
+haxe_xml__$Fast_HasNodeAccess.__name__ = ["haxe","xml","_Fast","HasNodeAccess"];
+haxe_xml__$Fast_HasNodeAccess.prototype = {
+	__x: null
+	,resolve: function(name) {
+		return this.__x.elementsNamed(name).hasNext();
+	}
+	,__class__: haxe_xml__$Fast_HasNodeAccess
+};
+var haxe_xml__$Fast_NodeListAccess = function(x) {
+	this.__x = x;
+};
+$hxClasses["haxe.xml._Fast.NodeListAccess"] = haxe_xml__$Fast_NodeListAccess;
+haxe_xml__$Fast_NodeListAccess.__name__ = ["haxe","xml","_Fast","NodeListAccess"];
+haxe_xml__$Fast_NodeListAccess.prototype = {
+	__x: null
+	,resolve: function(name) {
+		var l = new List();
+		var $it0 = this.__x.elementsNamed(name);
+		while( $it0.hasNext() ) {
+			var x = $it0.next();
+			l.add(new haxe_xml_Fast(x));
+		}
+		return l;
+	}
+	,__class__: haxe_xml__$Fast_NodeListAccess
+};
+var haxe_xml_Fast = function(x) {
+	if(x.nodeType != Xml.Document && x.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Invalid nodeType " + x.nodeType);
+	this.x = x;
+	this.node = new haxe_xml__$Fast_NodeAccess(x);
+	this.nodes = new haxe_xml__$Fast_NodeListAccess(x);
+	this.att = new haxe_xml__$Fast_AttribAccess(x);
+	this.has = new haxe_xml__$Fast_HasAttribAccess(x);
+	this.hasNode = new haxe_xml__$Fast_HasNodeAccess(x);
+};
+$hxClasses["haxe.xml.Fast"] = haxe_xml_Fast;
+haxe_xml_Fast.__name__ = ["haxe","xml","Fast"];
+haxe_xml_Fast.prototype = {
+	x: null
+	,node: null
+	,nodes: null
+	,att: null
+	,has: null
+	,hasNode: null
+	,get_name: function() {
+		if(this.x.nodeType == Xml.Document) return "Document"; else return this.x.get_nodeName();
+	}
+	,get_innerData: function() {
+		var it = this.x.iterator();
+		if(!it.hasNext()) throw new js__$Boot_HaxeError(this.get_name() + " does not have data");
+		var v = it.next();
+		var n = it.next();
+		if(n != null) {
+			if(v.nodeType == Xml.PCData && n.nodeType == Xml.CData && StringTools.trim((function($this) {
+				var $r;
+				if(v.nodeType == Xml.Document || v.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + v.nodeType);
+				$r = v.nodeValue;
+				return $r;
+			}(this))) == "") {
+				var n2 = it.next();
+				if(n2 == null || n2.nodeType == Xml.PCData && StringTools.trim((function($this) {
+					var $r;
+					if(n2.nodeType == Xml.Document || n2.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + n2.nodeType);
+					$r = n2.nodeValue;
+					return $r;
+				}(this))) == "" && it.next() == null) {
+					if(n.nodeType == Xml.Document || n.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + n.nodeType);
+					return n.nodeValue;
+				}
+			}
+			throw new js__$Boot_HaxeError(this.get_name() + " does not only have data");
+		}
+		if(v.nodeType != Xml.PCData && v.nodeType != Xml.CData) throw new js__$Boot_HaxeError(this.get_name() + " does not have data");
+		if(v.nodeType == Xml.Document || v.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + v.nodeType);
+		return v.nodeValue;
+	}
+	,get_innerHTML: function() {
+		var s = new StringBuf();
+		var $it0 = this.x.iterator();
+		while( $it0.hasNext() ) {
+			var x = $it0.next();
+			s.add(haxe_xml_Printer.print(x));
+		}
+		return s.b;
+	}
+	,get_elements: function() {
+		var it = this.x.elements();
+		return { hasNext : $bind(it,it.hasNext), next : function() {
+			var x = it.next();
+			if(x == null) return null;
+			return new haxe_xml_Fast(x);
+		}};
+	}
+	,__class__: haxe_xml_Fast
+	,__properties__: {get_elements:"get_elements",get_innerHTML:"get_innerHTML",get_innerData:"get_innerData",get_name:"get_name"}
+};
+var haxe_xml_Parser = function() { };
+$hxClasses["haxe.xml.Parser"] = haxe_xml_Parser;
+haxe_xml_Parser.__name__ = ["haxe","xml","Parser"];
+haxe_xml_Parser.parse = function(str,strict) {
+	if(strict == null) strict = false;
+	var doc = Xml.createDocument();
+	haxe_xml_Parser.doParse(str,strict,0,doc);
+	return doc;
+};
+haxe_xml_Parser.doParse = function(str,strict,p,parent) {
+	if(p == null) p = 0;
+	var xml = null;
+	var state = 1;
+	var next = 1;
+	var aname = null;
+	var start = 0;
+	var nsubs = 0;
+	var nbrackets = 0;
+	var c = str.charCodeAt(p);
+	var buf = new StringBuf();
+	var escapeNext = 1;
+	var attrValQuote = -1;
+	while(!(c != c)) {
+		switch(state) {
+		case 0:
+			switch(c) {
+			case 10:case 13:case 9:case 32:
+				break;
+			default:
+				state = next;
+				continue;
+			}
+			break;
+		case 1:
+			switch(c) {
+			case 60:
+				state = 0;
+				next = 2;
+				break;
+			default:
+				start = p;
+				state = 13;
+				continue;
+			}
+			break;
+		case 13:
+			if(c == 60) {
+				buf.addSub(str,start,p - start);
+				var child = Xml.createPCData(buf.b);
+				buf = new StringBuf();
+				parent.addChild(child);
+				nsubs++;
+				state = 0;
+				next = 2;
+			} else if(c == 38) {
+				buf.addSub(str,start,p - start);
+				state = 18;
+				escapeNext = 13;
+				start = p + 1;
+			}
+			break;
+		case 17:
+			if(c == 93 && str.charCodeAt(p + 1) == 93 && str.charCodeAt(p + 2) == 62) {
+				var child1 = Xml.createCData(HxOverrides.substr(str,start,p - start));
+				parent.addChild(child1);
+				nsubs++;
+				p += 2;
+				state = 1;
+			}
+			break;
+		case 2:
+			switch(c) {
+			case 33:
+				if(str.charCodeAt(p + 1) == 91) {
+					p += 2;
+					if(HxOverrides.substr(str,p,6).toUpperCase() != "CDATA[") throw new js__$Boot_HaxeError("Expected <![CDATA[");
+					p += 5;
+					state = 17;
+					start = p + 1;
+				} else if(str.charCodeAt(p + 1) == 68 || str.charCodeAt(p + 1) == 100) {
+					if(HxOverrides.substr(str,p + 2,6).toUpperCase() != "OCTYPE") throw new js__$Boot_HaxeError("Expected <!DOCTYPE");
+					p += 8;
+					state = 16;
+					start = p + 1;
+				} else if(str.charCodeAt(p + 1) != 45 || str.charCodeAt(p + 2) != 45) throw new js__$Boot_HaxeError("Expected <!--"); else {
+					p += 2;
+					state = 15;
+					start = p + 1;
+				}
+				break;
+			case 63:
+				state = 14;
+				start = p;
+				break;
+			case 47:
+				if(parent == null) throw new js__$Boot_HaxeError("Expected node name");
+				start = p + 1;
+				state = 0;
+				next = 10;
+				break;
+			default:
+				state = 3;
+				start = p;
+				continue;
+			}
+			break;
+		case 3:
+			if(!(c >= 97 && c <= 122 || c >= 65 && c <= 90 || c >= 48 && c <= 57 || c == 58 || c == 46 || c == 95 || c == 45)) {
+				if(p == start) throw new js__$Boot_HaxeError("Expected node name");
+				xml = Xml.createElement(HxOverrides.substr(str,start,p - start));
+				parent.addChild(xml);
+				nsubs++;
+				state = 0;
+				next = 4;
+				continue;
+			}
+			break;
+		case 4:
+			switch(c) {
+			case 47:
+				state = 11;
+				break;
+			case 62:
+				state = 9;
+				break;
+			default:
+				state = 5;
+				start = p;
+				continue;
+			}
+			break;
+		case 5:
+			if(!(c >= 97 && c <= 122 || c >= 65 && c <= 90 || c >= 48 && c <= 57 || c == 58 || c == 46 || c == 95 || c == 45)) {
+				var tmp;
+				if(start == p) throw new js__$Boot_HaxeError("Expected attribute name");
+				tmp = HxOverrides.substr(str,start,p - start);
+				aname = tmp;
+				if(xml.exists(aname)) throw new js__$Boot_HaxeError("Duplicate attribute");
+				state = 0;
+				next = 6;
+				continue;
+			}
+			break;
+		case 6:
+			switch(c) {
+			case 61:
+				state = 0;
+				next = 7;
+				break;
+			default:
+				throw new js__$Boot_HaxeError("Expected =");
+			}
+			break;
+		case 7:
+			switch(c) {
+			case 34:case 39:
+				buf = new StringBuf();
+				state = 8;
+				start = p + 1;
+				attrValQuote = c;
+				break;
+			default:
+				throw new js__$Boot_HaxeError("Expected \"");
+			}
+			break;
+		case 8:
+			switch(c) {
+			case 38:
+				buf.addSub(str,start,p - start);
+				state = 18;
+				escapeNext = 8;
+				start = p + 1;
+				break;
+			case 62:
+				if(strict) throw new js__$Boot_HaxeError("Invalid unescaped " + String.fromCharCode(c) + " in attribute value"); else if(c == attrValQuote) {
+					buf.addSub(str,start,p - start);
+					var val = buf.b;
+					buf = new StringBuf();
+					xml.set(aname,val);
+					state = 0;
+					next = 4;
+				}
+				break;
+			case 60:
+				if(strict) throw new js__$Boot_HaxeError("Invalid unescaped " + String.fromCharCode(c) + " in attribute value"); else if(c == attrValQuote) {
+					buf.addSub(str,start,p - start);
+					var val1 = buf.b;
+					buf = new StringBuf();
+					xml.set(aname,val1);
+					state = 0;
+					next = 4;
+				}
+				break;
+			default:
+				if(c == attrValQuote) {
+					buf.addSub(str,start,p - start);
+					var val2 = buf.b;
+					buf = new StringBuf();
+					xml.set(aname,val2);
+					state = 0;
+					next = 4;
+				}
+			}
+			break;
+		case 9:
+			p = haxe_xml_Parser.doParse(str,strict,p,xml);
+			start = p;
+			state = 1;
+			break;
+		case 11:
+			switch(c) {
+			case 62:
+				state = 1;
+				break;
+			default:
+				throw new js__$Boot_HaxeError("Expected >");
+			}
+			break;
+		case 12:
+			switch(c) {
+			case 62:
+				if(nsubs == 0) parent.addChild(Xml.createPCData(""));
+				return p;
+			default:
+				throw new js__$Boot_HaxeError("Expected >");
+			}
+			break;
+		case 10:
+			if(!(c >= 97 && c <= 122 || c >= 65 && c <= 90 || c >= 48 && c <= 57 || c == 58 || c == 46 || c == 95 || c == 45)) {
+				if(start == p) throw new js__$Boot_HaxeError("Expected node name");
+				var v = HxOverrides.substr(str,start,p - start);
+				if(v != (function($this) {
+					var $r;
+					if(parent.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element but found " + parent.nodeType);
+					$r = parent.nodeName;
+					return $r;
+				}(this))) throw new js__$Boot_HaxeError("Expected </" + (function($this) {
+					var $r;
+					if(parent.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + parent.nodeType;
+					$r = parent.nodeName;
+					return $r;
+				}(this)) + ">");
+				state = 0;
+				next = 12;
+				continue;
+			}
+			break;
+		case 15:
+			if(c == 45 && str.charCodeAt(p + 1) == 45 && str.charCodeAt(p + 2) == 62) {
+				var xml1 = Xml.createComment(HxOverrides.substr(str,start,p - start));
+				parent.addChild(xml1);
+				nsubs++;
+				p += 2;
+				state = 1;
+			}
+			break;
+		case 16:
+			if(c == 91) nbrackets++; else if(c == 93) nbrackets--; else if(c == 62 && nbrackets == 0) {
+				var xml2 = Xml.createDocType(HxOverrides.substr(str,start,p - start));
+				parent.addChild(xml2);
+				nsubs++;
+				state = 1;
+			}
+			break;
+		case 14:
+			if(c == 63 && str.charCodeAt(p + 1) == 62) {
+				p++;
+				var str1 = HxOverrides.substr(str,start + 1,p - start - 2);
+				var xml3 = Xml.createProcessingInstruction(str1);
+				parent.addChild(xml3);
+				nsubs++;
+				state = 1;
+			}
+			break;
+		case 18:
+			if(c == 59) {
+				var s = HxOverrides.substr(str,start,p - start);
+				if(s.charCodeAt(0) == 35) {
+					var c1;
+					if(s.charCodeAt(1) == 120) c1 = Std.parseInt("0" + HxOverrides.substr(s,1,s.length - 1)); else c1 = Std.parseInt(HxOverrides.substr(s,1,s.length - 1));
+					buf.b += String.fromCharCode(c1);
+				} else if(!haxe_xml_Parser.escapes.exists(s)) {
+					if(strict) throw new js__$Boot_HaxeError("Undefined entity: " + s);
+					buf.b += Std.string("&" + s + ";");
+				} else buf.add(haxe_xml_Parser.escapes.get(s));
+				start = p + 1;
+				state = escapeNext;
+			} else if(!(c >= 97 && c <= 122 || c >= 65 && c <= 90 || c >= 48 && c <= 57 || c == 58 || c == 46 || c == 95 || c == 45) && c != 35) {
+				if(strict) throw new js__$Boot_HaxeError("Invalid character in entity: " + String.fromCharCode(c));
+				buf.b += "&";
+				buf.addSub(str,start,p - start);
+				p--;
+				start = p + 1;
+				state = escapeNext;
+			}
+			break;
+		}
+		c = StringTools.fastCodeAt(str,++p);
+	}
+	if(state == 1) {
+		start = p;
+		state = 13;
+	}
+	if(state == 13) {
+		if(p != start || nsubs == 0) {
+			buf.addSub(str,start,p - start);
+			var xml4 = Xml.createPCData(buf.b);
+			parent.addChild(xml4);
+			nsubs++;
+		}
+		return p;
+	}
+	if(!strict && state == 18 && escapeNext == 13) {
+		buf.b += "&";
+		buf.addSub(str,start,p - start);
+		var xml5 = Xml.createPCData(buf.b);
+		parent.addChild(xml5);
+		nsubs++;
+		return p;
+	}
+	throw new js__$Boot_HaxeError("Unexpected end");
+};
+var haxe_xml_Printer = function(pretty) {
+	this.output = new StringBuf();
+	this.pretty = pretty;
+};
+$hxClasses["haxe.xml.Printer"] = haxe_xml_Printer;
+haxe_xml_Printer.__name__ = ["haxe","xml","Printer"];
+haxe_xml_Printer.print = function(xml,pretty) {
+	if(pretty == null) pretty = false;
+	var printer = new haxe_xml_Printer(pretty);
+	printer.writeNode(xml,"");
+	return printer.output.b;
+};
+haxe_xml_Printer.prototype = {
+	output: null
+	,pretty: null
+	,writeNode: function(value,tabs) {
+		var _g = value.nodeType;
+		switch(_g) {
+		case 2:
+			this.output.b += Std.string(tabs + "<![CDATA[");
+			this.write(StringTools.trim((function($this) {
+				var $r;
+				if(value.nodeType == Xml.Document || value.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + value.nodeType);
+				$r = value.nodeValue;
+				return $r;
+			}(this))));
+			this.output.b += "]]>";
+			if(this.pretty) this.output.b += "";
+			break;
+		case 3:
+			var commentContent;
+			if(value.nodeType == Xml.Document || value.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + value.nodeType);
+			commentContent = value.nodeValue;
+			commentContent = new EReg("[\n\r\t]+","g").replace(commentContent,"");
+			commentContent = "<!--" + commentContent + "-->";
+			if(tabs == null) this.output.b += "null"; else this.output.b += "" + tabs;
+			this.write(StringTools.trim(commentContent));
+			if(this.pretty) this.output.b += "";
+			break;
+		case 6:
+			var $it0 = (function($this) {
+				var $r;
+				if(value.nodeType != Xml.Document && value.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element or Document but found " + value.nodeType);
+				$r = HxOverrides.iter(value.children);
+				return $r;
+			}(this));
+			while( $it0.hasNext() ) {
+				var child = $it0.next();
+				this.writeNode(child,tabs);
+			}
+			break;
+		case 0:
+			this.output.b += Std.string(tabs + "<");
+			this.write((function($this) {
+				var $r;
+				if(value.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element but found " + value.nodeType);
+				$r = value.nodeName;
+				return $r;
+			}(this)));
+			var $it1 = value.attributes();
+			while( $it1.hasNext() ) {
+				var attribute = $it1.next();
+				this.output.b += Std.string(" " + attribute + "=\"");
+				this.write(StringTools.htmlEscape(value.get(attribute),true));
+				this.output.b += "\"";
+			}
+			if(this.hasChildren(value)) {
+				this.output.b += ">";
+				if(this.pretty) this.output.b += "";
+				var $it2 = (function($this) {
+					var $r;
+					if(value.nodeType != Xml.Document && value.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element or Document but found " + value.nodeType);
+					$r = HxOverrides.iter(value.children);
+					return $r;
+				}(this));
+				while( $it2.hasNext() ) {
+					var child1 = $it2.next();
+					this.writeNode(child1,this.pretty?tabs + "\t":tabs);
+				}
+				this.output.b += Std.string(tabs + "</");
+				this.write((function($this) {
+					var $r;
+					if(value.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element but found " + value.nodeType);
+					$r = value.nodeName;
+					return $r;
+				}(this)));
+				this.output.b += ">";
+				if(this.pretty) this.output.b += "";
+			} else {
+				this.output.b += "/>";
+				if(this.pretty) this.output.b += "";
+			}
+			break;
+		case 1:
+			var nodeValue;
+			if(value.nodeType == Xml.Document || value.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + value.nodeType);
+			nodeValue = value.nodeValue;
+			if(nodeValue.length != 0) {
+				this.write(tabs + StringTools.htmlEscape(nodeValue));
+				if(this.pretty) this.output.b += "";
+			}
+			break;
+		case 5:
+			this.write("<?" + (function($this) {
+				var $r;
+				if(value.nodeType == Xml.Document || value.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + value.nodeType);
+				$r = value.nodeValue;
+				return $r;
+			}(this)) + "?>");
+			break;
+		case 4:
+			this.write("<!DOCTYPE " + (function($this) {
+				var $r;
+				if(value.nodeType == Xml.Document || value.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + value.nodeType);
+				$r = value.nodeValue;
+				return $r;
+			}(this)) + ">");
+			break;
+		}
+	}
+	,write: function(input) {
+		if(input == null) this.output.b += "null"; else this.output.b += "" + input;
+	}
+	,hasChildren: function(value) {
+		var $it0 = (function($this) {
+			var $r;
+			if(value.nodeType != Xml.Document && value.nodeType != Xml.Element) throw new js__$Boot_HaxeError("Bad node type, expected Element or Document but found " + value.nodeType);
+			$r = HxOverrides.iter(value.children);
+			return $r;
+		}(this));
+		while( $it0.hasNext() ) {
+			var child = $it0.next();
+			var _g = child.nodeType;
+			switch(_g) {
+			case 0:case 1:
+				return true;
+			case 2:case 3:
+				if(StringTools.ltrim((function($this) {
+					var $r;
+					if(child.nodeType == Xml.Document || child.nodeType == Xml.Element) throw new js__$Boot_HaxeError("Bad node type, unexpected " + child.nodeType);
+					$r = child.nodeValue;
+					return $r;
+				}(this))).length != 0) return true;
+				break;
+			default:
+			}
+		}
+		return false;
+	}
+	,__class__: haxe_xml_Printer
+};
 var js__$Boot_HaxeError = function(val) {
 	Error.call(this);
 	this.val = val;
@@ -2985,6 +4390,7 @@ textifician_mapping_LocationDefinition.prototype = {
 	,generalFixtures: null
 	,fixtureDensity: null
 	,priorityIndex: null
+	,testbool: null
 	,setSize: function(val) {
 		this.size = val;
 		return this;
@@ -3921,6 +5327,13 @@ var ArrayBuffer = $global.ArrayBuffer || js_html_compat_ArrayBuffer;
 if(ArrayBuffer.prototype.slice == null) ArrayBuffer.prototype.slice = js_html_compat_ArrayBuffer.sliceImpl;
 var DataView = $global.DataView || js_html_compat_DataView;
 var Uint8Array = $global.Uint8Array || js_html_compat_Uint8Array._new;
+Xml.Element = 0;
+Xml.PCData = 1;
+Xml.CData = 2;
+Xml.Comment = 3;
+Xml.DocType = 4;
+Xml.ProcessingInstruction = 5;
+Xml.Document = 6;
 de_polygonal_ds_HashKey._counter = 0;
 haxe_Serializer.USE_CACHE = false;
 haxe_Serializer.USE_ENUM_INDEX = false;
@@ -3932,6 +5345,17 @@ haxe_io_FPHelper.i64tmp = (function($this) {
 	var $r;
 	var x = new haxe__$Int64__$_$_$Int64(0,0);
 	$r = x;
+	return $r;
+}(this));
+haxe_xml_Parser.escapes = (function($this) {
+	var $r;
+	var h = new haxe_ds_StringMap();
+	if(__map_reserved.lt != null) h.setReserved("lt","<"); else h.h["lt"] = "<";
+	if(__map_reserved.gt != null) h.setReserved("gt",">"); else h.h["gt"] = ">";
+	if(__map_reserved.amp != null) h.setReserved("amp","&"); else h.h["amp"] = "&";
+	if(__map_reserved.quot != null) h.setReserved("quot","\""); else h.h["quot"] = "\"";
+	if(__map_reserved.apos != null) h.setReserved("apos","'"); else h.h["apos"] = "'";
+	$r = h;
 	return $r;
 }(this));
 js_Boot.__toStr = {}.toString;
@@ -3950,7 +5374,8 @@ textifician_mapping_IndoorLocationSpecs.DEFAULT_WALL_THICKNESS = 1;
 textifician_mapping_IndoorLocationSpecs.DEFAULT_WALL_STRENGTH = 1;
 textifician_mapping_IndoorLocationSpecs.DEFAULT_CEILING_THICKNESS = 1;
 textifician_mapping_IndoorLocationSpecs.DEFAULT_CEILING_STRENGTH = 1;
-textifician_mapping_LocationDefinition.__meta__ = { fields : { id : { readonly : null}, flags : { bitmask : ["FLAG"]}, type : { values : ["TYPE"]}, envFlags : { bitmask : ["ENV"]}, defaultLighting : { range : ["LIGHTING"]}, fixtureDensity : { range : ["DENSITY"]}}};
+textifician_mapping_LocationDefinition.__meta__ = { fields : { label : { inspect : null}, description : { inspect : [{ display : "textarea"}]}, flags : { inspect : null, bitmask : ["FLAG"]}, size : { inspect : null}, type : { inspect : [{ display : "selector", choices : [0,1,2]}], choices : ["TYPE"]}, envFlags : { inspect : null, bitmask : ["ENV"]}, defaultLighting : { inspect : [{ display : "range", value : 2}], range : ["LIGHTING"]}, fixtureDensity : { inspect : [{ display : "range"}], range : ["DENSITY"]}, priorityIndex : { inspect : null}, testbool : { inspect : null}}};
+textifician_mapping_LocationDefinition.__rtti = "<class path=\"textifician.mapping.LocationDefinition\" params=\"\">\n\t<FLAG_ENTRANCE public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;0)\" line=\"12\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<0)]]></e></m></meta>\n\t</FLAG_ENTRANCE>\n\t<FLAG_DOOR public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;1)\" line=\"13\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<1)]]></e></m></meta>\n\t</FLAG_DOOR>\n\t<FLAG_KEY public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;2)\" line=\"14\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<2)]]></e></m></meta>\n\t</FLAG_KEY>\n\t<FLAG_LANDMARK public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;3)\" line=\"15\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<3)]]></e></m></meta>\n\t</FLAG_LANDMARK>\n\t<FLAG_ENCLOSED public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;4)\" line=\"16\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<4)]]></e></m></meta>\n\t</FLAG_ENCLOSED>\n\t<TYPE_POINT public=\"1\" get=\"inline\" set=\"null\" expr=\"0\" line=\"18\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>0</e></m></meta>\n\t</TYPE_POINT>\n\t<TYPE_PATH public=\"1\" get=\"inline\" set=\"null\" expr=\"1\" line=\"19\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</TYPE_PATH>\n\t<TYPE_REGION public=\"1\" get=\"inline\" set=\"null\" expr=\"2\" line=\"20\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>2</e></m></meta>\n\t</TYPE_REGION>\n\t<ENV_WALL_1 public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;0)\" line=\"22\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<0)]]></e></m></meta>\n\t</ENV_WALL_1>\n\t<ENV_WALL_2 public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;1)\" line=\"23\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<1)]]></e></m></meta>\n\t</ENV_WALL_2>\n\t<ENV_CEILING_1 public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;2)\" line=\"24\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<2)]]></e></m></meta>\n\t</ENV_CEILING_1>\n\t<ENV_CEILING_2 public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;3)\" line=\"25\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<3)]]></e></m></meta>\n\t</ENV_CEILING_2>\n\t<LIGHTING_NONE_OR_OUT public=\"1\" get=\"inline\" set=\"null\" expr=\"0\" line=\"29\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>0</e></m></meta>\n\t</LIGHTING_NONE_OR_OUT>\n\t<LIGHTING_DIM public=\"1\" get=\"inline\" set=\"null\" expr=\"1\" line=\"30\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</LIGHTING_DIM>\n\t<LIGHTING_NORMAL public=\"1\" get=\"inline\" set=\"null\" expr=\"2\" line=\"31\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>2</e></m></meta>\n\t</LIGHTING_NORMAL>\n\t<LIGHTING_BRIGHT public=\"1\" get=\"inline\" set=\"null\" expr=\"3\" line=\"32\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>3</e></m></meta>\n\t</LIGHTING_BRIGHT>\n\t<DENSITY_NONE public=\"1\" get=\"inline\" set=\"null\" expr=\"0\" line=\"34\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>0</e></m></meta>\n\t</DENSITY_NONE>\n\t<DENSITY_VERY_SPARSE public=\"1\" get=\"inline\" set=\"null\" expr=\"1\" line=\"35\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DENSITY_VERY_SPARSE>\n\t<DENSITY_SPARSE public=\"1\" get=\"inline\" set=\"null\" expr=\"2\" line=\"36\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>2</e></m></meta>\n\t</DENSITY_SPARSE>\n\t<DENSITY_AVERAGE public=\"1\" get=\"inline\" set=\"null\" expr=\"3\" line=\"37\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>3</e></m></meta>\n\t</DENSITY_AVERAGE>\n\t<DENSITY_DENSE public=\"1\" get=\"inline\" set=\"null\" expr=\"4\" line=\"38\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>4</e></m></meta>\n\t</DENSITY_DENSE>\n\t<DENSITY_VERY_DENSE public=\"1\" get=\"inline\" set=\"null\" expr=\"5\" line=\"39\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>5</e></m></meta>\n\t</DENSITY_VERY_DENSE>\n\t<SHELTER_NONE public=\"1\" get=\"inline\" set=\"null\" expr=\"0\" line=\"41\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>0</e></m></meta>\n\t</SHELTER_NONE>\n\t<SHELTER_SPARSE public=\"1\" get=\"inline\" set=\"null\" expr=\"1\" line=\"42\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</SHELTER_SPARSE>\n\t<SHELTER_HALF public=\"1\" get=\"inline\" set=\"null\" expr=\"2\" line=\"43\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>2</e></m></meta>\n\t</SHELTER_HALF>\n\t<SHELTER_FULL public=\"1\" get=\"inline\" set=\"null\" expr=\"3\" line=\"44\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>3</e></m></meta>\n\t</SHELTER_FULL>\n\t<create public=\"1\" set=\"method\" line=\"69\" static=\"1\">\n\t\t<f a=\"type:label:?id\" v=\"::null\">\n\t\t\t<x path=\"Int\"/>\n\t\t\t<c path=\"String\"/>\n\t\t\t<c path=\"String\"/>\n\t\t\t<c path=\"textifician.mapping.LocationDefinition\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{id:null}</e></m></meta>\n\t</create>\n\t<createWithMatchingId public=\"1\" set=\"method\" line=\"90\" static=\"1\">\n\t\t<f a=\"type:label:?id:?doSlugify:?camelCase\" v=\"::null:false:false\">\n\t\t\t<x path=\"Int\"/>\n\t\t\t<c path=\"String\"/>\n\t\t\t<c path=\"String\"/>\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<c path=\"textifician.mapping.LocationDefinition\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{camelCase:false,doSlugify:false,id:null}</e></m></meta>\n\t</createWithMatchingId>\n\t<slugify public=\"1\" get=\"inline\" set=\"null\" line=\"110\" static=\"1\"><f a=\"label\">\n\t<c path=\"String\"/>\n\t<c path=\"String\"/>\n</f></slugify>\n\t<camelizeSlug public=\"1\" get=\"inline\" set=\"null\" line=\"132\" static=\"1\"><f a=\"slug\">\n\t<c path=\"String\"/>\n\t<c path=\"String\"/>\n</f></camelizeSlug>\n\t<id public=\"1\"><c path=\"String\"/></id>\n\t<label public=\"1\">\n\t\t<c path=\"String\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</label>\n\t<description public=\"1\">\n\t\t<c path=\"String\"/>\n\t\t<meta><m n=\"inspect\"><e>{display:\"textarea\"}</e></m></meta>\n\t</description>\n\t<flags public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"/>\n\t\t\t<m n=\"bitmask\"><e>\"FLAG\"</e></m>\n\t\t</meta>\n\t</flags>\n\t<size public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</size>\n\t<type public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"><e>{display:\"selector\",choices:[0,1,2]}</e></m>\n\t\t\t<m n=\"choices\"><e>\"TYPE\"</e></m>\n\t\t</meta>\n\t</type>\n\t<envFlags public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"/>\n\t\t\t<m n=\"bitmask\"><e>\"ENV\"</e></m>\n\t\t</meta>\n\t</envFlags>\n\t<indoorLocationSpecs public=\"1\"><c path=\"textifician.mapping.IndoorLocationSpecs\"/></indoorLocationSpecs>\n\t<defaultLighting public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"><e>{display:\"range\",value:2}</e></m>\n\t\t\t<m n=\"range\"><e>\"LIGHTING\"</e></m>\n\t\t</meta>\n\t</defaultLighting>\n\t<generalFixtures public=\"1\"><c path=\"Array\"><c path=\"String\"/></c></generalFixtures>\n\t<fixtureDensity public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"><e>{display:\"range\"}</e></m>\n\t\t\t<m n=\"range\"><e>\"DENSITY\"</e></m>\n\t\t</meta>\n\t</fixtureDensity>\n\t<priorityIndex public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</priorityIndex>\n\t<testbool public=\"1\">\n\t\t<x path=\"Bool\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</testbool>\n\t<setSize public=\"1\" set=\"method\" line=\"81\"><f a=\"val\">\n\t<x path=\"Float\"/>\n\t<c path=\"textifician.mapping.LocationDefinition\"/>\n</f></setSize>\n\t<setDescription public=\"1\" set=\"method\" line=\"85\"><f a=\"val\">\n\t<c path=\"String\"/>\n\t<c path=\"textifician.mapping.LocationDefinition\"/>\n</f></setDescription>\n\t<makeDoor public=\"1\" set=\"method\" line=\"148\">\n\t\t<f a=\"?val:?implyEntrance\" v=\"true:true\">\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<c path=\"textifician.mapping.LocationDefinition\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{implyEntrance:true,val:true}</e></m></meta>\n\t</makeDoor>\n\t<makeEntrance public=\"1\" set=\"method\" line=\"159\">\n\t\t<f a=\"?val\" v=\"true\">\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<c path=\"textifician.mapping.LocationDefinition\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{val:true}</e></m></meta>\n\t</makeEntrance>\n\t<makeKey public=\"1\" set=\"method\" line=\"169\">\n\t\t<f a=\"?val\" v=\"true\">\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<c path=\"textifician.mapping.LocationDefinition\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{val:true}</e></m></meta>\n\t</makeKey>\n\t<makeLandmark public=\"1\" set=\"method\" line=\"179\">\n\t\t<f a=\"?val\" v=\"true\">\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<c path=\"textifician.mapping.LocationDefinition\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{val:true}</e></m></meta>\n\t</makeLandmark>\n\t<resetShelterFlags get=\"inline\" set=\"null\" line=\"189\"><f a=\"\"><x path=\"Void\"/></f></resetShelterFlags>\n\t<resetShelterWallFlags get=\"inline\" set=\"null\" line=\"192\"><f a=\"\"><x path=\"Void\"/></f></resetShelterWallFlags>\n\t<resetShelterCeilingFlags get=\"inline\" set=\"null\" line=\"195\"><f a=\"\"><x path=\"Void\"/></f></resetShelterCeilingFlags>\n\t<makeFullyIndoor public=\"1\" set=\"method\" line=\"199\"><f a=\"\"><c path=\"textifician.mapping.LocationDefinition\"/></f></makeFullyIndoor>\n\t<makeFullyOutdoor public=\"1\" set=\"method\" line=\"205\"><f a=\"\"><c path=\"textifician.mapping.LocationDefinition\"/></f></makeFullyOutdoor>\n\t<setupIndoorLocationSpecs public=\"1\" set=\"method\" line=\"210\"><f a=\"locationSpecs\">\n\t<c path=\"textifician.mapping.IndoorLocationSpecs\"/>\n\t<c path=\"textifician.mapping.LocationDefinition\"/>\n</f></setupIndoorLocationSpecs>\n\t<setupShelterAmounts public=\"1\" set=\"method\" line=\"221\"><f a=\"wallAmount:ceilingAmount\">\n\t<x path=\"Int\"/>\n\t<x path=\"Int\"/>\n\t<c path=\"textifician.mapping.LocationDefinition\"/>\n</f></setupShelterAmounts>\n\t<setWallAmount public=\"1\" set=\"method\" line=\"228\"><f a=\"wallAmount\">\n\t<x path=\"Int\"/>\n\t<c path=\"textifician.mapping.LocationDefinition\"/>\n</f></setWallAmount>\n\t<setCeilingAmount public=\"1\" set=\"method\" line=\"234\"><f a=\"ceilingAmount\">\n\t<x path=\"Int\"/>\n\t<c path=\"textifician.mapping.LocationDefinition\"/>\n</f></setCeilingAmount>\n\t<new public=\"1\" set=\"method\" line=\"240\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":directlyUsed\"/>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
 textifician_mapping_LocationDefinition.FLAG_ENTRANCE = 1;
 textifician_mapping_LocationDefinition.FLAG_DOOR = 2;
 textifician_mapping_LocationDefinition.FLAG_KEY = 4;
@@ -3963,7 +5388,7 @@ textifician_mapping_LocationDefinition.ENV_WALL_1 = 1;
 textifician_mapping_LocationDefinition.ENV_WALL_2 = 2;
 textifician_mapping_LocationDefinition.ENV_CEILING_1 = 4;
 textifician_mapping_LocationDefinition.ENV_CEILING_2 = 8;
-textifician_mapping_LocationDefinition.LIGHTING_NONE_OR_OUTDOOR = 0;
+textifician_mapping_LocationDefinition.LIGHTING_NONE_OR_OUT = 0;
 textifician_mapping_LocationDefinition.LIGHTING_DIM = 1;
 textifician_mapping_LocationDefinition.LIGHTING_NORMAL = 2;
 textifician_mapping_LocationDefinition.LIGHTING_BRIGHT = 3;
