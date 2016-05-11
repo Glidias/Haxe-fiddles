@@ -130,30 +130,35 @@ function guiGlueRender(paramsGUI, optionsGUI, params, existingGUI) {
 				handle = folder.add(params, key, options.min, options.max);
 				break;
 		}
-
-		if (handle && options.onChange)
-			handle.onChange(options.onChange);
-
-		if (handle && options.onFinishChange)
-			handle.onChange(options.onFinishChange);
-
-		if (handle && options.listen)
-			handle.listen();
+		if (handle) {
 			
-		// style parent LI with custom classes
-		if (handle && options._classes) {
-			// warning: hackish way to get LI tag
-			var a = handle.domElement.parentNode.parentNode;
-			if (a.classList) {
-				a.classList.add.apply(a.classList, options._classes);
-				
-			} else {
-				a.className += ' '+options._classes.join(" ");
-			}
-		}
-		
-		if (handle) handle["_guiGlue"] = options;
+			if ( options.onChange)
+				handle.onChange(options.onChange);
 
+			if ( options.onFinishChange)
+				handle.onChange(options.onFinishChange);
+
+			if (  options.listen)
+				handle.listen();
+				
+			// style parent LI with custom classes
+			if (  options._classes) {
+				// warning: hackish way to get LI tag
+				var a = handle.domElement.parentNode.parentNode;
+				if (a.classList) {
+					a.classList.add.apply(a.classList, options._classes);
+					
+				} else {
+					a.className += ' '+options._classes.join(" ");
+				}
+			}
+			if  (options._readonly && handle["__input"]) {
+				
+				handle.__input.setAttribute("readonly", "readonly")
+			}
+			handle["_guiGlue"] = options;
+			
+		}
 	}
 	
 	

@@ -43,7 +43,7 @@ class LocationDefinition
 	public static inline var SHELTER_HALF:Int = 2;
 	public static inline var SHELTER_FULL:Int = 3;
 
-	public var id:String;
+	@inspect({_readonly:true}) public var id:String;
 	
 	@inspect public var label:String;
 	@inspect({display:"textarea" }) public var description:String;

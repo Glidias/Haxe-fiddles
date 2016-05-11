@@ -630,6 +630,7 @@
 .dg input[type=text] {
 	font-size:12px;
 }
+
 li.folder.bitmask ul {
 	background-color:black;
 }
@@ -698,7 +699,7 @@ with allowances for the title (top) and the resize handle (bottom)
   top: 14px;
 }
 #locationDefGUI > ul:before {
-	content: 'location definition:';
+	content: 'location definition';
 	display:block;
 	padding-left:10px;
 	background-color:#666666;	
@@ -717,6 +718,11 @@ with allowances for the title (top) and the resize handle (bottom)
 	font-weight:normal;
 }
  canvas:focus{outline:none;}
+ 
+ .dg input[readonly=readonly] {
+	color:yellow !important;
+}
+
 </style>
 </head>
 <body onload="init()" style="margin:0;padding:0">

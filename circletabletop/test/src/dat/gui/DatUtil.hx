@@ -20,6 +20,13 @@ class DatUtil
 		return a1.concat(a2);
 	}
 	
+	/**
+	 * Sets up inspectable parameters for guiGlue (glidias' fork) utility for DATGUI with a Haxe classes/instances containing RTTI data.
+	 * @param	instance
+	 * @param	classe
+	 * @param	options
+	 * @return
+	 */
 	public static function setup(instance:Dynamic, classe:Class<Dynamic>=null, options:Dynamic=null):Dynamic 
 	{
 		if (classe == null) classe = Type.getClass(instance);
@@ -247,23 +254,4 @@ class DatUtil
 		return fieldHash;
 	}
 	
-	/*
-	public static function setupDatGui(gui:GUI, instance:Dynamic, classe:Class<Dynamic>=null):Dynamic 
-	{
-		if (classe == null) classe = Type.getClass(instance);
-		var rtti = Rtti.getRtti(classe);
-		var fieldHash = { };
-		var fields = rtti.fields;
-		var fieldsI = fields.iterator();
-		
-		
-		for (f in fieldsI) {
-			//if (TypeApi.isVar(f.type)) {
-				//Reflect.setField(fieldHash, f.name, gui.add(instance, f.name));
-			//}
-		}
-		
-		return fieldHash;
-	}
-	*/
 }
