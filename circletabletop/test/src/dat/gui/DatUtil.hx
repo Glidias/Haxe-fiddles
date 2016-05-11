@@ -16,6 +16,9 @@ import haxe.rtti.Rtti;
 @:expose
 class DatUtil
 {
+	private static function _concatDyn(a1:Array<Dynamic>, a2:Array<Dynamic>):Array<Dynamic> {
+		return a1.concat(a2);
+	}
 	
 	public static function setup(instance:Dynamic, classe:Class<Dynamic>=null, options:Dynamic=null):Dynamic 
 	{
@@ -29,7 +32,7 @@ class DatUtil
 		var fieldHash = { };
 		var fields = rtti.fields;
 		var fieldsI = fields.iterator();
-		// @bitmask folders TODO
+		// @bitmask folders 
 		// @choices combo list
 		// @textarea  display:textarea
 		// @range   display:range
@@ -38,6 +41,13 @@ class DatUtil
 		
 		var cur:Dynamic;
 		var curVal:Dynamic;
+		var frStatics;
+					var frParams:Array<Dynamic>;
+				var frValue:Dynamic;
+				var frPrefix:String = null;
+				
+				var frI:Int;
+				
 		for (f in fieldsI) {
 			var fieldMeta = Reflect.field(meta, f.name);
 			
@@ -64,8 +74,35 @@ class DatUtil
 					if (typeStr == "Int" || typeStr == "UInt") {  // handle integer case
 						
 						if (Reflect.hasField(fieldMeta, "bitmask")) {
-							// TODO: bitmask case for integer data type
+	
+							var bitMaskFolder = { _classes: (Reflect.hasField(cur, "_classes") ? _concatDyn(["bitmask"], Reflect.field(cur, "_classes")) : ["bitmask"] ) }; //
 							
+							var gotBits = false;
+							var bitFieldMeta = Reflect.field(fieldMeta, "bitmask")[0];
+							if ( Std.is(bitFieldMeta, String)) {
+								frValue = bitFieldMeta;
+								frStatics = rtti.statics.iterator();
+								for (f in frStatics) {
+									frI = f.name.indexOf("_");
+									if (frI >= 0) {
+										gotBits = true;
+										frPrefix = f.name.substring(0, frI);
+										if (frPrefix == frValue) {	
+											
+											Reflect.setField(bitMaskFolder, f.name.substring(frI + 1),  {value:false});
+										}
+									}
+								}
+							}
+							else { // create default 32 bits
+								for (i in 0...32) {
+									Reflect.setField(bitMaskFolder, "b"+Std.string(i), {value:false});
+								}
+								gotBits = true;
+							}
+							
+							if (gotBits) Reflect.setField(fieldHash, f.name, bitMaskFolder);
+
 							//Reflect.setField(fieldHash, f.name, cur);
 							
 						}
@@ -87,9 +124,6 @@ class DatUtil
 						Reflect.setField(fieldHash, f.name, cur);
 						Reflect.setField(cur, "_isLeaf", true);
 					}
-					
-					
-					
 				}
 				else if (typeStr == "String") {
 					
@@ -111,16 +145,25 @@ class DatUtil
 					Reflect.setField(fieldHash, f.name, cur);
 					Reflect.setField(cur, "_isLeaf", true);
 				}
-				else {
-					trace("TODO: Could not resolve data type at the moment for:" + typeStr + ", " + f.name);
+				else {  // nested object case
+					var tryInstance = Reflect.getProperty(instance, f.name);
+					var instanceAvailable:Bool = true;
+					
+					if (tryInstance == null) {
+						instanceAvailable = false;
+						tryInstance = Type.createInstance( Type.resolveClass(typeStr), [] );  //Type.createEmptyInstance(Type.resolveClass(typeStr)); // 
+					}
+					var nested;
+					
+					Reflect.setField(fieldHash, f.name, nested=setup(tryInstance, Type.resolveClass(typeStr), f.type) );
+					Reflect.setField(nested, "_folded", instanceAvailable ? false : true );
+					Reflect.setField(nested, "_classes", ["instance"] );
+					
+					
 				}
 				//Reflect.setField(fieldHash, f.name, gui.add(instance, f.name));		
 				
-				var frParams:Array<Dynamic>;
-				var frValue:Dynamic;
-				var frPrefix:String = null;
-				var frStatics;
-				var frI:Int;
+	
 				
 				if (Reflect.hasField(fieldMeta, "range")) {
 					// check if choices[0] is a string static "string_" lookup, else woudl be either
@@ -134,7 +177,7 @@ class DatUtil
 							
 							var frEnum:Dynamic = {  };
 							// set min max based on static lookups
-							var min = 1e20;
+							var min = 1e20;	
 							var max = -1e20;
 							frStatics = rtti.statics.iterator();
 							for (f in frStatics) {
@@ -197,6 +240,7 @@ class DatUtil
 			}
 		}
 		
+		Reflect.setField(fieldHash, "_hxclass", Type.getClassName(classe) );
 		return fieldHash;
 	}
 	

@@ -46,24 +46,24 @@ class LocationDefinition
 	public var id:String;
 	
 	@inspect public var label:String;
-	@inspect({display:"textarea"}) public var description:String;
+	@inspect({display:"textarea" }) public var description:String;
 	@inspect @bitmask("FLAG") public var flags:Int;
 	@inspect public var size:Float; // convention for now: radius for TYPE_REGION, TYPE_POINT N/A, and TYPE_PATH size determines width of path 
 	@inspect({display:"selector", choices:[0,1,2]}) @choices("TYPE") public var type:Int;
 	
-	@inspect @bitmask("ENV") public var envFlags:Int;
-	public var indoorLocationSpecs:IndoorLocationSpecs;
+	@inspect() @bitmask("ENV") public var envFlags:Int;
+
 	@inspect({display:"range", value:2}) @range("LIGHTING") public var defaultLighting:Int;
 	
 	// procedural generation
 	public var generalFixtures:Array<String>;  // array of fixture definitions 
 	@inspect({display:"range"}) @range("DENSITY") public var fixtureDensity:Int;  // density of fixtures
-	
 
 	// variable that might be useful for point to point distance/breakpoint arc resolution
 	@inspect public var priorityIndex:Int;
 	
-	@inspect public var testbool:Bool;
+	@inspect public var indoorLocationSpecs:IndoorLocationSpecs;
+
 	
 
 	public static function create(type:Int, label:String, id:String=null):LocationDefinition {
@@ -239,7 +239,7 @@ class LocationDefinition
 	
 	public function new() 
 	{
-		
+		//indoorLocationSpecs = IndoorLocationSpecs.create();
 	}
 	
 }

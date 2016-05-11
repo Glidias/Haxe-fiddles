@@ -382,6 +382,32 @@ Type.resolveEnum = function(name) {
 	if(e == null || !e.__ename__) return null;
 	return e;
 };
+Type.createInstance = function(cl,args) {
+	var _g = args.length;
+	switch(_g) {
+	case 0:
+		return new cl();
+	case 1:
+		return new cl(args[0]);
+	case 2:
+		return new cl(args[0],args[1]);
+	case 3:
+		return new cl(args[0],args[1],args[2]);
+	case 4:
+		return new cl(args[0],args[1],args[2],args[3]);
+	case 5:
+		return new cl(args[0],args[1],args[2],args[3],args[4]);
+	case 6:
+		return new cl(args[0],args[1],args[2],args[3],args[4],args[5]);
+	case 7:
+		return new cl(args[0],args[1],args[2],args[3],args[4],args[5],args[6]);
+	case 8:
+		return new cl(args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7]);
+	default:
+		throw new js__$Boot_HaxeError("Too many arguments");
+	}
+	return null;
+};
 Type.createEmptyInstance = function(cl) {
 	function empty() {}; empty.prototype = cl.prototype;
 	return new empty();
@@ -577,6 +603,9 @@ Xml.prototype = {
 var dat_gui_DatUtil = $hx_exports.dat.gui.DatUtil = function() { };
 $hxClasses["dat.gui.DatUtil"] = dat_gui_DatUtil;
 dat_gui_DatUtil.__name__ = ["dat","gui","DatUtil"];
+dat_gui_DatUtil._concatDyn = function(a1,a2) {
+	return a1.concat(a2);
+};
 dat_gui_DatUtil.setup = function(instance,classe,options) {
 	if(classe == null) classe = Type.getClass(instance);
 	if(options == null) options = { };
@@ -588,6 +617,11 @@ dat_gui_DatUtil.setup = function(instance,classe,options) {
 	var fieldsI = new _$List_ListIterator(fields.h);
 	var cur;
 	var curVal;
+	var frStatics;
+	var frParams;
+	var frValue;
+	var frPrefix = null;
+	var frI;
 	var _g = fieldsI;
 	while(_g.head != null) {
 		var f;
@@ -609,6 +643,38 @@ dat_gui_DatUtil.setup = function(instance,classe,options) {
 				cur.value = curVal;
 				if(typeStr == "Int" || typeStr == "UInt") {
 					if(Object.prototype.hasOwnProperty.call(fieldMeta,"bitmask")) {
+						var bitMaskFolder = { _classes : Object.prototype.hasOwnProperty.call(cur,"_classes")?dat_gui_DatUtil._concatDyn(["bitmask"],Reflect.field(cur,"_classes")):["bitmask"]};
+						var gotBits = false;
+						var bitFieldMeta = Reflect.field(fieldMeta,"bitmask")[0];
+						if(typeof(bitFieldMeta) == "string") {
+							frValue = bitFieldMeta;
+							frStatics = new _$List_ListIterator(rtti.statics.h);
+							var _g1 = frStatics;
+							while(_g1.head != null) {
+								var f1;
+								f1 = (function($this) {
+									var $r;
+									_g1.val = _g1.head[0];
+									_g1.head = _g1.head[1];
+									$r = _g1.val;
+									return $r;
+								}(this));
+								frI = f1.name.indexOf("_");
+								if(frI >= 0) {
+									gotBits = true;
+									frPrefix = f1.name.substring(0,frI);
+									if(frPrefix == frValue) Reflect.setField(bitMaskFolder,f1.name.substring(frI + 1),{ value : false});
+								}
+							}
+						} else {
+							var _g2 = 0;
+							while(_g2 < 32) {
+								var i = _g2++;
+								bitMaskFolder["b" + (i == null?"null":"" + i)] = { value : false};
+							}
+							gotBits = true;
+						}
+						if(gotBits) fieldHash[f.name] = bitMaskFolder;
 					} else {
 						if(!Object.prototype.hasOwnProperty.call(cur,"step")) cur.step = 1;
 						if(typeStr == "UInt" && !Object.prototype.hasOwnProperty.call(cur,"min")) cur.min = 0;
@@ -629,12 +695,18 @@ dat_gui_DatUtil.setup = function(instance,classe,options) {
 				cur.value = curVal;
 				fieldHash[f.name] = cur;
 				cur._isLeaf = true;
-			} else console.log("TODO: Could not resolve data type at the moment for:" + typeStr + ", " + f.name);
-			var frParams;
-			var frValue;
-			var frPrefix = null;
-			var frStatics;
-			var frI;
+			} else {
+				var tryInstance = Reflect.getProperty(instance,f.name);
+				var instanceAvailable = true;
+				if(tryInstance == null) {
+					instanceAvailable = false;
+					tryInstance = Type.createInstance(Type.resolveClass(typeStr),[]);
+				}
+				var nested;
+				Reflect.setField(fieldHash,f.name,nested = dat_gui_DatUtil.setup(tryInstance,Type.resolveClass(typeStr),f.type));
+				if(instanceAvailable) nested._folded = false; else nested._folded = true;
+				nested._classes = ["instance"];
+			}
 			if(Object.prototype.hasOwnProperty.call(fieldMeta,"range")) {
 				frParams = Reflect.field(fieldMeta,"range");
 				if(frParams != null && frParams.length > 0) {
@@ -644,25 +716,25 @@ dat_gui_DatUtil.setup = function(instance,classe,options) {
 						var min = 1e20;
 						var max = -1e20;
 						frStatics = new _$List_ListIterator(rtti.statics.h);
-						var _g1 = frStatics;
-						while(_g1.head != null) {
-							var f1;
-							f1 = (function($this) {
+						var _g3 = frStatics;
+						while(_g3.head != null) {
+							var f2;
+							f2 = (function($this) {
 								var $r;
-								_g1.val = _g1.head[0];
-								_g1.head = _g1.head[1];
-								$r = _g1.val;
+								_g3.val = _g3.head[0];
+								_g3.head = _g3.head[1];
+								$r = _g3.val;
 								return $r;
 							}(this));
-							frI = f1.name.indexOf("_");
+							frI = f2.name.indexOf("_");
 							if(frI >= 0) {
-								frPrefix = f1.name.substring(0,frI);
+								frPrefix = f2.name.substring(0,frI);
 								if(frPrefix == frValue) {
 									var v;
-									v = Reflect.field(classe,f1.name);
+									v = Reflect.field(classe,f2.name);
 									if(v > max) max = v;
 									if(v < min) min = v;
-									Reflect.setField(frEnum,f1.name.substring(frI + 1),v);
+									Reflect.setField(frEnum,f2.name.substring(frI + 1),v);
 								}
 							}
 						}
@@ -682,20 +754,20 @@ dat_gui_DatUtil.setup = function(instance,classe,options) {
 					if(typeof(frValue) == "string") {
 						var frChoices = { };
 						frStatics = new _$List_ListIterator(rtti.statics.h);
-						var _g2 = frStatics;
-						while(_g2.head != null) {
-							var f2;
-							f2 = (function($this) {
+						var _g4 = frStatics;
+						while(_g4.head != null) {
+							var f3;
+							f3 = (function($this) {
 								var $r;
-								_g2.val = _g2.head[0];
-								_g2.head = _g2.head[1];
-								$r = _g2.val;
+								_g4.val = _g4.head[0];
+								_g4.head = _g4.head[1];
+								$r = _g4.val;
 								return $r;
 							}(this));
-							frI = f2.name.indexOf("_");
+							frI = f3.name.indexOf("_");
 							if(frI >= 0) {
-								frPrefix = f2.name.substring(0,frI);
-								if(frPrefix == frValue) Reflect.setField(frChoices,f2.name.substring(frI + 1),Reflect.field(classe,f2.name));
+								frPrefix = f3.name.substring(0,frI);
+								if(frPrefix == frValue) Reflect.setField(frChoices,f3.name.substring(frI + 1),Reflect.field(classe,f3.name));
 							}
 						}
 						cur.choices = frChoices;
@@ -704,6 +776,7 @@ dat_gui_DatUtil.setup = function(instance,classe,options) {
 			}
 		}
 	}
+	Reflect.setField(fieldHash,"_hxclass",Type.getClassName(classe));
 	return fieldHash;
 };
 var de_polygonal_ds_Cloneable = function() { };
@@ -4335,8 +4408,6 @@ textifician_mapping_IndoorLocationSpecs.prototype = {
 	,wallStrength: null
 	,ceilingThickness: null
 	,ceilingStrength: null
-	,testMethod: function() {
-	}
 	,__class__: textifician_mapping_IndoorLocationSpecs
 };
 var textifician_mapping_LocationDefinition = $hx_exports.textifician.mapping.LocationDefinition = function() {
@@ -4385,12 +4456,11 @@ textifician_mapping_LocationDefinition.prototype = {
 	,size: null
 	,type: null
 	,envFlags: null
-	,indoorLocationSpecs: null
 	,defaultLighting: null
 	,generalFixtures: null
 	,fixtureDensity: null
 	,priorityIndex: null
-	,testbool: null
+	,indoorLocationSpecs: null
 	,setSize: function(val) {
 		this.size = val;
 		return this;
@@ -5369,13 +5439,15 @@ textifician_mapping_ArcPacket.CARDINAL_NORTH_WEST = 5;
 textifician_mapping_ArcPacket.CARDINAL_NORTH = 6;
 textifician_mapping_ArcPacket.CARDINAL_NORTH_EAST = 7;
 textifician_mapping_ArcPacket.FLAG_ENTRANCE = 1;
+textifician_mapping_IndoorLocationSpecs.__meta__ = { fields : { wallHeight : { inspect : null}, wallThickness : { inspect : null}, wallStrength : { inspect : null}, ceilingThickness : { inspect : null}, ceilingStrength : { inspect : null}}};
+textifician_mapping_IndoorLocationSpecs.__rtti = "<class path=\"textifician.mapping.IndoorLocationSpecs\" params=\"\">\n\t<DEFAULT_WALL_HEIGHT public=\"1\" expr=\"1\" line=\"17\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_WALL_HEIGHT>\n\t<DEFAULT_WALL_THICKNESS public=\"1\" expr=\"1\" line=\"18\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_WALL_THICKNESS>\n\t<DEFAULT_WALL_STRENGTH public=\"1\" expr=\"1\" line=\"19\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_WALL_STRENGTH>\n\t<DEFAULT_CEILING_THICKNESS public=\"1\" expr=\"1\" line=\"20\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_CEILING_THICKNESS>\n\t<DEFAULT_CEILING_STRENGTH public=\"1\" expr=\"1\" line=\"21\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_CEILING_STRENGTH>\n\t<create public=\"1\" set=\"method\" line=\"38\" static=\"1\">\n\t\t<f a=\"?wallHeight:?wallThickness:?wallStrength:?ceilingThickness:?ceilingStrength\" v=\"-1:-1:-1:-1:-1\">\n\t\t\t<x path=\"Float\"/>\n\t\t\t<x path=\"Float\"/>\n\t\t\t<x path=\"Float\"/>\n\t\t\t<x path=\"Float\"/>\n\t\t\t<x path=\"Float\"/>\n\t\t\t<c path=\"textifician.mapping.IndoorLocationSpecs\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{ceilingStrength:-1,ceilingThickness:-1,wallStrength:-1,wallThickness:-1,wallHeight:-1}</e></m></meta>\n\t</create>\n\t<wallHeight public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</wallHeight>\n\t<wallThickness public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</wallThickness>\n\t<wallStrength public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</wallStrength>\n\t<ceilingThickness public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</ceilingThickness>\n\t<ceilingStrength public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</ceilingStrength>\n\t<new public=\"1\" set=\"method\" line=\"23\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":directlyUsed\"/>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
 textifician_mapping_IndoorLocationSpecs.DEFAULT_WALL_HEIGHT = 1;
 textifician_mapping_IndoorLocationSpecs.DEFAULT_WALL_THICKNESS = 1;
 textifician_mapping_IndoorLocationSpecs.DEFAULT_WALL_STRENGTH = 1;
 textifician_mapping_IndoorLocationSpecs.DEFAULT_CEILING_THICKNESS = 1;
 textifician_mapping_IndoorLocationSpecs.DEFAULT_CEILING_STRENGTH = 1;
-textifician_mapping_LocationDefinition.__meta__ = { fields : { label : { inspect : null}, description : { inspect : [{ display : "textarea"}]}, flags : { inspect : null, bitmask : ["FLAG"]}, size : { inspect : null}, type : { inspect : [{ display : "selector", choices : [0,1,2]}], choices : ["TYPE"]}, envFlags : { inspect : null, bitmask : ["ENV"]}, defaultLighting : { inspect : [{ display : "range", value : 2}], range : ["LIGHTING"]}, fixtureDensity : { inspect : [{ display : "range"}], range : ["DENSITY"]}, priorityIndex : { inspect : null}, testbool : { inspect : null}}};
-textifician_mapping_LocationDefinition.__rtti = "<class path=\"textifician.mapping.LocationDefinition\" params=\"\">\n\t<FLAG_ENTRANCE public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;0)\" line=\"12\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<0)]]></e></m></meta>\n\t</FLAG_ENTRANCE>\n\t<FLAG_DOOR public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;1)\" line=\"13\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<1)]]></e></m></meta>\n\t</FLAG_DOOR>\n\t<FLAG_KEY public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;2)\" line=\"14\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<2)]]></e></m></meta>\n\t</FLAG_KEY>\n\t<FLAG_LANDMARK public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;3)\" line=\"15\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<3)]]></e></m></meta>\n\t</FLAG_LANDMARK>\n\t<FLAG_ENCLOSED public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;4)\" line=\"16\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<4)]]></e></m></meta>\n\t</FLAG_ENCLOSED>\n\t<TYPE_POINT public=\"1\" get=\"inline\" set=\"null\" expr=\"0\" line=\"18\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>0</e></m></meta>\n\t</TYPE_POINT>\n\t<TYPE_PATH public=\"1\" get=\"inline\" set=\"null\" expr=\"1\" line=\"19\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</TYPE_PATH>\n\t<TYPE_REGION public=\"1\" get=\"inline\" set=\"null\" expr=\"2\" line=\"20\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>2</e></m></meta>\n\t</TYPE_REGION>\n\t<ENV_WALL_1 public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;0)\" line=\"22\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<0)]]></e></m></meta>\n\t</ENV_WALL_1>\n\t<ENV_WALL_2 public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;1)\" line=\"23\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<1)]]></e></m></meta>\n\t</ENV_WALL_2>\n\t<ENV_CEILING_1 public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;2)\" line=\"24\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<2)]]></e></m></meta>\n\t</ENV_CEILING_1>\n\t<ENV_CEILING_2 public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;3)\" line=\"25\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<3)]]></e></m></meta>\n\t</ENV_CEILING_2>\n\t<LIGHTING_NONE_OR_OUT public=\"1\" get=\"inline\" set=\"null\" expr=\"0\" line=\"29\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>0</e></m></meta>\n\t</LIGHTING_NONE_OR_OUT>\n\t<LIGHTING_DIM public=\"1\" get=\"inline\" set=\"null\" expr=\"1\" line=\"30\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</LIGHTING_DIM>\n\t<LIGHTING_NORMAL public=\"1\" get=\"inline\" set=\"null\" expr=\"2\" line=\"31\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>2</e></m></meta>\n\t</LIGHTING_NORMAL>\n\t<LIGHTING_BRIGHT public=\"1\" get=\"inline\" set=\"null\" expr=\"3\" line=\"32\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>3</e></m></meta>\n\t</LIGHTING_BRIGHT>\n\t<DENSITY_NONE public=\"1\" get=\"inline\" set=\"null\" expr=\"0\" line=\"34\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>0</e></m></meta>\n\t</DENSITY_NONE>\n\t<DENSITY_VERY_SPARSE public=\"1\" get=\"inline\" set=\"null\" expr=\"1\" line=\"35\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DENSITY_VERY_SPARSE>\n\t<DENSITY_SPARSE public=\"1\" get=\"inline\" set=\"null\" expr=\"2\" line=\"36\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>2</e></m></meta>\n\t</DENSITY_SPARSE>\n\t<DENSITY_AVERAGE public=\"1\" get=\"inline\" set=\"null\" expr=\"3\" line=\"37\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>3</e></m></meta>\n\t</DENSITY_AVERAGE>\n\t<DENSITY_DENSE public=\"1\" get=\"inline\" set=\"null\" expr=\"4\" line=\"38\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>4</e></m></meta>\n\t</DENSITY_DENSE>\n\t<DENSITY_VERY_DENSE public=\"1\" get=\"inline\" set=\"null\" expr=\"5\" line=\"39\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>5</e></m></meta>\n\t</DENSITY_VERY_DENSE>\n\t<SHELTER_NONE public=\"1\" get=\"inline\" set=\"null\" expr=\"0\" line=\"41\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>0</e></m></meta>\n\t</SHELTER_NONE>\n\t<SHELTER_SPARSE public=\"1\" get=\"inline\" set=\"null\" expr=\"1\" line=\"42\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</SHELTER_SPARSE>\n\t<SHELTER_HALF public=\"1\" get=\"inline\" set=\"null\" expr=\"2\" line=\"43\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>2</e></m></meta>\n\t</SHELTER_HALF>\n\t<SHELTER_FULL public=\"1\" get=\"inline\" set=\"null\" expr=\"3\" line=\"44\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>3</e></m></meta>\n\t</SHELTER_FULL>\n\t<create public=\"1\" set=\"method\" line=\"69\" static=\"1\">\n\t\t<f a=\"type:label:?id\" v=\"::null\">\n\t\t\t<x path=\"Int\"/>\n\t\t\t<c path=\"String\"/>\n\t\t\t<c path=\"String\"/>\n\t\t\t<c path=\"textifician.mapping.LocationDefinition\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{id:null}</e></m></meta>\n\t</create>\n\t<createWithMatchingId public=\"1\" set=\"method\" line=\"90\" static=\"1\">\n\t\t<f a=\"type:label:?id:?doSlugify:?camelCase\" v=\"::null:false:false\">\n\t\t\t<x path=\"Int\"/>\n\t\t\t<c path=\"String\"/>\n\t\t\t<c path=\"String\"/>\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<c path=\"textifician.mapping.LocationDefinition\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{camelCase:false,doSlugify:false,id:null}</e></m></meta>\n\t</createWithMatchingId>\n\t<slugify public=\"1\" get=\"inline\" set=\"null\" line=\"110\" static=\"1\"><f a=\"label\">\n\t<c path=\"String\"/>\n\t<c path=\"String\"/>\n</f></slugify>\n\t<camelizeSlug public=\"1\" get=\"inline\" set=\"null\" line=\"132\" static=\"1\"><f a=\"slug\">\n\t<c path=\"String\"/>\n\t<c path=\"String\"/>\n</f></camelizeSlug>\n\t<id public=\"1\"><c path=\"String\"/></id>\n\t<label public=\"1\">\n\t\t<c path=\"String\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</label>\n\t<description public=\"1\">\n\t\t<c path=\"String\"/>\n\t\t<meta><m n=\"inspect\"><e>{display:\"textarea\"}</e></m></meta>\n\t</description>\n\t<flags public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"/>\n\t\t\t<m n=\"bitmask\"><e>\"FLAG\"</e></m>\n\t\t</meta>\n\t</flags>\n\t<size public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</size>\n\t<type public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"><e>{display:\"selector\",choices:[0,1,2]}</e></m>\n\t\t\t<m n=\"choices\"><e>\"TYPE\"</e></m>\n\t\t</meta>\n\t</type>\n\t<envFlags public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"/>\n\t\t\t<m n=\"bitmask\"><e>\"ENV\"</e></m>\n\t\t</meta>\n\t</envFlags>\n\t<indoorLocationSpecs public=\"1\"><c path=\"textifician.mapping.IndoorLocationSpecs\"/></indoorLocationSpecs>\n\t<defaultLighting public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"><e>{display:\"range\",value:2}</e></m>\n\t\t\t<m n=\"range\"><e>\"LIGHTING\"</e></m>\n\t\t</meta>\n\t</defaultLighting>\n\t<generalFixtures public=\"1\"><c path=\"Array\"><c path=\"String\"/></c></generalFixtures>\n\t<fixtureDensity public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"><e>{display:\"range\"}</e></m>\n\t\t\t<m n=\"range\"><e>\"DENSITY\"</e></m>\n\t\t</meta>\n\t</fixtureDensity>\n\t<priorityIndex public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</priorityIndex>\n\t<testbool public=\"1\">\n\t\t<x path=\"Bool\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</testbool>\n\t<setSize public=\"1\" set=\"method\" line=\"81\"><f a=\"val\">\n\t<x path=\"Float\"/>\n\t<c path=\"textifician.mapping.LocationDefinition\"/>\n</f></setSize>\n\t<setDescription public=\"1\" set=\"method\" line=\"85\"><f a=\"val\">\n\t<c path=\"String\"/>\n\t<c path=\"textifician.mapping.LocationDefinition\"/>\n</f></setDescription>\n\t<makeDoor public=\"1\" set=\"method\" line=\"148\">\n\t\t<f a=\"?val:?implyEntrance\" v=\"true:true\">\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<c path=\"textifician.mapping.LocationDefinition\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{implyEntrance:true,val:true}</e></m></meta>\n\t</makeDoor>\n\t<makeEntrance public=\"1\" set=\"method\" line=\"159\">\n\t\t<f a=\"?val\" v=\"true\">\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<c path=\"textifician.mapping.LocationDefinition\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{val:true}</e></m></meta>\n\t</makeEntrance>\n\t<makeKey public=\"1\" set=\"method\" line=\"169\">\n\t\t<f a=\"?val\" v=\"true\">\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<c path=\"textifician.mapping.LocationDefinition\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{val:true}</e></m></meta>\n\t</makeKey>\n\t<makeLandmark public=\"1\" set=\"method\" line=\"179\">\n\t\t<f a=\"?val\" v=\"true\">\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<c path=\"textifician.mapping.LocationDefinition\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{val:true}</e></m></meta>\n\t</makeLandmark>\n\t<resetShelterFlags get=\"inline\" set=\"null\" line=\"189\"><f a=\"\"><x path=\"Void\"/></f></resetShelterFlags>\n\t<resetShelterWallFlags get=\"inline\" set=\"null\" line=\"192\"><f a=\"\"><x path=\"Void\"/></f></resetShelterWallFlags>\n\t<resetShelterCeilingFlags get=\"inline\" set=\"null\" line=\"195\"><f a=\"\"><x path=\"Void\"/></f></resetShelterCeilingFlags>\n\t<makeFullyIndoor public=\"1\" set=\"method\" line=\"199\"><f a=\"\"><c path=\"textifician.mapping.LocationDefinition\"/></f></makeFullyIndoor>\n\t<makeFullyOutdoor public=\"1\" set=\"method\" line=\"205\"><f a=\"\"><c path=\"textifician.mapping.LocationDefinition\"/></f></makeFullyOutdoor>\n\t<setupIndoorLocationSpecs public=\"1\" set=\"method\" line=\"210\"><f a=\"locationSpecs\">\n\t<c path=\"textifician.mapping.IndoorLocationSpecs\"/>\n\t<c path=\"textifician.mapping.LocationDefinition\"/>\n</f></setupIndoorLocationSpecs>\n\t<setupShelterAmounts public=\"1\" set=\"method\" line=\"221\"><f a=\"wallAmount:ceilingAmount\">\n\t<x path=\"Int\"/>\n\t<x path=\"Int\"/>\n\t<c path=\"textifician.mapping.LocationDefinition\"/>\n</f></setupShelterAmounts>\n\t<setWallAmount public=\"1\" set=\"method\" line=\"228\"><f a=\"wallAmount\">\n\t<x path=\"Int\"/>\n\t<c path=\"textifician.mapping.LocationDefinition\"/>\n</f></setWallAmount>\n\t<setCeilingAmount public=\"1\" set=\"method\" line=\"234\"><f a=\"ceilingAmount\">\n\t<x path=\"Int\"/>\n\t<c path=\"textifician.mapping.LocationDefinition\"/>\n</f></setCeilingAmount>\n\t<new public=\"1\" set=\"method\" line=\"240\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":directlyUsed\"/>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
+textifician_mapping_LocationDefinition.__meta__ = { fields : { label : { inspect : null}, description : { inspect : [{ display : "textarea"}]}, flags : { inspect : null, bitmask : ["FLAG"]}, size : { inspect : null}, type : { inspect : [{ display : "selector", choices : [0,1,2]}], choices : ["TYPE"]}, envFlags : { inspect : null, bitmask : ["ENV"]}, defaultLighting : { inspect : [{ display : "range", value : 2}], range : ["LIGHTING"]}, fixtureDensity : { inspect : [{ display : "range"}], range : ["DENSITY"]}, priorityIndex : { inspect : null}, indoorLocationSpecs : { inspect : null}}};
+textifician_mapping_LocationDefinition.__rtti = "<class path=\"textifician.mapping.LocationDefinition\" params=\"\">\n\t<FLAG_ENTRANCE public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;0)\" line=\"12\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<0)]]></e></m></meta>\n\t</FLAG_ENTRANCE>\n\t<FLAG_DOOR public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;1)\" line=\"13\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<1)]]></e></m></meta>\n\t</FLAG_DOOR>\n\t<FLAG_KEY public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;2)\" line=\"14\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<2)]]></e></m></meta>\n\t</FLAG_KEY>\n\t<FLAG_LANDMARK public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;3)\" line=\"15\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<3)]]></e></m></meta>\n\t</FLAG_LANDMARK>\n\t<FLAG_ENCLOSED public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;4)\" line=\"16\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<4)]]></e></m></meta>\n\t</FLAG_ENCLOSED>\n\t<TYPE_POINT public=\"1\" get=\"inline\" set=\"null\" expr=\"0\" line=\"18\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>0</e></m></meta>\n\t</TYPE_POINT>\n\t<TYPE_PATH public=\"1\" get=\"inline\" set=\"null\" expr=\"1\" line=\"19\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</TYPE_PATH>\n\t<TYPE_REGION public=\"1\" get=\"inline\" set=\"null\" expr=\"2\" line=\"20\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>2</e></m></meta>\n\t</TYPE_REGION>\n\t<ENV_WALL_1 public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;0)\" line=\"22\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<0)]]></e></m></meta>\n\t</ENV_WALL_1>\n\t<ENV_WALL_2 public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;1)\" line=\"23\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<1)]]></e></m></meta>\n\t</ENV_WALL_2>\n\t<ENV_CEILING_1 public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;2)\" line=\"24\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<2)]]></e></m></meta>\n\t</ENV_CEILING_1>\n\t<ENV_CEILING_2 public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;3)\" line=\"25\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<3)]]></e></m></meta>\n\t</ENV_CEILING_2>\n\t<LIGHTING_NONE_OR_OUT public=\"1\" get=\"inline\" set=\"null\" expr=\"0\" line=\"29\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>0</e></m></meta>\n\t</LIGHTING_NONE_OR_OUT>\n\t<LIGHTING_DIM public=\"1\" get=\"inline\" set=\"null\" expr=\"1\" line=\"30\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</LIGHTING_DIM>\n\t<LIGHTING_NORMAL public=\"1\" get=\"inline\" set=\"null\" expr=\"2\" line=\"31\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>2</e></m></meta>\n\t</LIGHTING_NORMAL>\n\t<LIGHTING_BRIGHT public=\"1\" get=\"inline\" set=\"null\" expr=\"3\" line=\"32\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>3</e></m></meta>\n\t</LIGHTING_BRIGHT>\n\t<DENSITY_NONE public=\"1\" get=\"inline\" set=\"null\" expr=\"0\" line=\"34\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>0</e></m></meta>\n\t</DENSITY_NONE>\n\t<DENSITY_VERY_SPARSE public=\"1\" get=\"inline\" set=\"null\" expr=\"1\" line=\"35\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DENSITY_VERY_SPARSE>\n\t<DENSITY_SPARSE public=\"1\" get=\"inline\" set=\"null\" expr=\"2\" line=\"36\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>2</e></m></meta>\n\t</DENSITY_SPARSE>\n\t<DENSITY_AVERAGE public=\"1\" get=\"inline\" set=\"null\" expr=\"3\" line=\"37\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>3</e></m></meta>\n\t</DENSITY_AVERAGE>\n\t<DENSITY_DENSE public=\"1\" get=\"inline\" set=\"null\" expr=\"4\" line=\"38\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>4</e></m></meta>\n\t</DENSITY_DENSE>\n\t<DENSITY_VERY_DENSE public=\"1\" get=\"inline\" set=\"null\" expr=\"5\" line=\"39\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>5</e></m></meta>\n\t</DENSITY_VERY_DENSE>\n\t<SHELTER_NONE public=\"1\" get=\"inline\" set=\"null\" expr=\"0\" line=\"41\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>0</e></m></meta>\n\t</SHELTER_NONE>\n\t<SHELTER_SPARSE public=\"1\" get=\"inline\" set=\"null\" expr=\"1\" line=\"42\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</SHELTER_SPARSE>\n\t<SHELTER_HALF public=\"1\" get=\"inline\" set=\"null\" expr=\"2\" line=\"43\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>2</e></m></meta>\n\t</SHELTER_HALF>\n\t<SHELTER_FULL public=\"1\" get=\"inline\" set=\"null\" expr=\"3\" line=\"44\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>3</e></m></meta>\n\t</SHELTER_FULL>\n\t<create public=\"1\" set=\"method\" line=\"69\" static=\"1\">\n\t\t<f a=\"type:label:?id\" v=\"::null\">\n\t\t\t<x path=\"Int\"/>\n\t\t\t<c path=\"String\"/>\n\t\t\t<c path=\"String\"/>\n\t\t\t<c path=\"textifician.mapping.LocationDefinition\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{id:null}</e></m></meta>\n\t</create>\n\t<createWithMatchingId public=\"1\" set=\"method\" line=\"90\" static=\"1\">\n\t\t<f a=\"type:label:?id:?doSlugify:?camelCase\" v=\"::null:false:false\">\n\t\t\t<x path=\"Int\"/>\n\t\t\t<c path=\"String\"/>\n\t\t\t<c path=\"String\"/>\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<c path=\"textifician.mapping.LocationDefinition\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{camelCase:false,doSlugify:false,id:null}</e></m></meta>\n\t</createWithMatchingId>\n\t<slugify public=\"1\" get=\"inline\" set=\"null\" line=\"110\" static=\"1\"><f a=\"label\">\n\t<c path=\"String\"/>\n\t<c path=\"String\"/>\n</f></slugify>\n\t<camelizeSlug public=\"1\" get=\"inline\" set=\"null\" line=\"132\" static=\"1\"><f a=\"slug\">\n\t<c path=\"String\"/>\n\t<c path=\"String\"/>\n</f></camelizeSlug>\n\t<id public=\"1\"><c path=\"String\"/></id>\n\t<label public=\"1\">\n\t\t<c path=\"String\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</label>\n\t<description public=\"1\">\n\t\t<c path=\"String\"/>\n\t\t<meta><m n=\"inspect\"><e>{display:\"textarea\"}</e></m></meta>\n\t</description>\n\t<flags public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"/>\n\t\t\t<m n=\"bitmask\"><e>\"FLAG\"</e></m>\n\t\t</meta>\n\t</flags>\n\t<size public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</size>\n\t<type public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"><e>{display:\"selector\",choices:[0,1,2]}</e></m>\n\t\t\t<m n=\"choices\"><e>\"TYPE\"</e></m>\n\t\t</meta>\n\t</type>\n\t<envFlags public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"/>\n\t\t\t<m n=\"bitmask\"><e>\"ENV\"</e></m>\n\t\t</meta>\n\t</envFlags>\n\t<defaultLighting public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"><e>{display:\"range\",value:2}</e></m>\n\t\t\t<m n=\"range\"><e>\"LIGHTING\"</e></m>\n\t\t</meta>\n\t</defaultLighting>\n\t<generalFixtures public=\"1\"><c path=\"Array\"><c path=\"String\"/></c></generalFixtures>\n\t<fixtureDensity public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"><e>{display:\"range\"}</e></m>\n\t\t\t<m n=\"range\"><e>\"DENSITY\"</e></m>\n\t\t</meta>\n\t</fixtureDensity>\n\t<priorityIndex public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</priorityIndex>\n\t<indoorLocationSpecs public=\"1\">\n\t\t<c path=\"textifician.mapping.IndoorLocationSpecs\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</indoorLocationSpecs>\n\t<setSize public=\"1\" set=\"method\" line=\"81\"><f a=\"val\">\n\t<x path=\"Float\"/>\n\t<c path=\"textifician.mapping.LocationDefinition\"/>\n</f></setSize>\n\t<setDescription public=\"1\" set=\"method\" line=\"85\"><f a=\"val\">\n\t<c path=\"String\"/>\n\t<c path=\"textifician.mapping.LocationDefinition\"/>\n</f></setDescription>\n\t<makeDoor public=\"1\" set=\"method\" line=\"148\">\n\t\t<f a=\"?val:?implyEntrance\" v=\"true:true\">\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<c path=\"textifician.mapping.LocationDefinition\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{implyEntrance:true,val:true}</e></m></meta>\n\t</makeDoor>\n\t<makeEntrance public=\"1\" set=\"method\" line=\"159\">\n\t\t<f a=\"?val\" v=\"true\">\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<c path=\"textifician.mapping.LocationDefinition\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{val:true}</e></m></meta>\n\t</makeEntrance>\n\t<makeKey public=\"1\" set=\"method\" line=\"169\">\n\t\t<f a=\"?val\" v=\"true\">\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<c path=\"textifician.mapping.LocationDefinition\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{val:true}</e></m></meta>\n\t</makeKey>\n\t<makeLandmark public=\"1\" set=\"method\" line=\"179\">\n\t\t<f a=\"?val\" v=\"true\">\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<c path=\"textifician.mapping.LocationDefinition\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{val:true}</e></m></meta>\n\t</makeLandmark>\n\t<resetShelterFlags get=\"inline\" set=\"null\" line=\"189\"><f a=\"\"><x path=\"Void\"/></f></resetShelterFlags>\n\t<resetShelterWallFlags get=\"inline\" set=\"null\" line=\"192\"><f a=\"\"><x path=\"Void\"/></f></resetShelterWallFlags>\n\t<resetShelterCeilingFlags get=\"inline\" set=\"null\" line=\"195\"><f a=\"\"><x path=\"Void\"/></f></resetShelterCeilingFlags>\n\t<makeFullyIndoor public=\"1\" set=\"method\" line=\"199\"><f a=\"\"><c path=\"textifician.mapping.LocationDefinition\"/></f></makeFullyIndoor>\n\t<makeFullyOutdoor public=\"1\" set=\"method\" line=\"205\"><f a=\"\"><c path=\"textifician.mapping.LocationDefinition\"/></f></makeFullyOutdoor>\n\t<setupIndoorLocationSpecs public=\"1\" set=\"method\" line=\"210\"><f a=\"locationSpecs\">\n\t<c path=\"textifician.mapping.IndoorLocationSpecs\"/>\n\t<c path=\"textifician.mapping.LocationDefinition\"/>\n</f></setupIndoorLocationSpecs>\n\t<setupShelterAmounts public=\"1\" set=\"method\" line=\"221\"><f a=\"wallAmount:ceilingAmount\">\n\t<x path=\"Int\"/>\n\t<x path=\"Int\"/>\n\t<c path=\"textifician.mapping.LocationDefinition\"/>\n</f></setupShelterAmounts>\n\t<setWallAmount public=\"1\" set=\"method\" line=\"228\"><f a=\"wallAmount\">\n\t<x path=\"Int\"/>\n\t<c path=\"textifician.mapping.LocationDefinition\"/>\n</f></setWallAmount>\n\t<setCeilingAmount public=\"1\" set=\"method\" line=\"234\"><f a=\"ceilingAmount\">\n\t<x path=\"Int\"/>\n\t<c path=\"textifician.mapping.LocationDefinition\"/>\n</f></setCeilingAmount>\n\t<new public=\"1\" set=\"method\" line=\"240\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":directlyUsed\"/>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
 textifician_mapping_LocationDefinition.FLAG_ENTRANCE = 1;
 textifician_mapping_LocationDefinition.FLAG_DOOR = 2;
 textifician_mapping_LocationDefinition.FLAG_KEY = 4;

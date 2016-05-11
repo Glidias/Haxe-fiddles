@@ -6,8 +6,6 @@
 <!-- Copyright 1998-2016 by Northwoods Software Corporation. -->
 <meta charset="UTF-8">
 <script src="go.js"></script>
-<link href="../assets/css/goSamples.css" rel="stylesheet" type="text/css" />  <!-- you don't need to use this -->
-<script src="goSamples.js"></script>  <!-- this is only for the GoJS Samples framework -->
 
 <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.3/themes/smoothness/jquery-ui.css" />
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
@@ -26,6 +24,18 @@
 
 <script id="code">
 (function() {
+
+	var myDiagramDivs;
+	
+	function onUIDragStart() {
+		myDiagramDivs.css("pointer-events", "none");
+	}
+	function onUIDragStop() {
+		myDiagramDivs.css("pointer-events", "auto");
+	}
+	
+	
+
 	function exposeHxMappingClassesToGlobalNamespace() {
 		var p;
 		var arr = [];
@@ -41,13 +51,16 @@
 	world.setupDefaultNew();
 	
 	
+	
 	window.init = init;
   function init() {
   
 	//DATGUI
 	var specsLocationDefinition = DatUtil.setup( new LocationDefinition() );
-	var params = guiGlue(specsLocationDefinition);
-	console.log(params);
+	var params = {};
+	var gui = guiGlueRender(specsLocationDefinition, null, params);
+	gui.domElement.addEventListener('dragstart', onUIDragStart);
+	gui.domElement.addEventListener('dragstop', onUIDragStop);
   
 	// GOJS
     if (window.goSamples) goSamples();  // init for these samples -- you don't need to call this
@@ -58,6 +71,7 @@
     myDiagram =
       GO(go.Diagram, "myDiagramDiv",  // must name or refer to the DIV HTML element
          { allowDrop: true,
+			
 		 	"undoManager.isEnabled": true,
                     "toolManager.hoverDelay": 100  // how quickly tooltips are shown
 		 
@@ -547,15 +561,28 @@
       var palette = diagramEvent.diagram;
       var paddingHorizontal = palette.padding.left + palette.padding.right;
       var paddingVertical = palette.padding.top + palette.padding.bottom;
+	  pdrag.style.top = 8  + "px";
+	  pdrag.style.left = 270  + "px";
       pdrag.style.width = palette.documentBounds.width + 20  + "px";
       pdrag.style.height = palette.documentBounds.height + 30 + "px";
     });
+	
+	$("#infoDraggable").focus( function() {
+		
+	});
+	
+	myDiagramDivs = $("#myDiagramDiv").add($("#myPaletteDiv"));
+	
+	
+	
+	
 
 
     $(function() {
-        $("#paletteDraggable").draggable({handle: "#paletteDraggableHandle"}).resizable({
+        $("#paletteDraggable").draggable({handle: "#paletteDraggableHandle", start:onUIDragStart, stop:onUIDragStop}).resizable({
           // After resizing, perform another layout to fit everything in the palette's viewport
-          stop: function(){ myPalette.layoutDiagram(true); }
+		  start: onUIDragStart,
+          stop: function(){ myPalette.layoutDiagram(true); onUIDragStop(); }
         });
 
         var inspector = new Inspector('infoDraggable', myDiagram,
@@ -602,6 +629,33 @@
 .dg input[type=text] {
 	font-size:12px;
 }
+li.folder.bitmask ul {
+	background-color:black;
+}
+li.folder.bitmask ul li.boolean {
+	display:inline-block;
+}
+li.folder.bitmask ul li .property-name {
+	width:auto;
+}
+li.folder.bitmask ul li.boolean .c {
+	width:auto;
+}
+
+li.folder.instance .title {
+	background-image:none;
+	padding-left:8px;
+}
+
+li.folder.instance .title:before {
+	margin-right:8px;
+	content:'\2611';
+}
+
+li.folder.instance .closed .title:before {
+	content:'\2610';
+}
+
 
 .handle {
   background-color: lightblue;
@@ -612,6 +666,13 @@
 
 #infoDraggable {
   font: 12px helvetica, sans-serif;
+  background-color:rgba(45,45,45,.8);
+}	
+
+#infoDraggable .inspector {
+	background-color:#000000;
+	
+	display:block;
 }
 
 #myInfo {
@@ -636,44 +697,51 @@ with allowances for the title (top) and the resize handle (bottom)
   top: 14px;
 }
 
+#infoDraggableInstruct  {
+	
+}
+#infoDraggableInstruct span {
+	font-style:normal;	
+	font-weight:bold;
+	color:yellow;
+}
+#infoDraggableInstruct i {
+	font-size:11px;
+	font-weight:normal;
+}
+ canvas:focus{outline:none;}
 </style>
 </head>
-<body onload="init()">
+<body onload="init()" style="margin:0;padding:0">
 <div id="sample">
 
-    <div id="paletteDraggable" class="draggable" style="height: 300px;">
+    <div id="paletteDraggable" class="draggable" style="height: 300px;	">
       <div id="paletteDraggableHandle" class="handle">Palette</div>
       <div id="paletteContainer">
         <div id="myPaletteDiv"></div>
       </div>
     </div>
 
-    <div style="display: inline-block; vertical-align: top; padding: 5px; width:400px">
-      <div id="myDiagramDiv" style="background-color: whitesmoke; border: solid 1px black; height: 400px"></div>
+    <div style="display: block; z-index:0;vertical-align: top;  padding:0;margin:0;width:100%; height:100%;position:absolute; top;0; left:0;">
+      <div id="myDiagramDiv" style="outline:none;background-color:whitesmoke; border: solid 1px #dddddd; margin:0 auto;	  width:90%; height: 90%"></div>
     </div>
 
-    <div id="infoDraggable" style="position:relative; display: inline-block; vertical-align: top; padding: 5px;">
-      <div id="myInfo">Selecting nodes in the main Diagram will display information here</div>
+    <div id="infoDraggable" style="position:relative; display: inline-block; vertical-align: top; padding: 5px; z-index:1">
+      <div id="myInfo" style="visibility:visible; margin-bottom:20px;"><h3>Textifician Mapper</h3>Selecting nodes in the Main Canvas will display information here</div>
 	  <div id="infoDraggableInstruct" style="position:absolute;bottom:0;left:0;padding:5px;">
-		 <h4>TEXT prefix legend:</h4>
+		 <h4>TEXT <span>prefix</span> legend:</h4>
 		 <p>
-		"" (no prefix) - <i>Writes text as label into location definition overwrites</i> <hr/>
-		"~" - <i>Writes text as label directly into LocationDefinition.</i><hr/>
-		"#" - <i>Load content by LocationDefinitionID. Cancels any current location definition overwrites.</i><hr/>
-		"*" - <i>Save out current overwrites over new LocationDefinition using text as both label and LocationDefinitionID.</i><hr/>
-		"*#" - <i>Save out current overwrites over new LocationDefinition, using text as LocationDefinitionID</i><hr/>
+		<span>(no prefix)</span> <i>Create overwrite label</i> <hr/>
+		<span>~</span>  <i>Write label into existing definition</i><hr/>
+		<span>#</span>   <i>Load definition</i><hr/>
+		<span>*</span> <i>Save into New definition (auto-generate id)</i><hr/>
+		<span>*#</span> <i>Save into New definition (with id) </i><hr/>
 		<i>NOTE: When saving, if text is an empty string, will save all existing overwrites over current LocationDefinitionID.</i>
 </p>
 	  </div>
     </div>
 
-    <p>
-      This sample contains a draggable HTML element (using jQuery UI), which houses a GoJS Palette.
-    </p>
-    <p>
-      A DIV to the right of the diagram houses a <a href="../extensions/inspector.html">GoJS GraphObject inspector</a>,
-      which displays some editable information about each Node.
-    </p>
+  
 
 </div>
 </body>
