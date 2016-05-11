@@ -59,6 +59,7 @@
 	var specsLocationDefinition = DatUtil.setup( new LocationDefinition() );
 	var params = {};
 	var gui = guiGlueRender(specsLocationDefinition, null, params);
+	$(gui.domElement).attr("id", "locationDefGUI");
 	gui.domElement.addEventListener('dragstart', onUIDragStart);
 	gui.domElement.addEventListener('dragstop', onUIDragStop);
   
@@ -696,6 +697,12 @@ with allowances for the title (top) and the resize handle (bottom)
   right: 0px;
   top: 14px;
 }
+#locationDefGUI > ul:before {
+	content: 'location definition:';
+	display:block;
+	padding-left:10px;
+	background-color:#666666;	
+}
 
 #infoDraggableInstruct  {
 	
@@ -727,16 +734,16 @@ with allowances for the title (top) and the resize handle (bottom)
     </div>
 
     <div id="infoDraggable" style="position:relative; display: inline-block; vertical-align: top; padding: 5px; z-index:1">
-      <div id="myInfo" style="visibility:visible; margin-bottom:20px;"><h3>Textifician Mapper</h3>Selecting nodes in the Main Canvas will display information here</div>
+      <div id="myInfo" style="visibility:visible; margin-bottom:10px;"><h1>Textifician Mapper</h1>Selecting nodes in the Main Canvas will show linked location definition here</div>
 	  <div id="infoDraggableInstruct" style="position:absolute;bottom:0;left:0;padding:5px;">
 		 <h4>TEXT <span>prefix</span> legend:</h4>
 		 <p>
 		<span>(no prefix)</span> <i>Create overwrite label</i> <hr/>
-		<span>~</span>  <i>Write label into existing definition</i><hr/>
-		<span>#</span>   <i>Load definition</i><hr/>
-		<span>*</span> <i>Save into New definition (auto-generate id)</i><hr/>
-		<span>*#</span> <i>Save into New definition (with id) </i><hr/>
-		<i>NOTE: When saving, if text is an empty string, will save all existing overwrites over current LocationDefinitionID.</i>
+		<span>~</span>  <i>Write label into existing location definition</i><hr/>
+		<span>#</span>   <i>Load location definition</i><hr/>
+		<span>*</span> <i>Save into New location definition (auto-generate id)</i><hr/>
+		<span>*#</span> <i>Save into New location definition (with id) </i><hr/>
+		<i>NOTE: When saving, if text is an empty string, will save all existing overwrites over current location definition id.</i>
 </p>
 	  </div>
     </div>

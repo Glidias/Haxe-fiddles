@@ -47,6 +47,9 @@ class DatUtil
 				var frPrefix:String = null;
 				
 				var frI:Int;
+			
+		//	cur = {display:"none", "_isLeaf":true, "value":0 };
+		//	Reflect.setField(fieldHash, "DATUTIL", cur);
 				
 		for (f in fieldsI) {
 			var fieldMeta = Reflect.field(meta, f.name);

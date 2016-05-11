@@ -141,7 +141,7 @@ function guiGlueRender(paramsGUI, optionsGUI, params, existingGUI) {
 			handle.listen();
 			
 		// style parent LI with custom classes
-		if (options._classes) {
+		if (handle && options._classes) {
 			// warning: hackish way to get LI tag
 			var a = handle.domElement.parentNode.parentNode;
 			if (a.classList) {
@@ -152,7 +152,7 @@ function guiGlueRender(paramsGUI, optionsGUI, params, existingGUI) {
 			}
 		}
 		
-		handle["_guiGlue"] = options;
+		if (handle) handle["_guiGlue"] = options;
 
 	}
 	
