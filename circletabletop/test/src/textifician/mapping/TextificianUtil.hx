@@ -2,6 +2,7 @@ package textifician.mapping ;
 import de.polygonal.ds.Graph;
 import de.polygonal.ds.GraphArc;
 import de.polygonal.ds.GraphNode;
+import haxe.rtti.CType.TypeApi;
 import textifician.mapping.TextificianUtil.PropertyChainHolder;
 
 
@@ -44,6 +45,55 @@ class TextificianUtil
 		me.setupProperty(src,property);
 		return me;
 	}
+	
+	/**
+	 * Applies dynamic properties over a given target from a plain dynamic object 
+	 * @param	obj		The plain obj model containing the values to apply
+	 * @param	target	The target  (might be a complex class instance)  to apply properties over
+	 */
+	public static function applyDynamicProperties(obj:Dynamic, target:Dynamic):Void {
+		var fields = Reflect.fields(obj);
+		for (p in fields) {
+			var val = Reflect.field(fields, p);
+			if ( Reflect.isObject(val)) {
+				
+				var tarProp = Reflect.getProperty(target, p);
+				
+				if (tarProp != null) {
+					applyDynamicProperties(val, tarProp );
+				}
+				else {
+					// TODO: allow for dynamic instantation on the fly
+					Reflect.setProperty(target, p, null);
+				}
+			}
+			else {
+				Reflect.setProperty(target, p, val);
+			}
+		}
+	}
+	
+	/**
+	 * 
+	 * @param   src		The src object (might be a complex class instance)  to derive values  from
+	 * @param	obj		The plain dynamic object model to update. Properties to be retrieved are derived from here.
+	 */
+	public static function applyPropertiesOverFromSrc(src:Dynamic, obj:Dynamic):Void {
+		// TODO:// this approach will apply LocationDefinition properties onto obj
+		
+	}
+	
+	/**
+	 * 
+	 * @param   src		The src object (must be a complex class instance)  to derive properties from via the inspectable metatag
+	 * @param	obj		The plain dynamic object model to update.
+	 */
+	/*
+	 public static function applyInspectablePropertiesOverFromSrc(src:Dynamic, obj:Dynamic):Void {
+		// kiv: not needed atm
+	}
+	*/
+	
 	
 	
 	

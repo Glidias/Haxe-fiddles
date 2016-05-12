@@ -2111,6 +2111,32 @@ dat.GUI = dat.gui.GUI = (function (css, saveDialogueContents, styleSheet, contro
 	  GUI.prototype.getFolderByName = function(name) {
 			return this.__folders[name];
 	  }
+	  
+	  /*
+	  *  Gets this current GUI (usually) and all sub-folder GUIs under this GUI as an array of {name/gui} pairs. The "this" current gui uses empty string.
+	  *  @param  recurse (optional) By default, it will recurse multiple levels deep. Set to false to only scan current level from current GUI.
+	  *  @param  myArray (optional) Supply an existing array to use.  If used, will not push this current GUI into array, only the subfolder GUIs.
+	  */
+	  GUI.prototype.getAllGUIs = function(recurse, myArray) {
+		if (recurse == undefined) recurse = true;
+		var i;
+		var arr = myArray!= null ? myArray : [{name:'', gui:this}];
+		var obj;
+		var folders = this.__folders;
+		for (i in folders) {
+			obj = {};
+			obj.name = i;
+			obj.gui = folders[i];
+			arr.push(obj);
+		}
+		
+		if (recurse) {
+			for (i in folders) {
+				folders[i].getAllGUIs(true, arr);
+			}
+		}
+		return arr;
+	  }
 
   GUI.toggleHide = function() {
 

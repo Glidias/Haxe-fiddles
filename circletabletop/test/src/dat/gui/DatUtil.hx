@@ -27,7 +27,7 @@ class DatUtil
 	 * @param	options
 	 * @return
 	 */
-	public static function setup(instance:Dynamic, classe:Class<Dynamic>=null, options:Dynamic=null):Dynamic 
+	public static function setup(instance:Dynamic, classe:Class<Dynamic>=null, options:Dynamic=null, dotPath:String=""):Dynamic 
 	{
 		if (classe == null) classe = Type.getClass(instance);
 		if (options == null) options = { };
@@ -89,6 +89,7 @@ class DatUtil
 							
 							var gotBits = false;
 							var bitFieldMeta = Reflect.field(fieldMeta, "bitmask")[0];
+							
 							if ( Std.is(bitFieldMeta, String)) {
 								frValue = bitFieldMeta;
 								frStatics = rtti.statics.iterator();
@@ -98,20 +99,22 @@ class DatUtil
 										gotBits = true;
 										frPrefix = f.name.substring(0, frI);
 										if (frPrefix == frValue) {	
-											
-											Reflect.setField(bitMaskFolder, f.name.substring(frI + 1),  {value:false});
+											Reflect.setField(bitMaskFolder, f.name.substring(frI + 1),  {_bit:Reflect.field(classe, f.name), value:(curVal & Reflect.field(classe, f.name) )!=0 });
 										}
 									}
 								}
 							}
 							else { // create default 32 bits
 								for (i in 0...32) {
-									Reflect.setField(bitMaskFolder, "b"+Std.string(i), {value:false});
+									Reflect.setField(bitMaskFolder, "b"+Std.string(i), {_bit:(1<<i), value:(curVal & (1<<i))!=0 });
 								}
 								gotBits = true;
 							}
 							
-							if (gotBits) Reflect.setField(fieldHash, f.name, bitMaskFolder);
+							if (gotBits) {
+								Reflect.setField(fieldHash, f.name, bitMaskFolder);
+								Reflect.setField(bitMaskFolder, "_subProxy", "bitmask");
+							}
 
 							//Reflect.setField(fieldHash, f.name, cur);
 							
@@ -165,7 +168,7 @@ class DatUtil
 					}
 					var nested;
 					
-					Reflect.setField(fieldHash, f.name, nested=setup(tryInstance, Type.resolveClass(typeStr), f.type) );
+					Reflect.setField(fieldHash, f.name, nested=setup(tryInstance, Type.resolveClass(typeStr), f.type, dotPath+"."+f.name) );
 					Reflect.setField(nested, "_folded", instanceAvailable ? false : true );
 					Reflect.setField(nested, "_classes", ["instance"] );
 					
@@ -250,6 +253,7 @@ class DatUtil
 			}
 		}
 		
+		Reflect.setField(fieldHash, "_dotPath", dotPath);
 		Reflect.setField(fieldHash, "_hxclass", Type.getClassName(classe) );
 		return fieldHash;
 	}

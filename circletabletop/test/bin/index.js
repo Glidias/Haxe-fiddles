@@ -606,7 +606,8 @@ dat_gui_DatUtil.__name__ = ["dat","gui","DatUtil"];
 dat_gui_DatUtil._concatDyn = function(a1,a2) {
 	return a1.concat(a2);
 };
-dat_gui_DatUtil.setup = function(instance,classe,options) {
+dat_gui_DatUtil.setup = function(instance,classe,options,dotPath) {
+	if(dotPath == null) dotPath = "";
 	if(classe == null) classe = Type.getClass(instance);
 	if(options == null) options = { };
 	var ignoreInspectMeta = Reflect.field(options,"ignoreInspectMeta");
@@ -663,18 +664,21 @@ dat_gui_DatUtil.setup = function(instance,classe,options) {
 								if(frI >= 0) {
 									gotBits = true;
 									frPrefix = f1.name.substring(0,frI);
-									if(frPrefix == frValue) Reflect.setField(bitMaskFolder,f1.name.substring(frI + 1),{ value : false});
+									if(frPrefix == frValue) Reflect.setField(bitMaskFolder,f1.name.substring(frI + 1),{ _bit : Reflect.field(classe,f1.name), value : (curVal & Reflect.field(classe,f1.name)) != 0});
 								}
 							}
 						} else {
 							var _g2 = 0;
 							while(_g2 < 32) {
 								var i = _g2++;
-								bitMaskFolder["b" + (i == null?"null":"" + i)] = { value : false};
+								bitMaskFolder["b" + (i == null?"null":"" + i)] = { _bit : 1 << i, value : (curVal & 1 << i) != 0};
 							}
 							gotBits = true;
 						}
-						if(gotBits) fieldHash[f.name] = bitMaskFolder;
+						if(gotBits) {
+							fieldHash[f.name] = bitMaskFolder;
+							bitMaskFolder._subProxy = "bitmask";
+						}
 					} else {
 						if(!Object.prototype.hasOwnProperty.call(cur,"step")) cur.step = 1;
 						if(typeStr == "UInt" && !Object.prototype.hasOwnProperty.call(cur,"min")) cur.min = 0;
@@ -703,7 +707,7 @@ dat_gui_DatUtil.setup = function(instance,classe,options) {
 					tryInstance = Type.createInstance(Type.resolveClass(typeStr),[]);
 				}
 				var nested;
-				Reflect.setField(fieldHash,f.name,nested = dat_gui_DatUtil.setup(tryInstance,Type.resolveClass(typeStr),f.type));
+				Reflect.setField(fieldHash,f.name,nested = dat_gui_DatUtil.setup(tryInstance,Type.resolveClass(typeStr),f.type,dotPath + "." + f.name));
 				if(instanceAvailable) nested._folded = false; else nested._folded = true;
 				nested._classes = ["instance"];
 			}
@@ -776,6 +780,7 @@ dat_gui_DatUtil.setup = function(instance,classe,options) {
 			}
 		}
 	}
+	fieldHash._dotPath = dotPath;
 	Reflect.setField(fieldHash,"_hxclass",Type.getClassName(classe));
 	return fieldHash;
 };
@@ -4411,6 +4416,7 @@ textifician_mapping_IndoorLocationSpecs.prototype = {
 	,__class__: textifician_mapping_IndoorLocationSpecs
 };
 var textifician_mapping_LocationDefinition = $hx_exports.textifician.mapping.LocationDefinition = function() {
+	if(Math.random() > .5) this.flags |= 3; else this.envFlags |= 9;
 };
 $hxClasses["textifician.mapping.LocationDefinition"] = textifician_mapping_LocationDefinition;
 textifician_mapping_LocationDefinition.__name__ = ["textifician","mapping","LocationDefinition"];
@@ -4628,6 +4634,21 @@ textifician_mapping_TextificianUtil.getPropertyChainObj = function(src,property)
 	var me = new textifician_mapping_PropertyChainHolder();
 	me.setupProperty(src,property);
 	return me;
+};
+textifician_mapping_TextificianUtil.applyDynamicProperties = function(obj,target) {
+	var fields = Reflect.fields(obj);
+	var _g = 0;
+	while(_g < fields.length) {
+		var p = fields[_g];
+		++_g;
+		var val = Reflect.field(fields,p);
+		if(Reflect.isObject(val)) {
+			var tarProp = Reflect.getProperty(target,p);
+			if(tarProp != null) textifician_mapping_TextificianUtil.applyDynamicProperties(val,tarProp); else Reflect.setProperty(target,p,null);
+		} else Reflect.setProperty(target,p,val);
+	}
+};
+textifician_mapping_TextificianUtil.applyPropertiesOverFromSrc = function(src,obj) {
 };
 var textifician_mapping_PropertyChainHolder = function() {
 	Object.defineProperty(this,"value",{ get : $bind(this,this.get_value), set : $bind(this,this.set_value)});

@@ -17,6 +17,7 @@ function guiGlue(paramsGUI, optionsGUI){
     // but its default attributes have been removed
     var params = {};
     var gui = guiGlueRender(paramsGUI, optionsGUI, params);
+	
 
     //return stripped parameter object
     return params;
@@ -37,6 +38,7 @@ function guiGlueRender(paramsGUI, optionsGUI, params, existingGUI) {
 	
 	//initial creation    
 	var gui = existingGUI ? existingGUI : new dat.GUI(optionsGUI);
+	gui["_guiGlueParams"] = params;
 
 	//walk the parameter tree
 	unfurl(paramsGUI, gui, params);
@@ -58,6 +60,8 @@ function guiGlueRender(paramsGUI, optionsGUI, params, existingGUI) {
 				//is folder
 				var subfolder = folder.addFolder(key);
 				subfolder["_guiGlue"] = obj[key];
+				subfolder["_guiGlueParams"] = params[key];
+				
 				// style parent LI with custom classes
 				if (obj[key]["_classes"]) {
 					var a = subfolder.domElement.parentNode;  // warning, hack to get parent LI 
@@ -157,12 +161,13 @@ function guiGlueRender(paramsGUI, optionsGUI, params, existingGUI) {
 				handle.__input.setAttribute("readonly", "readonly")
 			}
 			handle["_guiGlue"] = options;
+		
 			
 		}
 	}
 	
 	
-
+	gui["_guiGlue"] = paramsGUI;
 	return gui;
 
 }
