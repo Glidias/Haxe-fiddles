@@ -37,6 +37,9 @@
 	
 	// TODO:
 	// bitmask
+	// z-sort categories
+	// indoor location specs instance reference/de-reference
+	// flag
 	// do not allow selection of prototypes , hide locationdefinition guis for prototypes
 	
 	function getCategoryStringFromType(newValue) {
@@ -185,21 +188,17 @@
 //	/*
 	Vue.directive('dat-slider',{
 		bind: function() {
-			
-			//alert( $(this.el).data("controller"));
 			var self = this;
 	
 			 $(this.el).data("controller").onChange( function(val) {
 				self.vm.$set( self.expression, val );
 			 });
-			 
-			
 		},
 		update: function(val) {
 			 $(this.el).data("controller").setValue(val);
 		},
 		unbind: function() {
-			
+			 $(this.el).data("controller").onChange(null);
 		}
 	});
 	//*/
@@ -219,15 +218,12 @@
 				var dotPath =( g.gui._guiGlue._dotPath!= "" ?  g.gui._guiGlue._dotPath + "." : "")+ cn.property;
 				if (cn.domElement.firstChild.nodeName.toLowerCase() != "div") {
 					cn.domElement.firstChild.setAttribute("v-model", "selected."+dotPath);
-					
 				}
 				else {
 					if (jQuery(cn.domElement.firstChild).parents("li.has-slider").length) {
-						//alert("VALUE FOR:"+dotPath);
 						jQuery(cn.domElement.firstChild).data("controller", cn).attr("v-dat-slider", "selected."+dotPath);
 					}
 					else alert("TODO: NEED TO resolve controller directive for:"+cn.property);
-				//	jQuery(cn.domElement.firstChild).find("input").attr("v-model", "selected."+dotPath).attr("v-node", "selected."+dotPath);
 					
 				}
 				cn.domElement.firstChild.setAttribute("v-node", "selected."+dotPath);
