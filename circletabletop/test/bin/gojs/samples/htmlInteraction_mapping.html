@@ -20,6 +20,7 @@
 <script src="../extensions/ExtendedBrush.js"></script>
 <script src="../../dat.gui.js"></script>
 <script src="../../guiGlue.js"></script>
+<script src="../../vue.min.js"></script>
 <script src="../../index.js"></script>
 
 <script id="code">
@@ -34,6 +35,19 @@
 		myDiagramDivs.css("pointer-events", "auto");
 	}
 	
+	// TODO:
+	// bitmask
+	
+	function getCategoryStringFromType(newValue) {
+	
+		if (typeof(newValue) != 'number') return;
+		return newValue === LocationDefinition.TYPE_POINT ? "point" : newValue=== LocationDefinition.TYPE_PATH ? "path" : "region";
+	}
+	function getUniformSize(size) {
+		if (typeof(size) != 'number') return;
+		if (size < 0) size = 999999999;
+		return new go.Size(size,size);
+	}
 	
 	function updateAllControllers(newTarget) {
 		// method to update all object targets of:
@@ -116,97 +130,6 @@
 		}
 	};
 	
-	function setupTargetProxy(proxy, gui, guiName) {
-			
-		var collector = proxy._controllers;
-		proxy._gui = gui;
-		// go through all leaf child controllers of gui and assign object
-		var guiControllers = gui.__controllers;
-		var len = guiControllers.length;
-		var i;
-		if (gui["_guiGlueParams"]) {
-			proxy._target = gui._guiGlueParams;
-		}
-		for (i=0; i< len; i++) {
-			guiControllers[i].object = proxy;
-			collector.push(guiControllers[i]);
-			guiControllers[i].updateDisplay();
-		}
-		
-		return proxy;
-	}
-	
-	function setupSubProxies(proxy, gui, guiName) {
-		var i;
-		
-	// go through all folders look for leaf ones if any, and add to the list
-		if (proxy._subProxies != null) {
-			var folders = gui.__folders;
-			for (i in folders) {
-				if ( folders[i]._guiGlue._dotPath == undefined) {
-					var p = ProxyFactory.getNewProxy( folders[i]._guiGlue._subProxy, folders[i] ,i );
-					proxy._subProxies.push(p);
-				}
-			}
-		}
-		return proxy;
-	}
-	
-		
-	function setupBitMaskProxy(proxy, guiFolder, guiName) {
-		proxy._gui = guiFolder;
-		setupTargetProxy(proxy, guiFolder, guiName);
-		proxy._property = guiName;
-		var guiControllers = guiFolder.__controllers;
-		var len = guiControllers.length;
-		var i;
-		var bitMaskEnum  = proxy._bitMaskEnum;
-		var value = 0;
-		for (i=0; i< len; i++) {
-			bitMaskEnum[ guiControllers[i].property ] = guiControllers[i]._guiGlue._bit;
-			value |= guiFolder._guiGlue[guiControllers[i].property].value ? guiControllers[i]._guiGlue._bit : 0;
-		}
-		proxy._value = value; 
-		
-		return proxy;
-	}
-
-	var ProxyFactory = new (function(){
-	
-	    // defs:
-		// hash of array parameters
-		   // param 0: The object (will be shallow cloned) per instanation
-		   // param 1: The handler
-		   // param 2: (optional) Factory method
-		var defs = {
-			"":[
-				{_target:{}, _onTargetChanged:updateAllControllers, _controllers:[], _subProxies:[], _refresh: function(){ this._onTargetChanged.apply(this, [this._target] ); }  }
-				,targetProxyHandler
-				,setupTargetProxy
-			],
-			"bitmask":[
-				{_target:{}, _onTargetChanged:updateAllControllers, _controllers:[], _property:"", _bitMaskEnum:{}, 
-					_onPropertyChanged: function(newBitMaskValue){
-						// update controller booleans based on newBitMaskValue
-						var i = this._controllers.length;
-						while(--i > -1 ){
-							this._controllers[i].updateDisplay();
-						}
-					}
-				}
-				,bitmaskProxyHandler
-				,setupBitMaskProxy
-			]
-		};
-		
-		this.getNewProxy = function(id) {
-			if (id == undefined) id = "";
-			if (!defs[id]) return null;
-			var params = defs[id];
-			var t = jQuery.extend({}, params[0]);
-			return params[2] ? params[2].apply(null, [new Proxy(t, params[1])].concat(Array.prototype.slice.call(arguments, 1)) ) : new Proxy(t, params[1]);
-		}
-	})();
 	
 	
 	
@@ -220,69 +143,156 @@
 	}
 	exposeHxMappingClassesToGlobalNamespace();
 	var TJSON = tjson.TJSON;
+
 	
 	var DatUtil = dat.gui.DatUtil;
 	var world = new TextificianWorld();
 	world.setupDefaultNew();
 	
-	
-	function setupGUIProxies(gui) {
-		var hash = {};
-		var list = gui.getAllGUIs();
-		
-		var i;
-		var g;
-		var len = list.length;
-		var p;
-		var rootGs = [];
-		for (i=0; i< len; i++) {
-			g = list[i];
-			
-			if (g.gui._guiGlue._dotPath != undefined) { // 
-				p = ProxyFactory.getNewProxy( (g.gui._guiGlue._subProxy || ""), g.gui, g.name );
-				setupSubProxies(p, g.gui, g.name, hash);
-				hash[g.gui._guiGlue._dotPath] = p;
-			}	
-		}
-		
-		return hash;
-	}
-	
-	
-	
+
 	
 	window.init = init;
   function init() {
+  
+  
   
 	//DATGUI
 	var specsLocationDefinition = DatUtil.setup( new LocationDefinition() );
 	var params = {};
 	var gui = guiGlueRender(specsLocationDefinition, null, params);
-	var guiPathHash = setupGUIProxies(gui);
+
+	// some mods for filtering
+	var liNumberRows = $(gui.domElement).find("li.number");	
+	liNumberRows.find("input").each( function(index, item) {
+		item = $(item);
+		item.attr( "number", "");
+		//item.attr("type", "number");  // consider todo: css support for type number?
+	});
+	liNumberRows.find("select").each( function(index, item) {
+		item = $(item);
+		item.attr( "number", "");
+	});
+	/*
+	liNumberRows.find("option").each( function(index, item) {
+		item = $(item);
+		item.attr( "v-bind:value", item.val());
+	});
+	*/
 	
-	var inspectPropertyChainLookup = TextificianUtil.getPropertyChainObj({}, "");
-	function inspectLocationDefinition(locDef) {
-		//guiPathHash(100
-		var p;
-		var proxy;
-		for (p in guiPathHash) {
-			proxy = guiPathHash[p];
-			//proxy._target = locDef;
-			if (p == "") { // root object
-				proxy._target = locDef;
-			}
-			else {  // nested/descendent object
-				inspectPropertyChainLookup._src = locDef;
-				inspectPropertyChainLookup.propertyChain = p.split(".");
-				var testTarg = inspectPropertyChainLookup.getPropertyChainValue() || {_dummy:true, toString:function(){return "[dummy!]";} };
-				// TODO: if dummy cannot be found, use guiParams from proxy._gui
+//	/*
+	Vue.directive('dat-slider',{
+		bind: function() {
+			
+			//alert( $(this.el).data("controller"));
+			var self = this;
+	
+			 $(this.el).data("controller").onChange( function(val) {
+				self.vm.$set( self.expression, val );
+			 });
+			 
+			
+		},
+		update: function(val) {
+			 $(this.el).data("controller").setValue(val);
+		},
+		unbind: function() {
+			
+		}
+	});
+	//*/
+
+	var guiFolders = gui.getAllGUIs();
+	var p;
+	var g;
+	var c;
+	var f;
+	for (p in guiFolders) {
+		g= guiFolders[p];
+		
+		if (g.gui._guiGlue._dotPath != undefined) {
+		    for (c in g.gui.__controllers) {
+				var cn = g.gui.__controllers[c];
 				
-				proxy._target = testTarg;
+				var dotPath =( g.gui._guiGlue._dotPath!= "" ?  g.gui._guiGlue._dotPath + "." : "")+ cn.property;
+				if (cn.domElement.firstChild.nodeName.toLowerCase() != "div") {
+					cn.domElement.firstChild.setAttribute("v-model", "selected."+dotPath);
+					
+				}
+				else {
+					if (jQuery(cn.domElement.firstChild).parents("li.has-slider").length) {
+						//alert("VALUE FOR:"+dotPath);
+						jQuery(cn.domElement.firstChild).data("controller", cn).attr("v-dat-slider", "selected."+dotPath);
+					}
+					else alert("TODO: NEED TO resolve controller directive for:"+cn.property);
+				//	jQuery(cn.domElement.firstChild).find("input").attr("v-model", "selected."+dotPath).attr("v-node", "selected."+dotPath);
+					
+				}
+				cn.domElement.firstChild.setAttribute("v-node", "selected."+dotPath);
+			}
+		}
+		for (f in g.gui.__folders) {
+			if (g.gui.__folders[f]._guiGlue._dotPath == undefined) {
+				//alert("TODO: need to resolve folder directive for:"+f);
 			}
 		}
 	}
 	
+	
+	
+
+	// App specific setup
 	$(gui.domElement).attr("id", "locationDefGUI");
+	
+	var inspectPropertyChainLookup = TextificianUtil.getPropertyChainObj({}, "");
+	var _inspectedNodeVal=null;
+	var _inspectedGoNode = null;
+	var leafBindingHash = { size:"desiredSize", label:"text", type:"category" };
+	
+	Vue.directive('node', function(newValue, oldValue) {
+		if (_inspectedNodeVal == null) return;
+		
+		
+		var splitExp  = this.expression.split(".");
+		splitExp.shift();  // remove off selected prefix in expression
+	
+		inspectPropertyChainLookup.setupProperty( _inspectedNodeVal.def,  splitExp.join(".") );
+		var result = inspectPropertyChainLookup.setPropertyChainValue(newValue);
+		
+		var leafProp = splitExp[splitExp.length - 1];
+		
+		if ( leafBindingHash[leafProp] ) {
+			updateRelatedNodesOfModel(myDiagram.model, _inspectedNodeVal.def, leafBindingHash[leafProp]);
+		}
+	});
+	
+	
+	// Vuemodel for LocationDefinition only
+	var vueModel = new Vue({
+		el:"#locationDefGUI",
+		data: { selected: $.extend(true, {}, gui._guiGlueParams) }
+	});
+	
+	
+	function inspectGoNode(goNode) {
+		var node = goNode.node;
+		var nodeVal = node.val;
+		
+		var locDef = nodeVal.def;
+		// lazy JSON approach to convert a Model to vueModel
+		var jsonStr = JSON.stringify(locDef);
+		var newVueModelData = JSON.parse(jsonStr);
+		
+		_inspectedGoNode = goNode;
+		_inspectedNodeVal = nodeVal;
+
+		// setup new location def
+		vueModel.selected = newVueModelData;
+		
+		// nodeVal.defOverwrites TODO
+		
+		// nodeVal.state
+	}
+
 	gui.domElement.addEventListener('dragstart', onUIDragStart);
 	gui.domElement.addEventListener('dragstop', onUIDragStop);
   
@@ -339,6 +349,7 @@
     var brush4 = "rgb(203,84,08)";
 	
 	var TEXTLABEL_BASEWIDTH = 80;
+	var MAX_SHAPE_SIZE = 512;
 	
 	
 	function getNodeTemplate(figure, fill, stroke, maxSize, layout) {
@@ -380,7 +391,7 @@
 		//*/
 		var textBlock  =  GO.apply(null, textBlockParams);
 
-
+		
 				
 		var shape = GO(go.Shape, "Ellipse",
 			  { strokeWidth: 2, fill: fill1, name: "SHAPE"
@@ -401,7 +412,7 @@
 			 //new go.Binding("fill", "fill"),
 			 // new go.Binding("stroke", "stroke"),
 			   
-			 new go.Binding("desiredSize", "size")
+			 new go.Binding("desiredSize", "", function(v) { return v.node ? getUniformSize(v.node.val.def.size) : v.size; } )
 			  
 			  ,
 				   new go.Binding("fromLinkable", "", function(data) {
@@ -415,7 +426,7 @@
 			 
 		var goParams = [go.Node, panelLayout,
         { locationSpot: go.Spot.Center },
-        new go.Binding("location", "loc").makeTwoWay()];
+        new go.Binding("location", "loc").makeTwoWay(), new go.Binding("category", "", function(v) { return v.node ? getCategoryStringFromType(v.node.val.def.type) : v.category; }  ) ];
 			
 		if (panelLayout == go.Panel.Spot)  goParams.push(shape, textBlock);
 		else goParams.push(textBlock, shape);
@@ -425,8 +436,8 @@
 
 
 	 myDiagram.nodeTemplateMap.add("point", getNodeTemplate("Square",fill1,brush1, 5));
-	  myDiagram.nodeTemplateMap.add("path", getNodeTemplate("Diamond",fill2,brush2));
-	  myDiagram.nodeTemplateMap.add("region",getNodeTemplate("Circle",fill3,brush3, null, go.Panel.Spot));
+	  myDiagram.nodeTemplateMap.add("path", getNodeTemplate("Diamond",fill2,brush2, MAX_SHAPE_SIZE));
+	  myDiagram.nodeTemplateMap.add("region",getNodeTemplate("Circle",fill3,brush3, MAX_SHAPE_SIZE, go.Panel.Spot));
 
 	  function scaleLink(link, newscale) {
 		link.curviness = 1 * origscale/newscale;
@@ -505,6 +516,7 @@
 					this.node.val.def = tryDef;
 					this.node.val.defOverwrites = null;
 					this.isProto =  val =="Point" || val ==="Path" || val === "Region";
+					inspectGoNode(this);
 				}
 				else {
 					alert("Failed to find location definition: "+val);
@@ -559,6 +571,7 @@
 					this.node.val.defOverwrites = null;
 					this.node.val.def = dupLoc;
 					this.isProto = false;
+					inspectGoNode(this);
 				}
 				catch(err) {
 					alert(err);
@@ -611,7 +624,7 @@
       var tx = e.object;
 	  
       if (tx instanceof go.Transaction && console && e.model) {
-        console.log(tx.toString());
+       // console.log(tx.toString());
 		
 		if (true || tx.name != "Move") {
 		
@@ -664,13 +677,14 @@
 					else if (c.propertyName === "node") {
 						// irrelavant
 					}
+					else if (c.propertyName === "category") {
+						// irrelavant
+					}
 					else { //
 					  alert("could not resolve:"+c.propertyName);
 					}
 				}
-				
-			
-				
+
 				console.log( c.object," " +c.modelChange + ","+c.propertyName+","+c.oldParam +", "+c.newParam );
 				//console.log("OldValue:", c.oldValue);
 				//console.log("NewValue:", c.newValue);
@@ -698,7 +712,7 @@
 					else {  // NEW NODE CASE
 						
 						e.model.setDataProperty(o,"node",v= world.addLocationNode(world.getLocationDef(o.locid).setSize(o.size.width), o.loc.x, o.loc.y, 0, null, null ));
-						inspectLocationDefinition(v.val.def);
+						inspectGoNode(o);
 					}
 					
 					if (o.text != textProxy) {
@@ -806,8 +820,8 @@
 		  return;
 		}
 		
-		inspectLocationDefinition(selection.data.node.val.def);
-		// showUIs
+		inspectGoNode(selection.data);
+
 	
 	});
 	

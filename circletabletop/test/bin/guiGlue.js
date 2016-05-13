@@ -39,6 +39,7 @@ function guiGlueRender(paramsGUI, optionsGUI, params, existingGUI) {
 	//initial creation    
 	var gui = existingGUI ? existingGUI : new dat.GUI(optionsGUI);
 	gui["_guiGlueParams"] = params;
+	if (paramsGUI._hxclass) params._hxcls = paramsGUI._hxclass;
 
 	//walk the parameter tree
 	unfurl(paramsGUI, gui, params);
@@ -59,8 +60,10 @@ function guiGlueRender(paramsGUI, optionsGUI, params, existingGUI) {
 			else{ 
 				//is folder
 				var subfolder = folder.addFolder(key);
+				params[key] = {};
 				subfolder["_guiGlue"] = obj[key];
 				subfolder["_guiGlueParams"] = params[key];
+				if ( obj[key]._hxclass)  params[key]._hxcls =  obj[key]._hxclass;
 				
 				// style parent LI with custom classes
 				if (obj[key]["_classes"]) {
@@ -75,8 +78,7 @@ function guiGlueRender(paramsGUI, optionsGUI, params, existingGUI) {
 				
 				if ( (obj[key]._folded!=undefined ? !obj[key]._folded : !optionsGUI.folded) )
 					subfolder.open();
-
-				params[key] = {};
+					
 				unfurl(obj[key], subfolder, params[key]);
 			}
 

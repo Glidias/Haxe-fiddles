@@ -707,7 +707,7 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath) {
 					tryInstance = Type.createInstance(Type.resolveClass(typeStr),[]);
 				}
 				var nested;
-				Reflect.setField(fieldHash,f.name,nested = dat_gui_DatUtil.setup(tryInstance,Type.resolveClass(typeStr),f.type,dotPath + "." + f.name));
+				Reflect.setField(fieldHash,f.name,nested = dat_gui_DatUtil.setup(tryInstance,Type.resolveClass(typeStr),f.type,(dotPath != ""?dotPath + ".":"") + f.name));
 				if(instanceAvailable) nested._folded = false; else nested._folded = true;
 				nested._classes = ["instance"];
 			}
@@ -4416,6 +4416,8 @@ textifician_mapping_IndoorLocationSpecs.prototype = {
 	,__class__: textifician_mapping_IndoorLocationSpecs
 };
 var textifician_mapping_LocationDefinition = $hx_exports.textifician.mapping.LocationDefinition = function() {
+	this.defaultLighting = 2;
+	this.fixtureDensity = 0;
 	if(Math.random() > .5) this.flags |= 3; else this.envFlags |= 9;
 };
 $hxClasses["textifician.mapping.LocationDefinition"] = textifician_mapping_LocationDefinition;
@@ -4674,7 +4676,7 @@ textifician_mapping_PropertyChainHolder.prototype = {
 		while(_g < len) {
 			var i = _g++;
 			var propToGet = this.propertyChain[i];
-			cur = this.getPropertyOf(cur,propToGet);
+			cur = Reflect.getProperty(cur,propToGet);
 			if(cur == null) return null;
 		}
 		return cur;
@@ -4683,16 +4685,18 @@ textifician_mapping_PropertyChainHolder.prototype = {
 		if(this._src == null) this._src = { };
 		var cur = this._src;
 		var len = this.propertyChain.length;
+		var propStack = [];
 		var _g = 0;
 		while(_g < len) {
 			var i = _g++;
 			var propToSet = this.propertyChain[i];
-			cur = this.setPropertyOf(cur,propToSet,i < len - 1?null:val);
+			propStack.push(propToSet);
+			cur = this.setPropertyOf(cur,propToSet,val,i >= len - 1,propStack);
 		}
 		return cur;
 	}
-	,setPropertyOf: function(obj,prop,val) {
-		if(val == null) {
+	,setPropertyOf: function(obj,prop,val,leaf,propStack) {
+		if(!leaf) {
 			var reflectProp = val = Reflect.getProperty(obj,prop);
 			if(reflectProp == null) Reflect.setProperty(obj,prop,reflectProp = { });
 			val = reflectProp;
@@ -4701,8 +4705,7 @@ textifician_mapping_PropertyChainHolder.prototype = {
 		return val;
 	}
 	,getPropertyOf: function(obj,prop) {
-		var reflectProp = Reflect.getProperty(obj,prop);
-		if(reflectProp != null) return reflectProp; else return null;
+		return Reflect.getProperty(obj,prop);
 	}
 	,get_value: function() {
 		if(this.propertyChain != null && this._src != null) return this.getPropertyChainValue(); else return null;
