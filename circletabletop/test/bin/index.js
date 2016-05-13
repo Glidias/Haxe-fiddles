@@ -686,6 +686,7 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath) {
 						cur._isLeaf = true;
 					}
 				} else {
+					if(dat_gui_DatUtil.DEFAULT_FLOAT_STEP > 0 && !Object.prototype.hasOwnProperty.call(cur,"step")) cur.step = dat_gui_DatUtil.DEFAULT_FLOAT_STEP;
 					fieldHash[f.name] = cur;
 					cur._isLeaf = true;
 				}

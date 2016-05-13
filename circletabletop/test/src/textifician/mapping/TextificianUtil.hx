@@ -75,11 +75,12 @@ class TextificianUtil
 	
 	/**
 	 * 
-	 * @param   src		The src object (might be a complex class instance)  to derive values  from
-	 * @param	obj		The plain dynamic object model to update. Properties to be retrieved are derived from here.
+	 * @param   src		The src object (might be a complex class instance)  to derive values from
+	 * @param	obj		The plain dynamic object model to update. Valid properties to be retrieved are derived from here.
 	 */
 	public static function applyPropertiesOverFromSrc(src:Dynamic, obj:Dynamic):Void {
-		// TODO:// this approach will apply LocationDefinition properties onto obj
+		// TODO:// eg. this approach will apply LocationDefinition properties onto obj, converting a Model to ViewModel
+		
 		
 	}
 	
@@ -155,31 +156,38 @@ class PropertyChainHolder {
 			_src = { };
 		}
 		var cur = _src;
-		
 		var len:Int = propertyChain.length;
+		
+		/*
+		if (len == 1) {  // early out case
+			Reflect.setProperty(_src, propertyChain[0], val);
+			return val;
+		}
+		*/
+		
+		var propStack:Array<String> = [];
 		for (i in 0...len) {
 			var propToSet = propertyChain[i];
-			cur = setPropertyOf(cur, propToSet, (i < len - 1 ? null : val) );
+			propStack.push(propToSet);
+			cur = setPropertyOf(cur, propToSet, val, i >= len -1, propStack);
 		}
 		return cur;
 	}
 	
-	private  function setPropertyOf(obj:Dynamic, prop:String, val:Dynamic):Dynamic {
-		
-		if (val == null) {
+	private function setPropertyOf(obj:Dynamic, prop:String, val:Dynamic,leaf:Bool, propStack:Array<String>):Dynamic {
+		if (!leaf) {
 			var reflectProp = val = Reflect.getProperty(obj, prop);
 			if (reflectProp == null) Reflect.setProperty(obj, prop, (reflectProp={ }) );
 			val =  reflectProp;
 		}
-
 		Reflect.setProperty(obj, prop, val);
 		return val;
 	}
 	
 	private  inline function getPropertyOf(obj:Dynamic, prop:String):Dynamic {
 
-		var reflectProp = Reflect.getProperty(obj, prop);
-		return reflectProp != null ? reflectProp : null;
+
+		return  Reflect.getProperty(obj, prop);
 	}
 	
 	@:getter function get_value():Dynamic 

@@ -37,6 +37,7 @@
 	
 	// TODO:
 	// bitmask
+	// do not allow selection of prototypes , hide locationdefinition guis for prototypes
 	
 	function getCategoryStringFromType(newValue) {
 	
@@ -146,6 +147,8 @@
 
 	
 	var DatUtil = dat.gui.DatUtil;
+	DatUtil.DEFAULT_FLOAT_STEP = .001;
+	
 	var world = new TextificianWorld();
 	world.setupDefaultNew();
 	
@@ -275,16 +278,17 @@
 	
 	function inspectGoNode(goNode) {
 		var node = goNode.node;
-		var nodeVal = node.val;
+		_inspectedGoNode = goNode;
 		
+		var nodeVal = node.val;
+		_inspectedNodeVal = nodeVal;
+		
+		// consider todo: check if locDef is changed, if not changed no need to update
 		var locDef = nodeVal.def;
 		// lazy JSON approach to convert a Model to vueModel
 		var jsonStr = JSON.stringify(locDef);
 		var newVueModelData = JSON.parse(jsonStr);
-		
-		_inspectedGoNode = goNode;
-		_inspectedNodeVal = nodeVal;
-
+	
 		// setup new location def
 		vueModel.selected = newVueModelData;
 		
@@ -396,6 +400,7 @@
 		var shape = GO(go.Shape, "Ellipse",
 			  { strokeWidth: 2, fill: fill1, name: "SHAPE"
 			 , desiredSize: new go.Size(16, 16)
+			 ,minSize:  new go.Size(1,1)
 				,maxSize:  new go.Size(maxSize ? maxSize : NaN, maxSize  ? maxSize : NaN)
 				,figure:figure
 				,fill:fill

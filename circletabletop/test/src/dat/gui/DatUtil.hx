@@ -16,6 +16,8 @@ import haxe.rtti.Rtti;
 @:expose
 class DatUtil
 {
+	public static var DEFAULT_FLOAT_STEP:Float;
+	
 	private static function _concatDyn(a1:Array<Dynamic>, a2:Array<Dynamic>):Array<Dynamic> {
 		return a1.concat(a2);
 	}
@@ -134,6 +136,9 @@ class DatUtil
 						
 					}
 					else {  // handle generic number case
+						if (DEFAULT_FLOAT_STEP > 0 && !Reflect.hasField(cur, "step")) {
+							Reflect.setField(cur, "step", DEFAULT_FLOAT_STEP);
+						}
 						Reflect.setField(fieldHash, f.name, cur);
 						Reflect.setField(cur, "_isLeaf", true);
 					}
@@ -168,7 +173,7 @@ class DatUtil
 					}
 					var nested;
 					
-					Reflect.setField(fieldHash, f.name, nested=setup(tryInstance, Type.resolveClass(typeStr), f.type, dotPath+"."+f.name) );
+					Reflect.setField(fieldHash, f.name, nested=setup(tryInstance, Type.resolveClass(typeStr), f.type, (dotPath!= "" ? dotPath+"." : "")+f.name) );
 					Reflect.setField(nested, "_folded", instanceAvailable ? false : true );
 					Reflect.setField(nested, "_classes", ["instance"] );
 					
