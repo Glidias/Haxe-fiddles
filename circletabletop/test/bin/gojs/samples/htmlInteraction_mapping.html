@@ -150,7 +150,7 @@
 
 	
 	var DatUtil = dat.gui.DatUtil;
-	DatUtil.DEFAULT_FLOAT_STEP = .001;
+	//DatUtil.DEFAULT_FLOAT_STEP = .001;
 	
 	var world = new TextificianWorld();
 	world.setupDefaultNew();
@@ -162,9 +162,12 @@
   
 	//DATGUI
 	var specsLocationDefinition = DatUtil.setup( new LocationDefinition() );
+	specsLocationDefinition.size.step = .001;
+	
 	var params = {};
 	var gui = guiGlueRender(specsLocationDefinition, null, params);
-
+	gui.getControllerByName("size").__input.setAttribute("step", "any");
+	
 	// some mods for filtering
 	var liNumberRows = $(gui.domElement).find("li.number");	
 	liNumberRows.find("input").each( function(index, item) {
