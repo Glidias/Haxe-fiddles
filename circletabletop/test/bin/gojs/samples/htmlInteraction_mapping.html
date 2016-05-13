@@ -160,8 +160,6 @@
 	window.init = init;
   function init() {
   
-  
-  
 	//DATGUI
 	var specsLocationDefinition = DatUtil.setup( new LocationDefinition() );
 	var params = {};
@@ -185,29 +183,74 @@
 	});
 	*/
 	
-//	/*
-	Vue.directive('dat-slider',{
+
+	Vue.directive('dat-slider',{  // Binds to Dat.gui controller's domElement.firstChild => Div wrapper element
 		bind: function() {
 			var self = this;
 	
-			 $(this.el).data("controller").onChange( function(val) {
+			 $(this.el).data("dat-controller").onChange( function(val) {
 				self.vm.$set( self.expression, val );
 			 });
 		},
 		update: function(val) {
-			 $(this.el).data("controller").setValue(val);
+			 $(this.el).data("dat-controller").setValue(val);
 		},
 		unbind: function() {
-			 $(this.el).data("controller").onChange(null);
+			 $(this.el).data("dat-controller").onChange(null);
 		}
 	});
-	//*/
+	
+	Vue.directive('dat-bitmask',{  // Binds to Dat.gui folder's domElement.firstChild => UL element
+		bind: function() {
+			var self = this;
+			//var liBoolList = $(this.el).children("li.boolean");
+			var el = $(this.el);
+			var folder = el.data("dat-gui");
+			var controllers = folder.__controllers;
+			var p;
+			var c;
+			var len = controllers.length;
+			var initialValue = 0;
+			
+			this.controllers = controllers;
+			
+			for (i=0; i< len; i++) {
+				c = controllers[i];
+				c.__bit = (1 << i);  // TODO: retrieve for __bit using ENUM with controller
+				initialValue |= c.getValue() ? c.__bit : 0;
+				c.onChange(function(val) {
+					if (val) {
+						self.bitmaskValue |= this.__bit;
+					}
+					else {
+						self.bitmaskValue &= ~(this.__bit);
+					}
+					//console.log( self.expression + "=" + self.bitmaskValue);
+					self.vm.$set( self.expression, self.bitmaskValue );
+				});
+			}
+			
+			this.bitmaskValue = initialValue;
+		//	console.log( self.expression + "=" + this.bitmaskValue);
+		
+		},
+		update: function(val) {	
+			//alert(val);
+		
+		},
+		unbind: function() {
+		
+		}
+	});
+
 
 	var guiFolders = gui.getAllGUIs();
 	var p;
 	var g;
 	var c;
 	var f;
+	var expressionPrefix = "selected.";
+	
 	for (p in guiFolders) {
 		g= guiFolders[p];
 		
@@ -217,21 +260,27 @@
 				
 				var dotPath =( g.gui._guiGlue._dotPath!= "" ?  g.gui._guiGlue._dotPath + "." : "")+ cn.property;
 				if (cn.domElement.firstChild.nodeName.toLowerCase() != "div") {
-					cn.domElement.firstChild.setAttribute("v-model", "selected."+dotPath);
+					cn.domElement.firstChild.setAttribute("v-model", expressionPrefix+dotPath);
 				}
 				else {
 					if (jQuery(cn.domElement.firstChild).parents("li.has-slider").length) {
-						jQuery(cn.domElement.firstChild).data("controller", cn).attr("v-dat-slider", "selected."+dotPath);
+						jQuery(cn.domElement.firstChild).data("dat-controller", cn).attr("v-dat-slider", expressionPrefix+dotPath);
 					}
 					else alert("TODO: NEED TO resolve controller directive for:"+cn.property);
 					
 				}
-				cn.domElement.firstChild.setAttribute("v-node", "selected."+dotPath);
+				cn.domElement.firstChild.setAttribute("v-node", expressionPrefix+dotPath);
 			}
-		}
-		for (f in g.gui.__folders) {
-			if (g.gui.__folders[f]._guiGlue._dotPath == undefined) {
-				//alert("TODO: need to resolve folder directive for:"+f);
+			
+			for (f in g.gui.__folders) {
+				var folder = g.gui.__folders[f];
+				if (folder._guiGlue._dotPath == undefined) {
+					if (jQuery(folder.domElement).parents("li.bitmask").length) {
+						var dotPath =( g.gui._guiGlue._dotPath!= "" ?  g.gui._guiGlue._dotPath + "." : "")+ f;
+						$(folder.domElement.firstChild).data("dat-gui", folder).attr("v-dat-bitmask", expressionPrefix+dotPath );
+					}
+					else alert("TODO: need to resolve folder directive for:"+f );
+				}
 			}
 		}
 	}
