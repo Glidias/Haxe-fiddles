@@ -36,11 +36,11 @@
 	}
 	
 	// TODO:
-	// bitmask
-	// z-sort categories
+	// bitmask directive
 	// indoor location specs instance reference/de-reference
-	// flag
-	// do not allow selection of prototypes , hide locationdefinition guis for prototypes
+	
+	// do not allow selection of prototypes, hide locationdefinition guis for prototypes
+	// 
 	
 	function getCategoryStringFromType(newValue) {
 	
@@ -186,20 +186,36 @@
 	});
 	*/
 	
-
-	Vue.directive('dat-slider',{  // Binds to Dat.gui controller's domElement.firstChild => Div wrapper element
+	Vue.directive('dat-input',{  // Binds to Dat.gui controller's domElement.firstChild => Div input element
 		bind: function() {
 			var self = this;
-	
-			 $(this.el).data("dat-controller").onChange( function(val) {
+			this._datController = $(this.el).data("dat-controller");
+			 this._datController.onChange( function(val) {
 				self.vm.$set( self.expression, val );
 			 });
 		},
 		update: function(val) {
-			 $(this.el).data("dat-controller").setValue(val);
+			this._datController.value = val;//(val);
 		},
 		unbind: function() {
-			 $(this.el).data("dat-controller").onChange(null);
+			 this._datController.onChange(null);
+		}
+	});
+
+
+	Vue.directive('dat-slider',{  // Binds to Dat.gui controller's domElement.firstChild => Div wrapper element
+		bind: function() {
+			var self = this;
+			this._datController = $(this.el).data("dat-controller");
+				this._datController.onChange( function(val) {
+				self.vm.$set( self.expression, val );
+			 });
+		},
+		update: function(val) {
+			this._datController.setValue(val);
+		},
+		unbind: function() {
+			 this._datController.onChange(null);
 		}
 	});
 	
@@ -262,8 +278,14 @@
 				var cn = g.gui.__controllers[c];
 				
 				var dotPath =( g.gui._guiGlue._dotPath!= "" ?  g.gui._guiGlue._dotPath + "." : "")+ cn.property;
-				if (cn.domElement.firstChild.nodeName.toLowerCase() != "div") {
-					cn.domElement.firstChild.setAttribute("v-model", expressionPrefix+dotPath);
+				if (cn.domElement.firstChild.nodeName.toLowerCase() != "div") {  // assumed input
+					jQuery(cn.domElement.firstChild).data("dat-controller", cn);
+					if (!jQuery(cn.domElement.firstChild).parents("li.number").length) {
+						cn.domElement.firstChild.setAttribute("v-model", expressionPrefix+dotPath);
+					}
+					else {
+						cn.domElement.firstChild.setAttribute("v-dat-input", expressionPrefix+dotPath);
+					}
 				}
 				else {
 					if (jQuery(cn.domElement.firstChild).parents("li.has-slider").length) {
@@ -325,6 +347,9 @@
 	
 	
 	function inspectGoNode(goNode) {
+
+		gui.domElement.removeAttribute("hidden");
+		
 		var node = goNode.node;
 		_inspectedGoNode = goNode;
 		
@@ -387,27 +412,37 @@
 	myDiagram.linkTemplate.curviness = 1;
 	//myDiagram.linkTemplate.bind(new go.Binding("curviness", "curviness"));
 
+	myDiagram.addLayerBefore(GO(go.Layer, {name:"Regions"}), myDiagram.findLayer(""));
+	myDiagram.addLayerAfter(GO(go.Layer, {name:"Points"}), myDiagram.findLayer(""));
+	
     // define several shared Brushes
-    var fill1 = "rgb(105,210,231)"
-    var brush1 = "rgb(65,180,181)";
+    var fill1 = "rgb(167,219,216)"
+    var brush1 = "rgb(127,179,176)";
 
-    var fill2 = "rgb(167,219,216)"
-    var brush2 = "rgb(127,179,176)";
+    var fill2 = "rgba(243,134,48, .65)"
+    var brush2 = "rgb(203,84,08)";
 
-    var fill3 = "rgb(224,228,204)"
+    var fill3 = "rgba(224,228,204, .5)"
     var brush3 = "rgb(184,188,164)";
+	
+	//  var fill1 = "rgb(243,210,231)"
+//   var brush1 = "rgb(65,180,181)";
+ //  var fill2 = "rgba(167,219,216, .85)"
+ //   var brush2 = "rgb(127,179,176)";
 
-    var fill4 = "rgb(243,134,48)"
-    var brush4 = "rgb(203,84,08)";
+
+   // var fill4 = "rgb(243,134,48)"
+ //   var brush4 = "rgb(203,84,08)";
 	
 	var TEXTLABEL_BASEWIDTH = 80;
 	var MAX_SHAPE_SIZE = 512;
+	var POINT_SIZE = 5;
 	
-	
-	function getNodeTemplate(figure, fill, stroke, maxSize, layout) {
+	function getNodeTemplate(figure, fill, stroke, maxSize, layout, layerName) {
 	
 		var panelLayout = layout ? layout :  go.Panel.Vertical;
-	 
+		if (!layerName) layerName = "";
+		
 		var textBlockParams = [go.TextBlock,
 			{ 
 			maxSize: new go.Size(TEXTLABEL_BASEWIDTH, NaN),
@@ -425,7 +460,8 @@
 		
 		textBlockParams.push(
 				   new go.Binding("pickable", "", function(data) {
-						return myDiagram.zoom < 1;
+			
+						return myDiagram.scale < 1;
 				  })
 		  );
 			
@@ -481,16 +517,24 @@
         { locationSpot: go.Spot.Center },
         new go.Binding("location", "loc").makeTwoWay(), new go.Binding("category", "", function(v) { return v.node ? getCategoryStringFromType(v.node.val.def.type) : v.category; }  ) ];
 			
-		if (panelLayout == go.Panel.Spot)  goParams.push(shape, textBlock);
-		else goParams.push(textBlock, shape);
+		if (panelLayout == go.Panel.Spot)  {
+			goParams.push(shape, textBlock);
+		}
+		else {
+			goParams.push(textBlock, shape);
+		}
+		
+		goParams.push({layerName:layerName});
+		
+		
 		return GO.apply(null, goParams);
 	}
 
 
 
-	 myDiagram.nodeTemplateMap.add("point", getNodeTemplate("Square",fill1,brush1, 5));
-	  myDiagram.nodeTemplateMap.add("path", getNodeTemplate("Diamond",fill2,brush2, MAX_SHAPE_SIZE));
-	  myDiagram.nodeTemplateMap.add("region",getNodeTemplate("Circle",fill3,brush3, MAX_SHAPE_SIZE, go.Panel.Spot));
+	 myDiagram.nodeTemplateMap.add("point", getNodeTemplate("Square",fill1,brush1, POINT_SIZE, null, "Points"));
+	  myDiagram.nodeTemplateMap.add("path", getNodeTemplate("Diamond",fill2,brush2, MAX_SHAPE_SIZE, null, ""));
+	  myDiagram.nodeTemplateMap.add("region",getNodeTemplate("Circle",fill3,brush3, MAX_SHAPE_SIZE, go.Panel.Spot, "Regions"));
 
 	  function scaleLink(link, newscale) {
 		link.curviness = 1 * origscale/newscale;
@@ -504,7 +548,13 @@
 			text.maxSize.width = TEXTLABEL_BASEWIDTH * origscale / newscale;
 			if (node.category === "point") {
 				var shape = node.findObject("SHAPE");
-				shape.scale =  newscale >= .2 ? 1 :  origscale / newscale * .2;
+				shape.scale =  newscale >= .3 ? 1 :  origscale / newscale * .3;
+			}
+			else if (node.category === "path") {
+				var shape = node.findObject("SHAPE");
+				var curSize = shape.desiredSize.width >= MAX_SHAPE_SIZE ? MAX_SHAPE_SIZE : shape.desiredSize.width;
+				curSize *=newscale;
+				shape.scale =  curSize >= 3 ? 1 : 3/curSize;
 			}
 	  }
 	  
@@ -822,7 +872,7 @@
   	
 	  
     myPalette.model = new go.GraphLinksModel([
-      { locid:"Point", isProto:true, text:"Point", category:"point",  size:new go.Size(5,5)   },
+      { locid:"Point", isProto:true, text:"Point", category:"point",  size:new go.Size(POINT_SIZE,POINT_SIZE)   },
       { locid:"Path", isProto:true, text:"Path",  category:"path",  size:new go.Size(12,12) },
       { locid:"Region", isProto:true,  text:"Region",  category:"region", size:new go.Size(30,30) }
     ]);
@@ -869,7 +919,7 @@
 	myDiagram.addDiagramListener("ChangedSelection", function(e) {
 		var selection = myDiagram.selection.first();
 		  if (selection === null || !(selection instanceof go.GraphObject) || !selection.data || !selection.data.node ) {  // hide UIs
-			
+			gui.domElement.setAttribute("hidden", true);
 		  return;
 		}
 		
