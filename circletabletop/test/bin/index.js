@@ -4391,6 +4391,11 @@ textifician_mapping_IXYZ.prototype = {
 	,__class__: textifician_mapping_IXYZ
 };
 var textifician_mapping_IndoorLocationSpecs = $hx_exports.textifician.mapping.IndoorLocationSpecs = function() {
+	this.wallHeight = textifician_mapping_IndoorLocationSpecs.DEFAULT_WALL_HEIGHT;
+	this.wallThickness = textifician_mapping_IndoorLocationSpecs.DEFAULT_WALL_THICKNESS;
+	this.wallStrength = textifician_mapping_IndoorLocationSpecs.DEFAULT_WALL_STRENGTH;
+	this.ceilingThickness = textifician_mapping_IndoorLocationSpecs.DEFAULT_WALL_THICKNESS;
+	this.ceilingStrength = textifician_mapping_IndoorLocationSpecs.DEFAULT_CEILING_STRENGTH;
 };
 $hxClasses["textifician.mapping.IndoorLocationSpecs"] = textifician_mapping_IndoorLocationSpecs;
 textifician_mapping_IndoorLocationSpecs.__name__ = ["textifician","mapping","IndoorLocationSpecs"];
@@ -4414,6 +4419,9 @@ textifician_mapping_IndoorLocationSpecs.prototype = {
 	,wallStrength: null
 	,ceilingThickness: null
 	,ceilingStrength: null
+	,toString: function() {
+		return "[IndoorLocationSpecs]";
+	}
 	,__class__: textifician_mapping_IndoorLocationSpecs
 };
 var textifician_mapping_LocationDefinition = $hx_exports.textifician.mapping.LocationDefinition = function() {
@@ -4692,13 +4700,20 @@ textifician_mapping_PropertyChainHolder.prototype = {
 			var propToSet = this.propertyChain[i];
 			propStack.push(propToSet);
 			cur = this.setPropertyOf(cur,propToSet,val,i >= len - 1,propStack);
+			if(cur == null) {
+				console.log("EXITING null: " + Std.string(val));
+				return null;
+			}
 		}
 		return cur;
 	}
 	,setPropertyOf: function(obj,prop,val,leaf,propStack) {
 		if(!leaf) {
 			var reflectProp = val = Reflect.getProperty(obj,prop);
-			if(reflectProp == null) Reflect.setProperty(obj,prop,reflectProp = { });
+			if(reflectProp == null) {
+				if(val == null) return null;
+				Reflect.setProperty(obj,prop,reflectProp = { });
+			}
 			val = reflectProp;
 		}
 		Reflect.setProperty(obj,prop,val);
@@ -5464,7 +5479,7 @@ textifician_mapping_ArcPacket.CARDINAL_NORTH = 6;
 textifician_mapping_ArcPacket.CARDINAL_NORTH_EAST = 7;
 textifician_mapping_ArcPacket.FLAG_ENTRANCE = 1;
 textifician_mapping_IndoorLocationSpecs.__meta__ = { fields : { wallHeight : { inspect : null}, wallThickness : { inspect : null}, wallStrength : { inspect : null}, ceilingThickness : { inspect : null}, ceilingStrength : { inspect : null}}};
-textifician_mapping_IndoorLocationSpecs.__rtti = "<class path=\"textifician.mapping.IndoorLocationSpecs\" params=\"\">\n\t<DEFAULT_WALL_HEIGHT public=\"1\" expr=\"1\" line=\"17\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_WALL_HEIGHT>\n\t<DEFAULT_WALL_THICKNESS public=\"1\" expr=\"1\" line=\"18\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_WALL_THICKNESS>\n\t<DEFAULT_WALL_STRENGTH public=\"1\" expr=\"1\" line=\"19\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_WALL_STRENGTH>\n\t<DEFAULT_CEILING_THICKNESS public=\"1\" expr=\"1\" line=\"20\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_CEILING_THICKNESS>\n\t<DEFAULT_CEILING_STRENGTH public=\"1\" expr=\"1\" line=\"21\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_CEILING_STRENGTH>\n\t<create public=\"1\" set=\"method\" line=\"38\" static=\"1\">\n\t\t<f a=\"?wallHeight:?wallThickness:?wallStrength:?ceilingThickness:?ceilingStrength\" v=\"-1:-1:-1:-1:-1\">\n\t\t\t<x path=\"Float\"/>\n\t\t\t<x path=\"Float\"/>\n\t\t\t<x path=\"Float\"/>\n\t\t\t<x path=\"Float\"/>\n\t\t\t<x path=\"Float\"/>\n\t\t\t<c path=\"textifician.mapping.IndoorLocationSpecs\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{ceilingStrength:-1,ceilingThickness:-1,wallStrength:-1,wallThickness:-1,wallHeight:-1}</e></m></meta>\n\t</create>\n\t<wallHeight public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</wallHeight>\n\t<wallThickness public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</wallThickness>\n\t<wallStrength public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</wallStrength>\n\t<ceilingThickness public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</ceilingThickness>\n\t<ceilingStrength public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</ceilingStrength>\n\t<new public=\"1\" set=\"method\" line=\"23\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":directlyUsed\"/>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
+textifician_mapping_IndoorLocationSpecs.__rtti = "<class path=\"textifician.mapping.IndoorLocationSpecs\" params=\"\">\n\t<DEFAULT_WALL_HEIGHT public=\"1\" expr=\"1\" line=\"17\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_WALL_HEIGHT>\n\t<DEFAULT_WALL_THICKNESS public=\"1\" expr=\"1\" line=\"18\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_WALL_THICKNESS>\n\t<DEFAULT_WALL_STRENGTH public=\"1\" expr=\"1\" line=\"19\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_WALL_STRENGTH>\n\t<DEFAULT_CEILING_THICKNESS public=\"1\" expr=\"1\" line=\"20\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_CEILING_THICKNESS>\n\t<DEFAULT_CEILING_STRENGTH public=\"1\" expr=\"1\" line=\"21\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_CEILING_STRENGTH>\n\t<create public=\"1\" set=\"method\" line=\"42\" static=\"1\">\n\t\t<f a=\"?wallHeight:?wallThickness:?wallStrength:?ceilingThickness:?ceilingStrength\" v=\"-1:-1:-1:-1:-1\">\n\t\t\t<x path=\"Float\"/>\n\t\t\t<x path=\"Float\"/>\n\t\t\t<x path=\"Float\"/>\n\t\t\t<x path=\"Float\"/>\n\t\t\t<x path=\"Float\"/>\n\t\t\t<c path=\"textifician.mapping.IndoorLocationSpecs\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{ceilingStrength:-1,ceilingThickness:-1,wallStrength:-1,wallThickness:-1,wallHeight:-1}</e></m></meta>\n\t</create>\n\t<wallHeight public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</wallHeight>\n\t<wallThickness public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</wallThickness>\n\t<wallStrength public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</wallStrength>\n\t<ceilingThickness public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</ceilingThickness>\n\t<ceilingStrength public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</ceilingStrength>\n\t<toString public=\"1\" set=\"method\" line=\"53\"><f a=\"\"><c path=\"String\"/></f></toString>\n\t<new public=\"1\" set=\"method\" line=\"23\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":directlyUsed\"/>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
 textifician_mapping_IndoorLocationSpecs.DEFAULT_WALL_HEIGHT = 1;
 textifician_mapping_IndoorLocationSpecs.DEFAULT_WALL_THICKNESS = 1;
 textifician_mapping_IndoorLocationSpecs.DEFAULT_WALL_STRENGTH = 1;

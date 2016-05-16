@@ -170,6 +170,10 @@ class PropertyChainHolder {
 			var propToSet = propertyChain[i];
 			propStack.push(propToSet);
 			cur = setPropertyOf(cur, propToSet, val, i >= len -1, propStack);
+			if (cur == null) {
+				trace("EXITING null: " + val);
+				return null;
+			}
 		}
 		return cur;
 	}
@@ -177,7 +181,13 @@ class PropertyChainHolder {
 	private function setPropertyOf(obj:Dynamic, prop:String, val:Dynamic,leaf:Bool, propStack:Array<String>):Dynamic {
 		if (!leaf) {
 			var reflectProp = val = Reflect.getProperty(obj, prop);
-			if (reflectProp == null) Reflect.setProperty(obj, prop, (reflectProp={ }) );
+			if (reflectProp == null) {
+				if (val == null) { // if value isn't significant, don't force it
+					
+					return null;  
+				}
+				Reflect.setProperty(obj, prop, (reflectProp={ }) );
+			}
 			val =  reflectProp;
 		}
 		Reflect.setProperty(obj, prop, val);

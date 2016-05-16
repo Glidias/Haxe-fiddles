@@ -22,7 +22,11 @@ class IndoorLocationSpecs
 
 	public function new() 
 	{
-		
+		wallHeight = DEFAULT_WALL_HEIGHT;
+		wallThickness = DEFAULT_WALL_THICKNESS;
+		wallStrength = DEFAULT_WALL_STRENGTH;
+		ceilingThickness = DEFAULT_WALL_THICKNESS;
+		ceilingStrength = DEFAULT_CEILING_STRENGTH;
 	}
 
 	/**
@@ -44,6 +48,10 @@ class IndoorLocationSpecs
 		me.ceilingStrength = ceilingStrength < 0 ? DEFAULT_CEILING_STRENGTH : ceilingStrength;
 		
 		return me;
+	}
+	
+	public function toString():String {
+		return "[IndoorLocationSpecs]";
 	}
 	
 }

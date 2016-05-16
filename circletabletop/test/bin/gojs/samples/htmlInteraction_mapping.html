@@ -146,6 +146,25 @@
 	});
 	*/
 	
+	Vue.directive('dat-instance', {  // Binds to Dat.gui folders's domElement.firstChild => UL element
+		bind: function() {
+			var self = this;
+			this._datGui = $(this.el).data("dat-gui");
+			 this._datGui.onClosedChange( function(isClosed) {
+				self.vm.$set( self.expression, (isClosed ? null : self._datGui._guiGlueParams ) );
+			 });
+		},
+		update: function(val) {
+			this._datGui.isClosed = val == null;
+			console.log("to close it?"+(val == null));  // TODO: this isn't firing the open/close action, also vmodel not firing for nested property
+		},
+		unbind: function() {
+			this._datGui.onClosedChanged(null);
+		}
+	});
+	
+
+	
 	Vue.directive('dat-input',{  // Binds to Dat.gui controller's domElement.firstChild => Div input element
 		bind: function() {
 			var self = this;
@@ -268,7 +287,7 @@
 		
 		if (g._guiGlue._dotPath != undefined) {
 			if (g._guiGlue._dotPath != "") {
-			//	alert("TODO: instance:"+g.domElement.firstChild);
+				$(g.domElement.firstChild).data("dat-gui", g).attr("v-dat-instance", expressionPrefix+ g._guiGlue._dotPath).attr("v-node", expressionPrefix+ g._guiGlue._dotPath);
 			}
 			
 		    for (c in g.__controllers) {
@@ -324,9 +343,28 @@
 	Vue.directive('node', function(newValue, oldValue) {
 		if (_inspectedNodeVal == null) return;
 		
+	//	if (newValue === undefined) return;  // if value is strictly undefined, can process be skipped?
 		
 		var splitExp  = this.expression.split(".");
 		splitExp.shift();  // remove off selected prefix in expression
+		
+		if (newValue != null && typeof(newValue) === "object") {
+			console.log("ROOT:"+this.expression + " = " +newValue);
+			if (newValue._hxcls != null) {
+				//TODO: check if newValue needs to e converted
+				//alert("TODO: need to serialize newValue as proper class!");
+				newValue = TJSON.parse(JSON.stringify(newValue));
+				console.log("Converted newValue to:"+ newValue);
+			}
+		}
+		else {
+			if (splitExp.length > 1 && splitExp[0] === "indoorLocationSpecs") {
+				console.log(this.expression + " = " +newValue);
+			}
+			else if (newValue === undefined) {
+				console.log("Setting the value as undefined: "+this.expression);
+			}
+		}
 	
 		inspectPropertyChainLookup.setupProperty( _inspectedNodeVal.def,  splitExp.join(".") );
 		var result = inspectPropertyChainLookup.setPropertyChainValue(newValue);
@@ -502,7 +540,6 @@
 			 // new go.Binding("stroke", "stroke"),
 			   
 			 new go.Binding("desiredSize", "", function(v) { return v.node ? getUniformSize(v.node.val.def.size) : v.size; } )
-			  
 			  ,
 				   new go.Binding("fromLinkable", "", function(data) {
 						return myDiagram.model.modelData.linkable;
