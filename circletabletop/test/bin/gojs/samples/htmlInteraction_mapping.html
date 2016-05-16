@@ -36,13 +36,15 @@
 	}
 	
 	// TODO:
-	// indoor location specs instance reference/de-reference
+	// indoor location specs instance reference/de-reference directive
 	
 	// pin adornment
-	
 	// do not allow selection of prototypes, hide locationdefinition guis for prototypes
+	
 	// location definition list dropdown
-	// 
+	// location definition overwrites
+	// location state panel
+	
 	
 	function getCategoryStringFromType(newValue) {
 	
@@ -264,11 +266,15 @@
 	for (p in guiFolders) {
 		g= guiFolders[p];
 		
-		if (g.gui._guiGlue._dotPath != undefined) {
-		    for (c in g.gui.__controllers) {
-				var cn = g.gui.__controllers[c];
+		if (g._guiGlue._dotPath != undefined) {
+			if (g._guiGlue._dotPath != "") {
+			//	alert("TODO: instance:"+g.domElement.firstChild);
+			}
+			
+		    for (c in g.__controllers) {
+				var cn = g.__controllers[c];
 				
-				var dotPath =( g.gui._guiGlue._dotPath!= "" ?  g.gui._guiGlue._dotPath + "." : "")+ cn.property;
+				var dotPath =( g._guiGlue._dotPath!= "" ?  g._guiGlue._dotPath + "." : "")+ cn.property;
 				if (cn.domElement.firstChild.nodeName.toLowerCase() != "div") {  // assumed input
 					jQuery(cn.domElement.firstChild).data("dat-controller", cn);
 					if (!jQuery(cn.domElement.firstChild).parents("li.number").length) {
@@ -288,13 +294,16 @@
 				cn.domElement.firstChild.setAttribute("v-node", expressionPrefix+dotPath);
 			}
 			
-			for (f in g.gui.__folders) {
-				var folder = g.gui.__folders[f];
+			for (f in g.__folders) {
+				var folder = g.__folders[f];
 				if (folder._guiGlue._dotPath == undefined) {
-					if (jQuery(folder.domElement).parents("li.bitmask").length) {
-						var dotPath =( g.gui._guiGlue._dotPath!= "" ?  g.gui._guiGlue._dotPath + "." : "")+ f;
+					var parentLI = jQuery( jQuery(folder.domElement).parents("li")[0] );
+					if (parentLI.hasClass("bitmask")) {
+						var dotPath =( g._guiGlue._dotPath!= "" ?  g._guiGlue._dotPath + "." : "")+ f;
 						$(folder.domElement.firstChild).data("dat-gui", folder).attr("v-dat-bitmask", expressionPrefix+dotPath ).attr("v-node", expressionPrefix+dotPath);
 					}
+					
+					
 					else alert("TODO: need to resolve folder directive for:"+f );
 				}
 			}

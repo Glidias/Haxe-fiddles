@@ -4419,7 +4419,6 @@ textifician_mapping_IndoorLocationSpecs.prototype = {
 var textifician_mapping_LocationDefinition = $hx_exports.textifician.mapping.LocationDefinition = function() {
 	this.defaultLighting = 2;
 	this.fixtureDensity = 0;
-	if(Math.random() > .5) this.flags |= 3; else this.envFlags |= 9;
 };
 $hxClasses["textifician.mapping.LocationDefinition"] = textifician_mapping_LocationDefinition;
 textifician_mapping_LocationDefinition.__name__ = ["textifician","mapping","LocationDefinition"];
