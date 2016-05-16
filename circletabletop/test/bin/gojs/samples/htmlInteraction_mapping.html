@@ -36,10 +36,12 @@
 	}
 	
 	// TODO:
-	// bitmask directive
 	// indoor location specs instance reference/de-reference
 	
+	// pin adornment
+	
 	// do not allow selection of prototypes, hide locationdefinition guis for prototypes
+	// location definition list dropdown
 	// 
 	
 	function getCategoryStringFromType(newValue) {
@@ -93,50 +95,7 @@
 		}
 	};
 	
-	var bitmaskProxyHandler = {
-		set: function(t, prop, value, receiver) {
-			if (prop.charAt(0) != "_") {
-				var refer = t["_bitMaskEnum"] || t;
-				
-				var lastValue = t._target[t._property];
-				if (value) {
-					t._target[t._property] |= refer[prop]!=undefined ? refer[prop] : 0;
-				}
-				else {
-					if (refer[prop] != undefined) {
-						t._target[t._property] &= ~refer[prop];
-					}
-				}
-				console.log("setting bitmask value:"+t._target[t._property]);
-				
-				if (t["_onPropertyChanged"] && lastValue != t._target[t._property] ) {
-					t._onPropertyChanged.apply(t, [t._target[t._property]]);
-				}
-			}
-			else  {
-				if ( prop != "_value") {
-					t[prop]= value;
-					if (prop === "_target" && t["_onTargetChanged"]) {
-						t._onTargetChanged.apply(t, [value]);
-					}
-				}
-				else {
-					t._target[t._property] = value;
-					if (t["_onPropertyChanged"]) {
-						t._onPropertyChanged.apply(t, [value]);
-					}
-				}
-			}
-		}
-		,get: function(t, prop, receiver) {
-			var refer = t["_bitMaskEnum"] || t;
-			return prop.charAt(0) != "_" ?  (t._target[t._property]&(refer[prop] || 0))!=0 :    prop != "_value" ?  t[prop]  : t._target[t._property];
-		}
-	};
-	
-	
-	
-	
+
 
 	function exposeHxMappingClassesToGlobalNamespace() {
 		var p;
@@ -173,7 +132,6 @@
 	liNumberRows.find("input").each( function(index, item) {
 		item = $(item);
 		item.attr( "number", "");
-		//item.attr("type", "number");  // consider todo: css support for type number?
 	});
 	liNumberRows.find("select").each( function(index, item) {
 		item = $(item);
@@ -231,21 +189,34 @@
 			var len = controllers.length;
 			var initialValue = 0;
 			
+			var titleCheck = el.children("li.title");
+			titleCheck.html( titleCheck.html() + ": ");
+			var labelListCheck = titleCheck.children("span.labellist");
+			if (labelListCheck.length ==0 ) {
+				labelListCheck = $('<span class="labellist"></span>');
+				titleCheck.append(labelListCheck);
+			}
+			
+			
+			this.labelList = labelListCheck;
 			this.controllers = controllers;
+			
+			
 			
 			for (i=0; i< len; i++) {
 				c = controllers[i];
-				c.__bit = (1 << i);  // TODO: retrieve for __bit using ENUM with controller
-				initialValue |= c.getValue() ? c.__bit : 0;
+				initialValue |= c.getValue() ? c._guiGlue._bit : 0;
 				c.onChange(function(val) {
 					if (val) {
-						self.bitmaskValue |= this.__bit;
+						self.bitmaskValue |= this._guiGlue._bit;
 					}
 					else {
-						self.bitmaskValue &= ~(this.__bit);
+						self.bitmaskValue &= ~(this._guiGlue._bit);
 					}
-					//console.log( self.expression + "=" + self.bitmaskValue);
+					
 					self.vm.$set( self.expression, self.bitmaskValue );
+					
+					//console.log( self.expression + "=" + self.bitmaskValue);
 				});
 			}
 			
@@ -255,10 +226,29 @@
 		},
 		update: function(val) {	
 			//alert(val);
-		
+			this.bitmaskValue = val;
+			
+			var i;
+			var c;
+			var controllers= this.controllers;
+			var len = controllers.length;
+			var arr = [];
+			var v;
+			for (i=0; i< len; i++) {
+				c = controllers[i];
+				c.setValue( v=(val & c._guiGlue._bit)!=0 );
+				if (v) arr.push('<span class="prop">'+c.property+'</span>');
+			}
+			
+			this.labelList.html( ""+arr.join(", ") );
 		},
 		unbind: function() {
-		
+			var i;
+			var controllers= this.controllers;
+			var len = controllers.length;
+			for (i=0; i< len; i++) {
+				controllers[i].onChange( null );
+			}
 		}
 	});
 
@@ -269,6 +259,7 @@
 	var c;
 	var f;
 	var expressionPrefix = "selected.";
+
 	
 	for (p in guiFolders) {
 		g= guiFolders[p];
@@ -302,7 +293,7 @@
 				if (folder._guiGlue._dotPath == undefined) {
 					if (jQuery(folder.domElement).parents("li.bitmask").length) {
 						var dotPath =( g.gui._guiGlue._dotPath!= "" ?  g.gui._guiGlue._dotPath + "." : "")+ f;
-						$(folder.domElement.firstChild).data("dat-gui", folder).attr("v-dat-bitmask", expressionPrefix+dotPath );
+						$(folder.domElement.firstChild).data("dat-gui", folder).attr("v-dat-bitmask", expressionPrefix+dotPath ).attr("v-node", expressionPrefix+dotPath);
 					}
 					else alert("TODO: need to resolve folder directive for:"+f );
 				}
@@ -416,11 +407,11 @@
 	myDiagram.addLayerAfter(GO(go.Layer, {name:"Points"}), myDiagram.findLayer(""));
 	
     // define several shared Brushes
-    var fill1 = "rgb(167,219,216)"
-    var brush1 = "rgb(127,179,176)";
+    var fill1 = "rgb(243,134,48)"
+    var brush1 = "rgb(203,84,08)";
 
-    var fill2 = "rgba(243,134,48, .65)"
-    var brush2 = "rgb(203,84,08)";
+    var fill2 = "rgba(167,219,216, .65)"
+    var brush2 = "rgb(127,179,176)";
 
     var fill3 = "rgba(224,228,204, .5)"
     var brush3 = "rgb(184,188,164)";
@@ -775,7 +766,7 @@
 						methodToCalls.push(updateRelatedNodesOfModel, [myPalette.model, c.object.node.val.def, "text"]);
 					}
 					else if (c.propertyName === "size") {
-						// todo: reflect c
+
 					}
 					else if (c.propertyName === "node") {
 						// irrelavant
@@ -994,6 +985,21 @@ li.folder.bitmask ul li .property-name {
 }
 li.folder.bitmask ul li.boolean .c {
 	width:auto;
+}
+
+li.folder.bitmask ul li.title {
+	whitespace:nowrap; 
+}
+li.folder.bitmask ul li.title .labellist {
+ word-spacing: -2px;
+
+ }
+li.folder.bitmask ul li.title .labellist .prop {
+	font-size:9px;
+	color:magenta;
+	margin:0 0px;
+	
+
 }
 
 li.folder.instance .title {
