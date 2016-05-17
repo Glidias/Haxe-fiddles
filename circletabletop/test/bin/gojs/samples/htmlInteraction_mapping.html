@@ -365,14 +365,6 @@
 		splitExp.shift();  // remove off selected prefix in expression
 		
 		if (newValue != null && typeof(newValue) === "object") {
-			
-			/*
-			if (newValue._hxcls != null) {
-				//TODO: check if newValue needs to e converted
-				//alert("TODO: need to serialize newValue as proper class!");
-				
-			}
-			*/
 			newValue = TJSON.parse(TJSON.encode(newValue));
 		}
 		/*
@@ -431,8 +423,6 @@
 	
 		// setup new location def
 		vueModel.selected = newVueModelData;
-		
-		// nodeVal.defOverwrites TODO
 		
 		// nodeVal.state
 	}
