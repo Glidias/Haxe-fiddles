@@ -4700,10 +4700,7 @@ textifician_mapping_PropertyChainHolder.prototype = {
 			var propToSet = this.propertyChain[i];
 			propStack.push(propToSet);
 			cur = this.setPropertyOf(cur,propToSet,val,i >= len - 1,propStack);
-			if(cur == null) {
-				console.log("EXITING null: " + Std.string(val));
-				return null;
-			}
+			if(cur == null) return null;
 		}
 		return cur;
 	}

@@ -171,7 +171,7 @@ class PropertyChainHolder {
 			propStack.push(propToSet);
 			cur = setPropertyOf(cur, propToSet, val, i >= len -1, propStack);
 			if (cur == null) {
-				trace("EXITING null: " + val);
+			//	trace("EXITING null: " + val);
 				return null;
 			}
 		}

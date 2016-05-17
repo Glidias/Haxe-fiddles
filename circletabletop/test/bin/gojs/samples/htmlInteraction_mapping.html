@@ -36,7 +36,6 @@
 	}
 	
 	// TODO:
-	// reset instances for dat-instance directive?
 	
 	// pin adornment
 	// do not allow selection of prototypes, hide locationdefinition guis for prototypes
@@ -145,17 +144,20 @@
 		item.attr( "v-bind:value", item.val());
 	});
 	*/
-	
+
 	Vue.directive('dat-instance', {  // Binds to Dat.gui folders's domElement.firstChild => UL element
-		bind: function() {
+		bind: function(val) {
 			var self = this;
 			this._datGui = $(this.el).data("dat-gui");
 			 this._datGui.onClosedChange( function(isClosed) {
 				self.vm.$set( self.expression, (isClosed ? null : self._datGui._guiGlueParams ) );
 			 });
 		},
-		update: function(val) {
+		update: function(val, lastVal) {
+	
 			this._datGui.closed = val == null;
+		
+			
 		},
 		unbind: function() {
 			this._datGui.onClosedChanged(null);
@@ -281,7 +283,14 @@
 	var c;
 	var f;
 	var expressionPrefix = "selected.";
-
+	var guiSubInstances = [];
+	
+	function resetAllGUISubInstances() {   
+		var i  = guiSubInstances.length;
+		while(--i > -1) {
+			guiGlueApplyDefaults(guiSubInstances[i]._guiGlue, guiSubInstances[i]._guiGlueParams);
+		}
+	}
 	
 	for (p in guiFolders) {
 		g= guiFolders[p];
@@ -289,6 +298,7 @@
 		if (g._guiGlue._dotPath != undefined) {
 			if (g._guiGlue._dotPath != "") {
 				$(g.domElement.firstChild).data("dat-gui", g).attr("v-dat-instance", expressionPrefix+ g._guiGlue._dotPath).attr("v-node", expressionPrefix+ g._guiGlue._dotPath);
+				guiSubInstances.push(g);
 			}
 			
 		    for (c in g.__controllers) {
@@ -394,7 +404,8 @@
 		data: { selected: $.extend(true, {}, gui._guiGlueParams) }
 	});
 	
-	
+
+	var lastInspectedLocDef = null;
 	function inspectGoNode(goNode) {
 
 		gui.domElement.removeAttribute("hidden");
@@ -407,10 +418,16 @@
 		
 		// consider todo: check if locDef is changed, if not changed no need to update
 		var locDef = nodeVal.def;
+		
+		if (lastInspectedLocDef != locDef) {
+			// reset temporary view-cache UI state values when location definition inspection-target changes
+			resetAllGUISubInstances(); 
+		}
+		lastInspectedLocDef = locDef;
 		// lazy JSON approach to convert a Model to vueModel
 		var jsonStr = TJSON.encode(locDef);
 		var newVueModelData = TJSON.parse(jsonStr);
-		console.log("Inspecting", locDef);
+		//console.log("Inspecting", locDef);
 	
 		// setup new location def
 		vueModel.selected = newVueModelData;
