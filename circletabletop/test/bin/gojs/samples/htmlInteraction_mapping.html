@@ -36,7 +36,7 @@
 	}
 	
 	// TODO:
-	// indoor location specs instance reference/de-reference directive
+	// reset instances for dat-instance directive?
 	
 	// pin adornment
 	// do not allow selection of prototypes, hide locationdefinition guis for prototypes
@@ -155,8 +155,7 @@
 			 });
 		},
 		update: function(val) {
-			this._datGui.isClosed = val == null;
-			console.log("to close it?"+(val == null));  // TODO: this isn't firing the open/close action, also vmodel not firing for nested property
+			this._datGui.closed = val == null;
 		},
 		unbind: function() {
 			this._datGui.onClosedChanged(null);
@@ -174,7 +173,9 @@
 			 });
 		},
 		update: function(val) {
-			this._datController.value = val;//(val);
+			if (isNaN(val)) return;
+			this._datController.setValue(val);//(val);
+			this._datController.updateDisplay();
 		},
 		unbind: function() {
 			 this._datController.onChange(null);
@@ -296,11 +297,16 @@
 				var dotPath =( g._guiGlue._dotPath!= "" ?  g._guiGlue._dotPath + "." : "")+ cn.property;
 				if (cn.domElement.firstChild.nodeName.toLowerCase() != "div") {  // assumed input
 					jQuery(cn.domElement.firstChild).data("dat-controller", cn);
+					
+					//if (jQuery(cn.domElement.firstChild).parents("li.number").length) {
+					//	cn.domElement.firstChild.setAttribute("lazy", "");
+					//}
 					if (!jQuery(cn.domElement.firstChild).parents("li.number").length) {
 						cn.domElement.firstChild.setAttribute("v-model", expressionPrefix+dotPath);
 					}
 					else {
 						cn.domElement.firstChild.setAttribute("v-dat-input", expressionPrefix+dotPath);
+					
 					}
 				}
 				else {
@@ -349,14 +355,17 @@
 		splitExp.shift();  // remove off selected prefix in expression
 		
 		if (newValue != null && typeof(newValue) === "object") {
-			console.log("ROOT:"+this.expression + " = " +newValue);
+			
+			/*
 			if (newValue._hxcls != null) {
 				//TODO: check if newValue needs to e converted
 				//alert("TODO: need to serialize newValue as proper class!");
-				newValue = TJSON.parse(JSON.stringify(newValue));
-				console.log("Converted newValue to:"+ newValue);
+				
 			}
+			*/
+			newValue = TJSON.parse(TJSON.encode(newValue));
 		}
+		/*
 		else {
 			if (splitExp.length > 1 && splitExp[0] === "indoorLocationSpecs") {
 				console.log(this.expression + " = " +newValue);
@@ -365,9 +374,11 @@
 				console.log("Setting the value as undefined: "+this.expression);
 			}
 		}
+		*/
 	
 		inspectPropertyChainLookup.setupProperty( _inspectedNodeVal.def,  splitExp.join(".") );
 		var result = inspectPropertyChainLookup.setPropertyChainValue(newValue);
+		
 		
 		var leafProp = splitExp[splitExp.length - 1];
 		
@@ -397,8 +408,9 @@
 		// consider todo: check if locDef is changed, if not changed no need to update
 		var locDef = nodeVal.def;
 		// lazy JSON approach to convert a Model to vueModel
-		var jsonStr = JSON.stringify(locDef);
-		var newVueModelData = JSON.parse(jsonStr);
+		var jsonStr = TJSON.encode(locDef);
+		var newVueModelData = TJSON.parse(jsonStr);
+		console.log("Inspecting", locDef);
 	
 		// setup new location def
 		vueModel.selected = newVueModelData;

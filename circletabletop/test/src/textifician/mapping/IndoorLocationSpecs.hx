@@ -20,6 +20,7 @@ class IndoorLocationSpecs
 	public static var DEFAULT_CEILING_THICKNESS:Float = 1;
 	public static var DEFAULT_CEILING_STRENGTH:Float = 1;
 
+
 	public function new() 
 	{
 		wallHeight = DEFAULT_WALL_HEIGHT;
@@ -27,6 +28,7 @@ class IndoorLocationSpecs
 		wallStrength = DEFAULT_WALL_STRENGTH;
 		ceilingThickness = DEFAULT_WALL_THICKNESS;
 		ceilingStrength = DEFAULT_CEILING_STRENGTH;
+
 	}
 
 	/**

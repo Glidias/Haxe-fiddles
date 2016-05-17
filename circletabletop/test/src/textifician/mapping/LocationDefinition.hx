@@ -241,7 +241,7 @@ class LocationDefinition
 	{
 		defaultLighting = LIGHTING_NORMAL;
 		fixtureDensity = DENSITY_NONE;
-		//indoorLocationSpecs = IndoorLocationSpecs.create();
+	//	indoorLocationSpecs = new IndoorLocationSpecs();
 		//if (Math.random() > .5) flags |= FLAG_ENTRANCE | FLAG_DOOR;
 		//else envFlags |= ENV_WALL_1 | ENV_CEILING_2;
 	}
