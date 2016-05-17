@@ -47,7 +47,10 @@
 	
 	function getCategoryStringFromType(newValue) {
 	
-		if (typeof(newValue) != 'number') return;
+		if (typeof(newValue) != 'number') {
+			alert("Wrong type assigned for:"+newValue + "::" +typeof(newValue));
+			return;
+		}
 		return newValue === LocationDefinition.TYPE_POINT ? "point" : newValue=== LocationDefinition.TYPE_PATH ? "path" : "region";
 	}
 	function getUniformSize(size) {
@@ -118,6 +121,9 @@
 
 	
 	window.init = init;
+	
+	var allLocationGUIDom = $("");
+
   function init() {
   
 	//DATGUI
@@ -125,7 +131,12 @@
 	specsLocationDefinition.size.step = .001;
 	
 	var params = {};
-	var gui = guiGlueRender(specsLocationDefinition, null, params);
+	
+	var gui = setupGUIGeneric( guiGlueRender(specsLocationDefinition, null, params) );
+	gui.domElement.setAttribute("id", "locationDefGUI");
+	var guiOverwriter = setupGUIGeneric( new dat.GUI() );
+	guiOverwriter.domElement.setAttribute("id", "locationDefGUIOverwriter");
+
 	gui.getControllerByName("size").__input.setAttribute("step", "any");
 	
 	// some mods for filtering
@@ -134,13 +145,16 @@
 		item = $(item);
 		item.attr( "number", "");
 	});
+
 	liNumberRows.find("select").each( function(index, item) {
 		item = $(item);
 		item.attr( "number", "");
 	});
+	
 	/*
 	liNumberRows.find("option").each( function(index, item) {
 		item = $(item);
+		
 		item.attr( "v-bind:value", item.val());
 	});
 	*/
@@ -166,7 +180,7 @@
 	
 
 	
-	Vue.directive('dat-input',{  // Binds to Dat.gui controller's domElement.firstChild => Div input element
+	Vue.directive('dat-numeric-input',{  // Binds to Dat.gui controller's domElement.firstChild => Div input element
 		bind: function() {
 			var self = this;
 			this._datController = $(this.el).data("dat-controller");
@@ -282,7 +296,7 @@
 	var g;
 	var c;
 	var f;
-	var expressionPrefix = "selected.";
+	var expressionPrefix = "selected.def.";
 	var guiSubInstances = [];
 	
 	function resetAllGUISubInstances() {   
@@ -305,18 +319,17 @@
 				var cn = g.__controllers[c];
 				
 				var dotPath =( g._guiGlue._dotPath!= "" ?  g._guiGlue._dotPath + "." : "")+ cn.property;
-				if (cn.domElement.firstChild.nodeName.toLowerCase() != "div") {  // assumed input
+				var nodeName = cn.domElement.firstChild.nodeName.toLowerCase();
+				if (nodeName != "div") {  // assumed input
 					jQuery(cn.domElement.firstChild).data("dat-controller", cn);
-					
 					//if (jQuery(cn.domElement.firstChild).parents("li.number").length) {
 					//	cn.domElement.firstChild.setAttribute("lazy", "");
 					//}
-					if (!jQuery(cn.domElement.firstChild).parents("li.number").length) {
-						cn.domElement.firstChild.setAttribute("v-model", expressionPrefix+dotPath);
+					if (jQuery(cn.domElement.firstChild).parents("li.number").length && nodeName === "input") {
+						cn.domElement.firstChild.setAttribute("v-dat-numeric-input", expressionPrefix+dotPath);
 					}
 					else {
-						cn.domElement.firstChild.setAttribute("v-dat-input", expressionPrefix+dotPath);
-					
+						cn.domElement.firstChild.setAttribute("v-model", expressionPrefix+dotPath);
 					}
 				}
 				else {
@@ -349,12 +362,12 @@
 	
 
 	// App specific setup
-	$(gui.domElement).attr("id", "locationDefGUI");
 	
 	var inspectPropertyChainLookup = TextificianUtil.getPropertyChainObj({}, "");
 	var _inspectedNodeVal=null;
 	var _inspectedGoNode = null;
 	var leafBindingHash = { size:"desiredSize", label:"text", type:"category" };
+	
 	
 	Vue.directive('node', function(newValue, oldValue) {
 		if (_inspectedNodeVal == null) return;
@@ -363,24 +376,13 @@
 		
 		var splitExp  = this.expression.split(".");
 		splitExp.shift();  // remove off selected prefix in expression
-		
+
 		if (newValue != null && typeof(newValue) === "object") {
 			newValue = TJSON.parse(TJSON.encode(newValue));
 		}
-		/*
-		else {
-			if (splitExp.length > 1 && splitExp[0] === "indoorLocationSpecs") {
-				console.log(this.expression + " = " +newValue);
-			}
-			else if (newValue === undefined) {
-				console.log("Setting the value as undefined: "+this.expression);
-			}
-		}
-		*/
-	
-		inspectPropertyChainLookup.setupProperty( _inspectedNodeVal.def,  splitExp.join(".") );
-		var result = inspectPropertyChainLookup.setPropertyChainValue(newValue);
 		
+		inspectPropertyChainLookup.setupProperty( _inspectedNodeVal,  splitExp.join(".") );
+		var result = inspectPropertyChainLookup.setPropertyChainValue(newValue);
 		
 		var leafProp = splitExp[splitExp.length - 1];
 		
@@ -390,17 +392,18 @@
 	});
 	
 	
-	// Vuemodel for LocationDefinition only
+	// Vuemodel for minimal selected LocationPacket containing LocationDefinition only
 	var vueModel = new Vue({
 		el:"#locationDefGUI",
-		data: { selected: $.extend(true, {}, gui._guiGlueParams) }
+		data: { selected: { def: $.extend(true, {}, gui._guiGlueParams) }  }
 	});
 	
 
 	var lastInspectedLocDef = null;
 	function inspectGoNode(goNode) {
 
-		gui.domElement.removeAttribute("hidden");
+		allLocationGUIDom.removeAttr("hidden");
+		guiOverwriter.domElement.removeAttribute("hidden");
 		
 		var node = goNode.node;
 		_inspectedGoNode = goNode;
@@ -422,13 +425,17 @@
 		//console.log("Inspecting", locDef);
 	
 		// setup new location def
-		vueModel.selected = newVueModelData;
+		vueModel.selected.def = newVueModelData;
 		
 		// nodeVal.state
 	}
 
-	gui.domElement.addEventListener('dragstart', onUIDragStart);
-	gui.domElement.addEventListener('dragstop', onUIDragStop);
+	function setupGUIGeneric(gui) {
+		gui.domElement.addEventListener('dragstart', onUIDragStart);
+		gui.domElement.addEventListener('dragstop', onUIDragStop);
+		allLocationGUIDom = allLocationGUIDom.add($(gui.domElement));
+		return gui;
+	}
   
 	// GOJS
     if (window.goSamples) goSamples();  // init for these samples -- you don't need to call this
@@ -571,7 +578,7 @@
 			 
 		var goParams = [go.Node, panelLayout,
         { locationSpot: go.Spot.Center },
-        new go.Binding("location", "loc").makeTwoWay(), new go.Binding("category", "", function(v) { return v.node ? getCategoryStringFromType(v.node.val.def.type) : v.category; }  ) ];
+        new go.Binding("location", "loc").makeTwoWay(), new go.Binding("category", "", function(v) {  return v.node ? getCategoryStringFromType(v.node.val.def.type) : v.category; }  ) ];
 			
 		if (panelLayout == go.Panel.Spot)  {
 			goParams.push(shape, textBlock);
@@ -975,7 +982,7 @@
 	myDiagram.addDiagramListener("ChangedSelection", function(e) {
 		var selection = myDiagram.selection.first();
 		  if (selection === null || !(selection instanceof go.GraphObject) || !selection.data || !selection.data.node ) {  // hide UIs
-			gui.domElement.setAttribute("hidden", true);
+			allLocationGUIDom.attr("hidden", true);
 		  return;
 		}
 		
@@ -1123,6 +1130,12 @@ with allowances for the title (top) and the resize handle (bottom)
 }
 #locationDefGUI > ul:before {
 	content: 'location definition';
+	display:block;
+	padding-left:10px;
+	background-color:#666666;	
+}
+#locationDefGUIOverwriter > ul:before {
+	content: 'location overwrites';
 	display:block;
 	padding-left:10px;
 	background-color:#666666;	
