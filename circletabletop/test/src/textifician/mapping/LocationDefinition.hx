@@ -145,7 +145,7 @@ class LocationDefinition
 	 * @param	implyEntrance  Defaulted to true. If "val" state setting of door is true, will imply to be an entrance as well.
 	 * @return
 	 */
-	public function makeDoor(val:Bool = true, implyEntrance:Bool=true):LocationDefinition {
+	@inspect public function makeDoor(val:Bool = true, implyEntrance:Bool=true):LocationDefinition {
 		if (val) {
 			flags |= implyEntrance ? FLAG_ENTRANCE : 0;
 			flags |= FLAG_DOOR;
@@ -186,23 +186,23 @@ class LocationDefinition
 		return this;
 	}
 	
-	private inline function resetShelterFlags():Void {
+	@inspect public inline function resetShelterFlags():Void {
 		envFlags &= ~(ENV_WALL_1|ENV_WALL_2|ENV_CEILING_1|ENV_CEILING_2);
 	}
-	private inline function resetShelterWallFlags():Void {
+	@inspect public inline function resetShelterWallFlags():Void {
 		envFlags &= ~(ENV_WALL_1|ENV_WALL_2);
 	}
-	private inline function resetShelterCeilingFlags():Void {
+	@inspect public inline function resetShelterCeilingFlags():Void {
 		envFlags &= ~(ENV_CEILING_1|ENV_CEILING_2);
 	}
 	
-	public function makeFullyIndoor():LocationDefinition {
+	@inspect public function makeFullyIndoor():LocationDefinition {
 		resetShelterFlags();
 		envFlags |= (ENV_WALL_1|ENV_WALL_2|ENV_CEILING_1|ENV_CEILING_2);
 		return this;
 	}
 	
-	public function makeFullyOutdoor():LocationDefinition {
+	@inspect public function makeFullyOutdoor():LocationDefinition {
 		resetShelterFlags();
 		return this;
 	}
@@ -218,14 +218,14 @@ class LocationDefinition
 	 * @param	ceilingAmount Amount of ceiling cover. Uses SHELTER_ values. A value of 0 none, 1 sparse, 2 half, or 3 for full
 	 * @return
 	 */
-	public function setupShelterAmounts(wallAmount:Int, ceilingAmount:Int):LocationDefinition {
+	@inspect public function setupShelterAmounts(wallAmount:Int, ceilingAmount:Int):LocationDefinition {
 		resetShelterFlags();
 		envFlags |= wallAmount == 0 ? 0 : wallAmount == 1 ? ENV_WALL_1 : wallAmount == 2 ? ENV_WALL_2 : (ENV_WALL_1 | ENV_WALL_2);
 		envFlags |= ceilingAmount == 0 ? 0 : ceilingAmount == 1 ? ENV_CEILING_1 : ceilingAmount == 2 ? ENV_CEILING_2 : (ENV_CEILING_1 | ENV_CEILING_2);
 		return this;
 	}
 	
-	public function setWallAmount(wallAmount:Int):LocationDefinition {
+	@inspect public function setWallAmount(wallAmount:Int):LocationDefinition {
 		resetShelterWallFlags();
 		envFlags |= wallAmount == 0 ? 0 : wallAmount == 1 ? ENV_WALL_1 : wallAmount == 2 ? ENV_WALL_2 : (ENV_WALL_1 | ENV_WALL_2);
 		return this;

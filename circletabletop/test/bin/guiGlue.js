@@ -83,6 +83,7 @@ function guiGlueRender(paramsGUI, optionsGUI, params, existingGUI) {
 			if (key.charAt(0) === "_") continue;  // ignore all underscores
 			
 			var subObj = obj[key];
+	
 			var leaf = isLeaf(subObj);
 		
 			if (leaf){

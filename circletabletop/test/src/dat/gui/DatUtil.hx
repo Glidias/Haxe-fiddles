@@ -31,6 +31,7 @@ class DatUtil
 	 */
 	public static function setup(instance:Dynamic, classe:Class<Dynamic>=null, options:Dynamic=null, dotPath:String=""):Dynamic 
 	{
+		var typeStr:String;
 		if (classe == null) classe = Type.getClass(instance);
 		if (options == null) options = { };
 		
@@ -48,6 +49,7 @@ class DatUtil
 		// @step	step:
 		// @color   display:color
 		
+		var funcFolder:Dynamic = null;
 		var cur:Dynamic;
 		var curVal:Dynamic;
 		var frStatics;
@@ -62,8 +64,8 @@ class DatUtil
 				
 		for (f in fieldsI) {
 			var fieldMeta = Reflect.field(meta, f.name);
-			
-			if (TypeApi.isVar(f.type) && (!ignoreInspectMeta ?  fieldMeta!=null && Reflect.hasField( fieldMeta, "inspect") : true ) ) {
+			var isVar = TypeApi.isVar(f.type);
+			if (isVar && (!ignoreInspectMeta ?  fieldMeta!=null && Reflect.hasField( fieldMeta, "inspect") : true ) ) {
 				
 				cur = Reflect.field(fieldMeta, "inspect");
 				
@@ -73,7 +75,7 @@ class DatUtil
 				else cur =  cur[0];
 				
 				curVal = Reflect.hasField(cur, "value") ? Reflect.field(cur, "value") : Reflect.getProperty(instance, f.name);
-				var typeStr = CTypeTools.toString(f.type);
+				typeStr = CTypeTools.toString(f.type);
 				
 	
 				if (typeStr == "Int" || typeStr=="UInt" || typeStr == "Float") {
@@ -256,10 +258,36 @@ class DatUtil
 					
 				}
 			}
+			else if (!isVar && fieldMeta!=null && Reflect.hasField( fieldMeta, "inspect") ) {
+				
+				
+				if (funcFolder == null) {
+					funcFolder = { };
+					
+				}
+				
+				// reflect field parameters into object instance?
+				
+				
+				//	cur = { _isLeaf:true, _isFunc:true, _funcParams };
+				//	Reflect.setField(fieldHash, f.name, cur);
+				
+				//typeStr = CTypeTools.toString(f.type);
+				
+			}
 		}
+		
+		if (funcFolder != null) {  // TODO
+	//		Reflect.setField(fieldHash, "function() ", funcFolder);
+		}
+		
+	
+		
 		
 		Reflect.setField(fieldHash, "_dotPath", dotPath);
 		Reflect.setField(fieldHash, "_hxclass", Type.getClassName(classe) );
+		
+		
 		return fieldHash;
 	}
 	

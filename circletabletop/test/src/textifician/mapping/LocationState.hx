@@ -5,6 +5,7 @@ import de.polygonal.ds.GraphNode;
  * ...
  * @author Glenn Ko
  */
+@:rtti
 @:expose
 class LocationState
 {
@@ -15,8 +16,10 @@ class LocationState
 	
 	//public var visibleNodesFromHere:Array<GraphNode<Dynamic>>;  // not needed, using simpler approach to infering visbility
 	public var thingsHere:Array<Dynamic>;  // store any uniquely defined things here for existing node
-	public var notes:String; // any custom notes can go here
-	public var flags:Int; 
+	
+	@inspect({display:"textarea"}) public var notes:String; // any custom notes can go here
+	@inspect() @bitmask("FLAG") public var flags:Int; 
+	
 	public var customData:Dynamic; // custom data extenesion stuff goes here if needed
 	
 	// door controls
@@ -24,22 +27,22 @@ class LocationState
 	// or open/close doors evens when a door is "locked".
 	// No sanity checks are done here and it's up to the game context to check/inform with the player accordingly...
 	
-	public function openDoorFully():LocationState {
+	@inspect public function openDoorFully():LocationState {
 		flags |= (FLAG_DOOR_OPEN_1|FLAG_DOOR_OPEN_2);
 		return this;
 	}
 	
-	public function openDoorPartially(ajarOnly:Bool = false):LocationState {
+	@inspect public function openDoorPartially(ajarOnly:Bool = false):LocationState {
 		flags &= ~(FLAG_DOOR_OPEN_1|FLAG_DOOR_OPEN_2);
 		flags |= ajarOnly ? FLAG_DOOR_OPEN_1 : FLAG_DOOR_OPEN_2;
 		return this;
 	}
 	
-	public function closeDoor():LocationState {
+	@inspect public function closeDoor():LocationState {
 		flags &= ~(FLAG_DOOR_OPEN_1|FLAG_DOOR_OPEN_2);
 		return this;
 	}
-	public function closeAndLockDoor():LocationState {
+	@inspect public function closeAndLockDoor():LocationState {
 		closeDoor();
 		flags |= FLAG_DOOR_LOCKED;
 		return this;
@@ -51,6 +54,10 @@ class LocationState
 	public function unlockDoor():LocationState {
 		flags &= ~FLAG_DOOR_LOCKED;
 		return this;
+	}
+	
+	public function toString():String {
+		return "[LocationState]";
 	}
 
 

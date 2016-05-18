@@ -40,8 +40,8 @@
 	// pin adornment
 	// do not allow selection of prototypes, hide locationdefinition guis for prototypes
 	
-	// location definition list dropdown
 	// location definition overwrites
+	// location definition list dropdown
 	// location state panel
 	
 	
@@ -130,13 +130,14 @@
 	var specsLocationDefinition = DatUtil.setup( new LocationDefinition() );
 	specsLocationDefinition.size.step = .001;
 	
-	var params = {};
-	
-	var gui = setupGUIGeneric( guiGlueRender(specsLocationDefinition, null, params) );
-	gui.domElement.setAttribute("id", "locationDefGUI");
-	var guiOverwriter = setupGUIGeneric( new dat.GUI() );
-	guiOverwriter.domElement.setAttribute("id", "locationDefGUIOverwriter");
 
+	var gui = setupGUIGeneric( guiGlueRender(specsLocationDefinition, null, {}) );
+	gui.domElement.setAttribute("id", "locationDefGUI");
+	var guiOverwriter = setupGUIGeneric( guiGlueRender(specsLocationDefinition, null, {}) );
+	guiOverwriter.domElement.setAttribute("id", "locationDefGUIOverwriter");
+	var guiStater = setupGUIGeneric( guiGlueRender( DatUtil.setup( new LocationState() ), null, {}) );
+	guiStater.domElement.setAttribute("id", "locationStateGUI");
+	
 	gui.getControllerByName("size").__input.setAttribute("step", "any");
 	
 	// some mods for filtering
@@ -158,6 +159,8 @@
 		item.attr( "v-bind:value", item.val());
 	});
 	*/
+	
+
 
 	Vue.directive('dat-instance', {  // Binds to Dat.gui folders's domElement.firstChild => UL element
 		bind: function(val) {
@@ -252,7 +255,7 @@
 						self.bitmaskValue &= ~(this._guiGlue._bit);
 					}
 					
-					self.vm.$set( self.expression, self.bitmaskValue );
+					if (self.vm.$get(self.expression) !== undefined) self.vm.$set( self.expression, self.bitmaskValue );
 					
 					//console.log( self.expression + "=" + self.bitmaskValue);
 				});
@@ -291,12 +294,12 @@
 	});
 
 
-	var guiFolders = gui.getAllGUIs();
+	
 	var p;
 	var g;
 	var c;
 	var f;
-	var expressionPrefix = "selected.def.";
+	
 	var guiSubInstances = [];
 	
 	function resetAllGUISubInstances() {   
@@ -306,66 +309,91 @@
 		}
 	}
 	
-	for (p in guiFolders) {
-		g= guiFolders[p];
-		
-		if (g._guiGlue._dotPath != undefined) {
-			if (g._guiGlue._dotPath != "") {
-				$(g.domElement.firstChild).data("dat-gui", g).attr("v-dat-instance", expressionPrefix+ g._guiGlue._dotPath).attr("v-node", expressionPrefix+ g._guiGlue._dotPath);
-				guiSubInstances.push(g);
-			}
+	//$(guiOverwriter.domElement).data("dat-gui", guiOverwriter).attr("v-if", "selected.defOverwrites != undefined");
+	
+//	$(guiOverwriter.domElement)
+
+	function setupGUIForVue(gui, expressionPrefix, ifSuffix) {
+		var guiFolders = gui.getAllGUIs();
+		var gotIf = ifSuffix != null;
+	
+		for (p in guiFolders) {
+			g= guiFolders[p];
 			
-		    for (c in g.__controllers) {
-				var cn = g.__controllers[c];
+			if (g._guiGlue._dotPath != undefined) {
+				if (g._guiGlue._dotPath != "") {
+					$(g.domElement.firstChild).data("dat-gui", g).attr("v-dat-instance", expressionPrefix+ g._guiGlue._dotPath).attr("v-node", expressionPrefix+ g._guiGlue._dotPath);
+					if (gotIf) {
+						$( $(g.domElement).parents("li")[0]).attr("v-if", expressionPrefix +g._guiGlue._dotPath +  ifSuffix);
+					}
+					guiSubInstances.push(g);
+				}
 				
-				var dotPath =( g._guiGlue._dotPath!= "" ?  g._guiGlue._dotPath + "." : "")+ cn.property;
-				var nodeName = cn.domElement.firstChild.nodeName.toLowerCase();
-				if (nodeName != "div") {  // assumed input
-					jQuery(cn.domElement.firstChild).data("dat-controller", cn);
-					//if (jQuery(cn.domElement.firstChild).parents("li.number").length) {
-					//	cn.domElement.firstChild.setAttribute("lazy", "");
-					//}
-					if (jQuery(cn.domElement.firstChild).parents("li.number").length && nodeName === "input") {
-						cn.domElement.firstChild.setAttribute("v-dat-numeric-input", expressionPrefix+dotPath);
+				for (c in g.__controllers) {
+					var cn = g.__controllers[c];
+					
+					var dotPath =( g._guiGlue._dotPath!= "" ?  g._guiGlue._dotPath + "." : "")+ cn.property;
+					
+					
+					var nodeName = cn.domElement.firstChild.nodeName.toLowerCase();
+					if (nodeName != "div") {  // assumed input
+						jQuery(cn.domElement.firstChild).data("dat-controller", cn);
+						//if (jQuery(cn.domElement.firstChild).parents("li.number").length) {
+						//	cn.domElement.firstChild.setAttribute("lazy", "");
+						//}
+						if (jQuery(cn.domElement.firstChild).parents("li.number").length && nodeName === "input") {
+							cn.domElement.firstChild.setAttribute("v-dat-numeric-input", expressionPrefix+dotPath);
+						}
+						else {
+							cn.domElement.firstChild.setAttribute("v-model", expressionPrefix+dotPath);
+						}
 					}
 					else {
-						cn.domElement.firstChild.setAttribute("v-model", expressionPrefix+dotPath);
+						if (jQuery(cn.domElement.firstChild).parents("li.has-slider").length) {
+							jQuery(cn.domElement.firstChild).data("dat-controller", cn).attr("v-dat-slider", expressionPrefix+dotPath);
+						}
+						else alert("TODO: NEED TO resolve controller directive for:"+cn.property);
+						
 					}
+					cn.domElement.firstChild.setAttribute("v-node", expressionPrefix+dotPath);
+					if (gotIf) $( $(cn.domElement).parents("li")[0]).attr("v-if", expressionPrefix + dotPath  +  ifSuffix);
 				}
-				else {
-					if (jQuery(cn.domElement.firstChild).parents("li.has-slider").length) {
-						jQuery(cn.domElement.firstChild).data("dat-controller", cn).attr("v-dat-slider", expressionPrefix+dotPath);
+				
+				for (f in g.__folders) {
+					var folder = g.__folders[f];
+					if (folder._guiGlue._dotPath == undefined) {
+						var parentLI = jQuery( jQuery(folder.domElement).parents("li")[0] );
+						if (parentLI.hasClass("bitmask")) {
+							var dotPath =( g._guiGlue._dotPath!= "" ?  g._guiGlue._dotPath + "." : "")+ f;
+							$(folder.domElement.firstChild).data("dat-gui", folder).attr("v-dat-bitmask", expressionPrefix+dotPath ).attr("v-node", expressionPrefix+dotPath);
+							if (gotIf) $( $(folder.domElement).parents("li")[0]).attr("v-if", expressionPrefix + dotPath  +  ifSuffix);
+						}
+						else {
+							//alert("TODO: need to resolve folder directive for:"+f );<br/>
+						}
 					}
-					else alert("TODO: NEED TO resolve controller directive for:"+cn.property);
-					
-				}
-				cn.domElement.firstChild.setAttribute("v-node", expressionPrefix+dotPath);
-			}
-			
-			for (f in g.__folders) {
-				var folder = g.__folders[f];
-				if (folder._guiGlue._dotPath == undefined) {
-					var parentLI = jQuery( jQuery(folder.domElement).parents("li")[0] );
-					if (parentLI.hasClass("bitmask")) {
-						var dotPath =( g._guiGlue._dotPath!= "" ?  g._guiGlue._dotPath + "." : "")+ f;
-						$(folder.domElement.firstChild).data("dat-gui", folder).attr("v-dat-bitmask", expressionPrefix+dotPath ).attr("v-node", expressionPrefix+dotPath);
-					}
-					
-					
-					else alert("TODO: need to resolve folder directive for:"+f );
 				}
 			}
 		}
 	}
+	setupGUIForVue(gui,  "selected.def.");
+	setupGUIForVue(guiOverwriter,  "selected.defOverwrites.", "!=undefined");
+	setupGUIForVue(guiStater,  "selected.state.");
+	gui.domElement.setAttribute("v-show", "selected.def");
+	guiOverwriter.domElement.setAttribute("v-show", "selected.defOverwrites");
+	guiOverwriter.domElement.setAttribute("v-node", "selected.defOverwrites");
+	guiStater.domElement.setAttribute("v-show", "selected.state");
+	guiStater.domElement.setAttribute("v-node", "selected.state");
 	
-	
+	$(guiOverwriter.domElement).add($(guiStater.domElement)).css("float", "none").css("margin-bottom", "28px").wrapAll($('<div style="float:right"></div>'));
 	
 
 	// App specific setup
 	
 	var inspectPropertyChainLookup = TextificianUtil.getPropertyChainObj({}, "");
 	var _inspectedNodeVal=null;
-	var _inspectedGoNode = null;
+	var _inspectedGoNodeData = null;
+	var _selectedGoNodeData = null;
 	var leafBindingHash = { size:"desiredSize", label:"text", type:"category" };
 	
 	
@@ -394,7 +422,7 @@
 	
 	// Vuemodel for minimal selected LocationPacket containing LocationDefinition only
 	var vueModel = new Vue({
-		el:"#locationDefGUI",
+		el:".dg.ac",
 		data: { selected: { def: $.extend(true, {}, gui._guiGlueParams) }  }
 	});
 	
@@ -406,10 +434,12 @@
 		guiOverwriter.domElement.removeAttribute("hidden");
 		
 		var node = goNode.node;
-		_inspectedGoNode = goNode;
+		_inspectedGoNodeData = goNode;
 		
 		var nodeVal = node.val;
 		_inspectedNodeVal = nodeVal;
+		
+
 		
 		// consider todo: check if locDef is changed, if not changed no need to update
 		var locDef = nodeVal.def;
@@ -420,13 +450,15 @@
 		}
 		lastInspectedLocDef = locDef;
 		// lazy JSON approach to convert a Model to vueModel
-		var jsonStr = TJSON.encode(locDef);
-		var newVueModelData = TJSON.parse(jsonStr);
+	
 		//console.log("Inspecting", locDef);
 	
 		// setup new location def
-		vueModel.selected.def = newVueModelData;
+		var jsonStr = TJSON.encode(nodeVal);
+		var newVueModelData = TJSON.parse(jsonStr);
 		
+		vueModel.selected = newVueModelData;
+
 		// nodeVal.state
 	}
 
@@ -781,7 +813,36 @@
 		}
 	}
 	
+	function vueNullifyPropertyOnInstanceChain(expression) {
+		var exprSplit = expression.split(".");
+		if (exprSplit.length >= 3) {
+		
+			var leaf = exprSplit.pop();
+			
+			nullifyPropertyOnInstanceChain(  vueModel.$get(exprSplit.join(".")), leaf, vueModel.$get(exprSplit.slice(0, exprSplit.length-1).join(".") ), exprSplit[exprSplit.length-1] );
+		}
+		else {
+			nullifyPropertyOnInstanceChain( vueModel.$get(exprSplit[0].toString()),  exprSplit[1].toString());
+		}
+	}
 	
+	function nullifyPropertyOnInstanceChain(instance, prop, parentObj, instanceProp) {
+		if (instance == null) return true;
+		if (instance[prop] !== undefined) instance[prop] = null;
+		
+		if (parentObj != null) {
+			var p;
+			for (p in instance) {
+				if (instance[p] != null) {
+					return true;
+				}
+			}
+			parentObj[instanceProp] = null;
+			return false;
+		}
+		
+		return true;
+	}
 	
 	
   myDiagram.model.linkKeyProperty = "key";
@@ -836,6 +897,17 @@
 					else if (c.propertyName === "text") {
 						methodToCalls.push(updateRelatedNodesOfModel, [e.model, c.object.node.val.def, "text"]);
 						methodToCalls.push(updateRelatedNodesOfModel, [myPalette.model, c.object.node.val.def, "text"]);
+						var n = c.object.node;
+						if (n != null && n.val=== _inspectedNodeVal  ) {
+							if(n.val.defOverwrites && n.val.defOverwrites.label!=null) {
+								vueModel.$set("selected.defOverwrites.label", n.val.defOverwrites.label);
+							}
+							else {
+								vueNullifyPropertyOnInstanceChain("selected.defOverwrites.label");
+							}
+							vueModel.$set("selected.def.label", n.val.def.label);
+							
+						}
 					}
 					else if (c.propertyName === "size") {
 
@@ -878,6 +950,12 @@
 					else {  // NEW NODE CASE
 						
 						e.model.setDataProperty(o,"node",v= world.addLocationNode(world.getLocationDef(o.locid).setSize(o.size.width), o.loc.x, o.loc.y, 0, null, null ));
+					
+					}
+					
+					
+					if (_selectedGoNodeData === o) {
+						//alert("A");
 						inspectGoNode(o);
 					}
 					
@@ -982,10 +1060,12 @@
 	myDiagram.addDiagramListener("ChangedSelection", function(e) {
 		var selection = myDiagram.selection.first();
 		  if (selection === null || !(selection instanceof go.GraphObject) || !selection.data || !selection.data.node ) {  // hide UIs
+			if (selection && selection.data != null) _selectedGoNodeData = selection.data;
 			allLocationGUIDom.attr("hidden", true);
 		  return;
 		}
 		
+		_selectedGoNodeData = selection.data;
 		inspectGoNode(selection.data);
 
 	
@@ -1136,6 +1216,12 @@ with allowances for the title (top) and the resize handle (bottom)
 }
 #locationDefGUIOverwriter > ul:before {
 	content: 'location overwrites';
+	display:block;
+	padding-left:10px;
+	background-color:#666666;	
+}
+#locationStateGUI > ul:before {
+	content: 'location state';
 	display:block;
 	padding-left:10px;
 	background-color:#666666;	
