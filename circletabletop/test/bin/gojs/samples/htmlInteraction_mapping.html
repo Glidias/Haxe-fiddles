@@ -42,7 +42,6 @@
 	
 	// location definition overwrites
 	// location definition list dropdown
-	// location state panel
 	
 	
 	function getCategoryStringFromType(newValue) {
@@ -123,6 +122,13 @@
 	window.init = init;
 	
 	var allLocationGUIDom = $("");
+	
+	
+	function guiFunction(obj, labelProp, func) {
+		var labelToUse =obj[labelProp];
+		obj[labelToUse] = func;
+		return labelToUse;
+	}
 
   function init() {
   
@@ -133,12 +139,36 @@
 
 	var gui = setupGUIGeneric( guiGlueRender(specsLocationDefinition, null, {}) );
 	gui.domElement.setAttribute("id", "locationDefGUI");
+	gui.getControllerByName("size").__input.setAttribute("step", "any");
+	
+	/*
+	var guiCmdLabels = {
+		"ADD_LOCATION_STATE": "Add location state..."
+	}
+	var guiCmd = setupGUIGeneric(new dat.GUI() ).add( guiCmdLabels,
+		guiFunction(guiCmdLabels, "ADD_LOCATION_STATE", function() {
+			alert("A");
+		}) 
+	);
+	guiCmd.domElement.setAttribute("id", "guiCmd");
+	*/
+	
+	
+	
 	var guiOverwriter = setupGUIGeneric( guiGlueRender(specsLocationDefinition, null, {}) );
 	guiOverwriter.domElement.setAttribute("id", "locationDefGUIOverwriter");
-	var guiStater = setupGUIGeneric( guiGlueRender( DatUtil.setup( new LocationState() ), null, {}) );
-	guiStater.domElement.setAttribute("id", "locationStateGUI");
 	
-	gui.getControllerByName("size").__input.setAttribute("step", "any");
+	//var guiStater = setupGUIGeneric( guiGlueRender( DatUtil.setup( new LocationState() ), null, {}) );
+	//guiStater.domElement.setAttribute("id", "locationStateGUI");
+	
+	var guiPacketer = new dat.GUI();
+	guiPacketer.addFolder( "position");
+	guiPacketer = setupGUIGeneric( guiGlueRender( DatUtil.setup(new LocationPacket()), null, {}, guiPacketer) );
+	guiPacketer.domElement.setAttribute("id", "guiPacketer");
+	$( guiPacketer.getFolderByName("state").domElement.firstChild ).children("li.title").html("Location state{{selected.state ? ':' : '?' }}");
+	$( guiPacketer.getFolderByName("position").domElement.firstChild ).children("li.title").html("position: {{ (selected ? '('+selected.x + ',' + selected.y + ',' + selected.z+')' : '') }}");
+	$( guiPacketer.getFolderByName("position").domElement.firstChild).append( $(guiPacketer.domElement).find("li.position") );
+
 	
 	// some mods for filtering
 	var liNumberRows = $(gui.domElement).find("li.number");	
@@ -152,15 +182,6 @@
 		item.attr( "number", "");
 	});
 	
-	/*
-	liNumberRows.find("option").each( function(index, item) {
-		item = $(item);
-		
-		item.attr( "v-bind:value", item.val());
-	});
-	*/
-	
-
 
 	Vue.directive('dat-instance', {  // Binds to Dat.gui folders's domElement.firstChild => UL element
 		bind: function(val) {
@@ -180,7 +201,6 @@
 			this._datGui.onClosedChanged(null);
 		}
 	});
-	
 
 	
 	Vue.directive('dat-numeric-input',{  // Binds to Dat.gui controller's domElement.firstChild => Div input element
@@ -241,7 +261,7 @@
 			
 			this.labelList = labelListCheck;
 			this.controllers = controllers;
-			
+			this._folder = folder;
 			
 			
 			for (i=0; i< len; i++) {
@@ -265,8 +285,15 @@
 		//	console.log( self.expression + "=" + this.bitmaskValue);
 		
 		},
-		update: function(val) {	
-			//alert(val);
+		update: function(val, lastVal) {	
+			//alert(val); 
+			if (val === undefined) {
+				val = this._folder._guiGlue._value;
+				
+			}
+			else if (!val) {
+				val = 0;
+			}
 			this.bitmaskValue = val;
 			
 			var i;
@@ -319,6 +346,7 @@
 	
 		for (p in guiFolders) {
 			g= guiFolders[p];
+			if (!g._guiGlue) continue;
 			
 			if (g._guiGlue._dotPath != undefined) {
 				if (g._guiGlue._dotPath != "") {
@@ -361,6 +389,7 @@
 				
 				for (f in g.__folders) {
 					var folder = g.__folders[f];
+					if (!folder._guiGlue) continue;
 					if (folder._guiGlue._dotPath == undefined) {
 						var parentLI = jQuery( jQuery(folder.domElement).parents("li")[0] );
 						if (parentLI.hasClass("bitmask")) {
@@ -378,14 +407,15 @@
 	}
 	setupGUIForVue(gui,  "selected.def.");
 	setupGUIForVue(guiOverwriter,  "selected.defOverwrites.", "!=undefined");
-	setupGUIForVue(guiStater,  "selected.state.");
+	setupGUIForVue(guiPacketer,  "selected.");
+	//setupGUIForVue(guiStater,  "selected.state.");
 	gui.domElement.setAttribute("v-show", "selected.def");
 	guiOverwriter.domElement.setAttribute("v-show", "selected.defOverwrites");
 	guiOverwriter.domElement.setAttribute("v-node", "selected.defOverwrites");
-	guiStater.domElement.setAttribute("v-show", "selected.state");
-	guiStater.domElement.setAttribute("v-node", "selected.state");
+	//guiStater.domElement.setAttribute("v-show", "selected.state");
+	//guiStater.domElement.setAttribute("v-node", "selected.state");
 	
-	$(guiOverwriter.domElement).add($(guiStater.domElement)).css("float", "none").css("margin-bottom", "28px").wrapAll($('<div style="float:right"></div>'));
+	$(guiOverwriter.domElement).add($(guiPacketer.domElement)).css("float", "none").css("margin-bottom", "28px").wrapAll($('<div style="float:right"></div>'));
 	
 
 	// App specific setup
@@ -423,7 +453,7 @@
 	// Vuemodel for minimal selected LocationPacket containing LocationDefinition only
 	var vueModel = new Vue({
 		el:".dg.ac",
-		data: { selected: { def: $.extend(true, {}, gui._guiGlueParams) }  }
+		data: {  selected: { x:0, y:0, z:0, def: $.extend(true, {}, gui._guiGlueParams) }  }
 	});
 	
 
@@ -889,6 +919,12 @@
 						if (n != null) {
 							n.val.x = c.newValue.x;
 							n.val.y = c.newValue.y;
+							if (_selectedGoNodeData === c.object) {  // sync location with vue gui
+								vueModel.selected.x = c.newValue.x;
+								vueModel.selected.y = c.newValue.y;
+							}
+							///vueModel.val.x = c.newValue.x;
+							//vueModel.val.y = 
 						}
 					}
 					else if (c.propertyName === "linkable") {
@@ -1154,17 +1190,17 @@ li.folder.bitmask ul li.title .labellist .prop {
 
 }
 
-li.folder.instance .title {
+li.folder.instance > div > ul >  li.title {
 	background-image:none;
 	padding-left:8px;
 }
 
-li.folder.instance .title:before {
+li.folder.instance  > div > ul >  li.title:before {
 	margin-right:8px;
 	content:'\2611';
 }
 
-li.folder.instance .closed .title:before {
+li.folder.instance  > div > ul.closed >  li.title:before {
 	content:'\2610';
 }
 
@@ -1226,6 +1262,8 @@ with allowances for the title (top) and the resize handle (bottom)
 	padding-left:10px;
 	background-color:#666666;	
 }
+
+
 
 #infoDraggableInstruct  {
 	

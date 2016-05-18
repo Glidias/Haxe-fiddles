@@ -64,7 +64,7 @@ class LocationState
 	
 	public function new() 
 	{
-		
+	//	flags = FLAG_DOOR_LOCKED;
 	}
 	
 }

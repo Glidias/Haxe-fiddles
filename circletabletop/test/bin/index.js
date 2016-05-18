@@ -681,6 +681,7 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath) {
 						if(gotBits) {
 							fieldHash[f.name] = bitMaskFolder;
 							bitMaskFolder._subProxy = "bitmask";
+							bitMaskFolder._value = curVal;
 						}
 					} else {
 						if(!Object.prototype.hasOwnProperty.call(cur,"step")) cur.step = 1;
@@ -4556,18 +4557,18 @@ textifician_mapping_LocationDefinition.prototype = {
 	}
 	,__class__: textifician_mapping_LocationDefinition
 };
-var textifician_mapping_LocationPacket = function() {
+var textifician_mapping_LocationPacket = $hx_exports.textifician.mapping.LocationPacket = function() {
 };
 $hxClasses["textifician.mapping.LocationPacket"] = textifician_mapping_LocationPacket;
 textifician_mapping_LocationPacket.__name__ = ["textifician","mapping","LocationPacket"];
 textifician_mapping_LocationPacket.__interfaces__ = [textifician_mapping_IXYZ];
 textifician_mapping_LocationPacket.prototype = {
-	state: null
-	,def: null
+	def: null
 	,defOverwrites: null
 	,x: null
 	,y: null
 	,z: null
+	,state: null
 	,getLabel: function() {
 		if(this.defOverwrites != null && this.defOverwrites.label != null) return this.defOverwrites.label; else return this.def.label;
 	}
@@ -5520,6 +5521,8 @@ textifician_mapping_LocationDefinition.SHELTER_NONE = 0;
 textifician_mapping_LocationDefinition.SHELTER_SPARSE = 1;
 textifician_mapping_LocationDefinition.SHELTER_HALF = 2;
 textifician_mapping_LocationDefinition.SHELTER_FULL = 3;
+textifician_mapping_LocationPacket.__meta__ = { fields : { x : { inspect : [{ _classes : ["position"], _readonly : true}]}, y : { inspect : [{ _classes : ["position"], _readonly : true}]}, z : { inspect : [{ _classes : ["position"]}]}, state : { inspect : null}}};
+textifician_mapping_LocationPacket.__rtti = "<class path=\"textifician.mapping.LocationPacket\" params=\"\">\n\t<implements path=\"textifician.mapping.IXYZ\"/>\n\t<def public=\"1\"><c path=\"textifician.mapping.LocationDefinition\"/></def>\n\t<defOverwrites public=\"1\"><d/></defOverwrites>\n\t<x public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"><e>{_classes:[\"position\"],_readonly:true}</e></m></meta>\n\t</x>\n\t<y public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"><e>{_classes:[\"position\"],_readonly:true}</e></m></meta>\n\t</y>\n\t<z public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"><e>{_classes:[\"position\"]}</e></m></meta>\n\t</z>\n\t<state public=\"1\">\n\t\t<c path=\"textifician.mapping.LocationState\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</state>\n\t<getLabel public=\"1\" set=\"method\" line=\"18\"><f a=\"\"><c path=\"String\"/></f></getLabel>\n\t<cloneOverwrites public=\"1\" set=\"method\" line=\"22\"><f a=\"\"><d/></f></cloneOverwrites>\n\t<new public=\"1\" set=\"method\" line=\"37\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":directlyUsed\"/>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
 textifician_mapping_LocationState.__meta__ = { fields : { notes : { inspect : [{ display : "textarea"}]}, flags : { inspect : null, bitmask : ["FLAG"]}, openDoorFully : { inspect : null}, openDoorPartially : { inspect : null}, closeDoor : { inspect : null}, closeAndLockDoor : { inspect : null}}};
 textifician_mapping_LocationState.__rtti = "<class path=\"textifician.mapping.LocationState\" params=\"\">\n\t<FLAG_DOOR_LOCKED public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;0)\" line=\"12\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<0)]]></e></m></meta>\n\t</FLAG_DOOR_LOCKED>\n\t<FLAG_DOOR_OPEN_1 public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;1)\" line=\"14\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<1)]]></e></m></meta>\n\t</FLAG_DOOR_OPEN_1>\n\t<FLAG_DOOR_OPEN_2 public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;2)\" line=\"15\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<2)]]></e></m></meta>\n\t</FLAG_DOOR_OPEN_2>\n\t<thingsHere public=\"1\"><c path=\"Array\"><d/></c></thingsHere>\n\t<notes public=\"1\">\n\t\t<c path=\"String\"/>\n\t\t<meta><m n=\"inspect\"><e>{display:\"textarea\"}</e></m></meta>\n\t</notes>\n\t<flags public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"/>\n\t\t\t<m n=\"bitmask\"><e>\"FLAG\"</e></m>\n\t\t</meta>\n\t</flags>\n\t<customData public=\"1\"><d/></customData>\n\t<openDoorFully public=\"1\" set=\"method\" line=\"30\">\n\t\t<f a=\"\"><c path=\"textifician.mapping.LocationState\"/></f>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</openDoorFully>\n\t<openDoorPartially public=\"1\" set=\"method\" line=\"35\">\n\t\t<f a=\"?ajarOnly\" v=\"false\">\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<c path=\"textifician.mapping.LocationState\"/>\n\t\t</f>\n\t\t<meta>\n\t\t\t<m n=\":value\"><e>{ajarOnly:false}</e></m>\n\t\t\t<m n=\"inspect\"/>\n\t\t</meta>\n\t</openDoorPartially>\n\t<closeDoor public=\"1\" set=\"method\" line=\"41\">\n\t\t<f a=\"\"><c path=\"textifician.mapping.LocationState\"/></f>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</closeDoor>\n\t<closeAndLockDoor public=\"1\" set=\"method\" line=\"45\">\n\t\t<f a=\"\"><c path=\"textifician.mapping.LocationState\"/></f>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</closeAndLockDoor>\n\t<lockDoor public=\"1\" set=\"method\" line=\"50\"><f a=\"\"><c path=\"textifician.mapping.LocationState\"/></f></lockDoor>\n\t<unlockDoor public=\"1\" set=\"method\" line=\"54\"><f a=\"\"><c path=\"textifician.mapping.LocationState\"/></f></unlockDoor>\n\t<toString public=\"1\" set=\"method\" line=\"59\"><f a=\"\"><c path=\"String\"/></f></toString>\n\t<new public=\"1\" set=\"method\" line=\"65\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
 textifician_mapping_LocationState.FLAG_DOOR_LOCKED = 1;

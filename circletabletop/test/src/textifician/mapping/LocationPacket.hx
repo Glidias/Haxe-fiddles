@@ -4,14 +4,16 @@ package textifician.mapping ;
  * Node-specific data ..
  * @author Glenn Ko
  */
+@:rtti
+@:expose
 class LocationPacket implements IXYZ
 {
-	public var state:LocationState;
 	public var def:LocationDefinition;
 	public var defOverwrites:Dynamic; // any property overwrites for locationDefinition. If label is different, will be listed uniquely as well.
-	public var x:Float;
-	public var y:Float;
-	public var z:Float;
+	@inspect({_classes:['position'], _readonly:true}) public var x:Float;
+	@inspect({_classes:['position'],_readonly:true}) public var y:Float;
+	@inspect({_classes:['position']}) public var z:Float;
+	@inspect public var state:LocationState;
 	
 	public function getLabel():String {
 		return defOverwrites != null && defOverwrites.label != null ? defOverwrites.label : def.label;
