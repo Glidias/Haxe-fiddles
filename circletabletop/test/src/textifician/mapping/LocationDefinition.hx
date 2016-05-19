@@ -42,6 +42,12 @@ class LocationDefinition
 	public static inline var SHELTER_SPARSE:Int = 1;
 	public static inline var SHELTER_HALF:Int = 2;
 	public static inline var SHELTER_FULL:Int = 3;
+	
+	public static inline var SPEEDCAP_NONE:Int = 0;
+	public static inline var SPEEDCAP_CRAWL:Int = 1;
+	public static inline var SPEEDCAP_CAUTIOUS:Int = 2;
+	public static inline var SPEEDCAP_NORMAL:Int = 3;
+	public static inline var SPEEDCAP_HURRIED:Int = 4;
 
 	@inspect({_readonly:true}) public var id:String;
 	
@@ -49,7 +55,7 @@ class LocationDefinition
 	@inspect({display:"textarea" }) public var description:String;
 	@inspect @bitmask("FLAG") public var flags:Int;
 	@inspect public var size:Float; // convention for now: radius for TYPE_REGION, TYPE_POINT N/A, and TYPE_PATH size determines width of path 
-	@inspect({display:"selector", choices:[0,1,2]}) @choices("TYPE") public var type:Int;
+	@inspect({display:"selector"}) @choices("TYPE") public var type:Int;
 	
 	@inspect() @bitmask("ENV") public var envFlags:Int;
 
@@ -57,12 +63,15 @@ class LocationDefinition
 	
 	// procedural generation
 	public var generalFixtures:Array<String>;  // array of fixture definitions 
-	@inspect({display:"range"}) @range("DENSITY") public var fixtureDensity:Int;  // density of fixtures
+	@inspect( { display:"range" } ) @range("DENSITY") public var fixtureDensity:Int;  // density of fixtures
+	
+	@inspect({display:"selector"}) @choices("SPEEDCAP") public var speedcap:Int;
 
 	// variable that might be useful for point to point distance/breakpoint arc resolution
 	@inspect public var priorityIndex:Int;
 	
 	@inspect public var indoorLocationSpecs:IndoorLocationSpecs;
+	
 
 	
 
@@ -241,6 +250,7 @@ class LocationDefinition
 	{
 		defaultLighting = LIGHTING_NORMAL;
 		fixtureDensity = DENSITY_NONE;
+		speedcap = 0;
 	//	indoorLocationSpecs = new IndoorLocationSpecs();
 		//if (Math.random() > .5) flags |= FLAG_ENTRANCE | FLAG_DOOR;
 		//else envFlags |= ENV_WALL_1 | ENV_CEILING_2;

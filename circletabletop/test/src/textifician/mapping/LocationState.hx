@@ -22,6 +22,7 @@ class LocationState
 	
 	public var customData:Dynamic; // custom data extenesion stuff goes here if needed
 	
+	
 	// door controls
 	// it's techically possible to unlock/lock doors indepedantly (eg. adjust the bolt) while the door is opened or closed,
 	// or open/close doors evens when a door is "locked".

@@ -1,0 +1,78 @@
+Textifician engine/mapping platform is a next-generation mapping tool for text-based RPGs and beyond. With it, you can set up connections/relationships between world locations/zones for your quests, and use the engine to help infer tactical information like cover, line of sight, visibility, etc. across these multiple locations. Pathfinding and analysing of possible routes is available as part of this engine/tool, making it a suitable "gamemaster companion" to flesh out your RPG narrative.
+
+Global RPG settings:
+-----------------
+(default initial settings for all zones?)
+(Roughly each turn can be considered a "round")
+Standard turn duration (mainly when not fighting or not within combat range , ~60 seconds)
+Combat turn duration  (mainly for battles, ~6 seconds)
+Bout turn duration (mainly for close-up 1 on 1 fights, ~2 seconds)
+Overland turn duration (~1 day)
+
+Zone settings: (refer to class)
+-----------------
+Scale 
+Metric (will have to choose from various real-life standard metrics)
+etc.
+
+Environmental conditions:
+-------------------
+Time
+Weather
+(can inadvertedly affect maximum visiblity for person)
+
+
+Character settings:
+------------------
+Sight range:
+(Sight clarity range:) (KIV atm)
+Prefered speed setting: Sprinting  (or Normal for searching, Hurried for stamina conservation)
+Movement mode: Normal/Combat/Bout
+
+Character Results - 
+Visibility range:
+(Movement mode timecap: Normal will either use Overland travel timecap if consisting of sibling zones only, or Standard if location travel involved). Combat will normally use a smaller timecap from Normal.
+
+____________
+
+Additional info (-) / available queries(+)
+When select:
+
+Single zone
+  related zones
+  (
+    + all adjacient sibling zones from current zone
+    + all child zones under current zone
+    + all child locations under current zone
+  )
+  + can select all sibling zones immediately reachable within prefered speed and time (time is capped to a single timecap per click)
+
+Single location
+ - all visible locations from current location 
+ - contiguously visible locations with same label
+ + can select all contiguous locations with same label
+ + can select all surrounding locations immediately reachable within prefered speed and time (time is capped to a single timecap per click)
+
+2 locations  (deemed from location, to target location)
+ - Shortest time route available
+ + can select all other routes to target location available within prefered speed and time  (time is capped to a single timecap per click)
+ + can select routes to get furthest AWAY from target location( with filter for "while staying within current location" and filter for "staying hidden from target location")
+   (time is capped to a single timecap per tick, and the furthest "route" can end up being replaced with subsequent clicks)
+ (if adjacient)  + can select single connecting arc 
+
+>=2 locations
+  + can attempt to select all contigous arcs  (may result in none bieng selected if no adjaciently selected locations)
+
+
+Selected arcs can be resetted to:
+- auto-determined distance
+
+_________
+
+Standard navigational ACTIONS based on query:
+1) Goto target location  (target destination required if not chosen yet)
+2) Wander from current location (BFS or can choose DFS,  with optional flag to determine whether to keep within current location.). 
+3) Move away from target location
+4) Hide away form target location
+
+During navigational travel, will perform a pause if any 'new' location with new label/state is discovered by the player. Gamewise, it's possible for a player, particular someone that is rushing, to miss location state details along the way.
