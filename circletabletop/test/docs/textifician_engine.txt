@@ -66,6 +66,7 @@ Single location
 
 Selected arcs can be resetted to:
 - auto-determined distance
+- auto-determined costs (requires function to handle costs based on (fromNode, toNode).. )
 
 _________
 
