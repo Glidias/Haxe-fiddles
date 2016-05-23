@@ -1,4 +1,4 @@
-Textifician engine/mapping platform is a next-generation mapping tool for revolutionising the way narrative/text-based RPGs are played. With it, you can set up connections/relationships between world locations/zones for your quests, and use the engine to help infer tactical information like cover, line of sight, visibility, etc. across these multiple locations. Pathfinding and analysing of possible routes is available as part of this engine/tool, making it a suitable "gamemaster" companion to flesh out your RPG narrative.
+Textifician engine/mapping platform is a next-generation mapping tool for revolutionising the way narrative/text-based RPGs are played. With it, you can set up connections/relationships between world locations/zones for your quests, and use the engine to help infer tactical information like cover, line of sight, visibility, etc. across these multiple locations. Pathfinding and analysing of possible routes is available as part of this engine/tool, making it a suitable "gamemaster" companion to outline your RPG locations and add a tactical layer to your text-based RPG.
 
 Global RPG settings:
 -----------------

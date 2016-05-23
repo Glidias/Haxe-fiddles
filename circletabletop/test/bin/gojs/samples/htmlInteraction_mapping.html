@@ -408,9 +408,10 @@
 	setupGUIForVue(gui,  "selected.def.");
 	setupGUIForVue(guiOverwriter,  "selected.defOverwrites.", "!=undefined");
 	setupGUIForVue(guiPacketer,  "selected.");
+	guiPacketer.domElement.setAttribute("v-show", "gotLocation");
 	//setupGUIForVue(guiStater,  "selected.state.");
-	gui.domElement.setAttribute("v-show", "selected.def");
-	guiOverwriter.domElement.setAttribute("v-show", "selected.defOverwrites");
+	gui.domElement.setAttribute("v-show", "gotLocation && selected.def");
+	guiOverwriter.domElement.setAttribute("v-show", "gotLocation &&  selected.defOverwrites");
 	guiOverwriter.domElement.setAttribute("v-node", "selected.defOverwrites");
 	//guiStater.domElement.setAttribute("v-show", "selected.state");
 	//guiStater.domElement.setAttribute("v-node", "selected.state");
@@ -451,17 +452,20 @@
 	
 	
 	// Vuemodel for minimal selected LocationPacket containing LocationDefinition only
+	var vueModelData;
 	var vueModel = new Vue({
 		el:".dg.ac",
-		data: {  selected: { x:0, y:0, z:0, def: $.extend(true, {}, gui._guiGlueParams) }  }
+		data: (vueModelData= {  gotLocation:false, selected: { x:0, y:0, z:0, def: $.extend(true, {}, gui._guiGlueParams) }  })
 	});
 	
 
+
 	var lastInspectedLocDef = null;
 	function inspectGoNode(goNode) {
-
-		allLocationGUIDom.removeAttr("hidden");
-		guiOverwriter.domElement.removeAttribute("hidden");
+		
+		//allLocationGUIDom.removeAttr("hidden");
+		vueModel.gotLocation = true;
+		//guiOverwriter.domElement.removeAttribute("hidden");
 		
 		var node = goNode.node;
 		_inspectedGoNodeData = goNode;
@@ -1096,8 +1100,10 @@
 	myDiagram.addDiagramListener("ChangedSelection", function(e) {
 		var selection = myDiagram.selection.first();
 		  if (selection === null || !(selection instanceof go.GraphObject) || !selection.data || !selection.data.node ) {  // hide UIs
-			if (selection && selection.data != null) _selectedGoNodeData = selection.data;
-			allLocationGUIDom.attr("hidden", true);
+			if (selection && selection.data != null) _selectedGoNodeData = selection.data
+			
+			//allLocationGUIDom.attr("hidden", true);
+			 vueModel.gotLocation = false;
 		  return;
 		}
 		
@@ -1117,6 +1123,7 @@
           stop: function(){ myPalette.layoutDiagram(true); onUIDragStop(); }
         });
 
+		
         var inspector = new Inspector('infoDraggable', myDiagram,
           {
             
@@ -1132,7 +1139,45 @@
 			//*/
           });
 		  
+		  function assignPrefixBtn(btn) {
+			  btn.click( function() {
+				var txter = $("#infoDraggable > .inspector > .inspector-section");
+				if (txter.length) {
+					
+				}
+			  })
+			return btn;
+		  }
+		  var inspectorBtnContainer = $("#infoDraggable .inspector-button-container");
+		  inspectorBtnContainer.after($('<div id="prefix-btn-container"></div>'));
+		  var prefixBtnContainer = $("#prefix-btn-container");
+		  prefixBtnContainer.append(assignPrefixBtn($('<button>~</button>')));
+		  prefixBtnContainer.append(assignPrefixBtn($('<button>*</button>')));
+		  prefixBtnContainer.append(assignPrefixBtn($('<button>*#</button>')));
+		  prefixBtnContainer.append(assignPrefixBtn($('<button>^#</button>')));
+		  prefixBtnContainer.attr("v-show", "gotLocation");
+		  prefixBtnContainer.after('<div style="clear:both"></div><hr/>');
+		  
+		 inspectorBtnContainer =  $("#infoDraggable");
+		  inspectorBtnContainer.append('<div class="formelem"><label>#</label><select style="width:70%"></select><button v-show="gotLocation">Load</button><button v-show="!gotLocation">Edit</button></div><hr/>'); 
+		
+		 inspectorBtnContainer.append(prefixBtnContainer = $('<div v-show="gotLocation"></div>'));
+		
+		
+		 prefixBtnContainer.append('<div class="formelem"><label style="">Query</label><select style="min-width:60%"></select><button>Go</button></div>'); 
+		 
+		
+		var vuePanel = new Vue({
+			el:"#infoDraggable",
+			data: vueModelData
+		});
+	
+  
+  
+		  
         });
+		
+		
 
   }
   
@@ -1160,6 +1205,33 @@
 }
 .dg input[type=text] {
 	font-size:12px;
+}
+
+.formelem {
+	margin:5px 0;
+}
+.formelem input {
+	display:inline-block;
+	margin:0px 2px;
+
+}
+.formelem button {
+	display:inline-block;
+	margin:0px 2px;
+
+
+}
+.formelem label {
+	display:inline-block;
+	margin:0px 2px;
+
+	
+}
+.formelem select {
+	display:inline-block;
+	width:auto;
+	margin:0px 2px;
+
 }
 
 li.folder.bitmask ul {
@@ -1263,7 +1335,22 @@ with allowances for the title (top) and the resize handle (bottom)
 	background-color:#666666;	
 }
 
+.inspector-button-container {
+	float:left;
+}
 
+
+#prefix-btn-container {
+	
+	margin:0 auto;
+	display:block;
+	margin:7px;
+	float:left;
+	text-align:center;
+}
+#prefix-btn-container[hidden=hidden] {
+	display:none;
+}
 
 #infoDraggableInstruct  {
 	
@@ -1307,8 +1394,9 @@ with allowances for the title (top) and the resize handle (bottom)
 		<span>(no prefix)</span> <i>Create overwrite label</i> <hr/>
 		<span>~</span>  <i>Write label into existing location definition</i><hr/>
 		<span>#</span>   <i>Load location definition by id</i><hr/>
-		<span>*</span> <i>Save into New location definition (auto-generate id)</i><hr/>
-		<span>*#</span> <i>Save into New location definition (with id) </i><hr/>
+		<span>*</span> <i>Save into New location definition label and auto-generated id</i><br/>
+		<span>*#</span> <i>Save into New location definition id</i><br/>
+		<span>^#</span> <i>Rename to New location definition id</i><hr/>
 		<i>NOTE: When saving, if text is an empty string, will save all existing overwrites over current location definition id.</i>
 </p>
 	  </div>
