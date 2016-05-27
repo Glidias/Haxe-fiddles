@@ -76,7 +76,37 @@ class TextificianWorld
 		graph.addGetSingleArc(a, b).val = 331;
 	}
 	
+	public function getLocationDefinitionIds(ignoreHash:Dynamic=null):Array<String> {
+		
+		var arr:Array<String> = [];
+		for (p in locationDefs.keys()) {
+			if (ignoreHash == null || !Reflect.field(ignoreHash, p)) {
+				arr.push(p);
+			}
+		}
+		return arr;
+	}
+	
+	public function getDefaultLocationDefIdHash():Dynamic {
+		return { "Point":true, "Path":true, "Region":true  };
+	
+	}
+	
+	public function setLocationDefinitionIds(arr:Array<String>):Void {
+		var newStrMap:StringMap<LocationDefinition> = new StringMap<LocationDefinition>();
+		var len = arr.length;
+		for (i in 0...len) {
+			var locDef:LocationDefinition = getLocationDef(arr[i]);
+			if (locDef != null) {
+				newStrMap.set(locDef.id, locDef);
+			}
+			else trace("Warning!! LocationDefinition search for:" + arr[i] + " is empty!");
+		}
+		
+		locationDefs = newStrMap;
+	}
 
+	
 	
 	public static function serialize(world:TextificianWorld):String {
 		var serializer = new Serializer();
@@ -137,7 +167,9 @@ class TextificianWorld
 		return locationDefs.get(id);
 	}
 	
-	
+	public function removeLocationDef(def:LocationDefinition):Bool {
+		return locationDefs.remove(def.id);
+	}
 	
 	public function addLocationDef(def:LocationDefinition, forceOverwrite:Bool = false):LocationDefinition {
 	

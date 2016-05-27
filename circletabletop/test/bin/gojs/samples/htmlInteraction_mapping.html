@@ -166,7 +166,7 @@
 	guiPacketer = setupGUIGeneric( guiGlueRender( DatUtil.setup(new LocationPacket()), null, {}, guiPacketer) );
 	guiPacketer.domElement.setAttribute("id", "guiPacketer");
 	$( guiPacketer.getFolderByName("state").domElement.firstChild ).children("li.title").html("Location state{{selected.state ? ':' : '?' }}");
-	$( guiPacketer.getFolderByName("position").domElement.firstChild ).children("li.title").html("position: {{ (selected ? '('+selected.x + ',' + selected.y + ',' + selected.z+')' : '') }}");
+	$( guiPacketer.getFolderByName("position").domElement.firstChild ).children("li.title").html("position: {{ (selected && selected.x!== undefined ? '('+selected.x + ',' + selected.y + ',' + selected.z+')' : '') }}");
 	$( guiPacketer.getFolderByName("position").domElement.firstChild).append( $(guiPacketer.domElement).find("li.position") );
 
 	
@@ -212,7 +212,7 @@
 			 });
 		},
 		update: function(val) {
-			if (isNaN(val)) return;
+			if ( isNaN(val)) return;
 			this._datController.setValue(val);//(val);
 			this._datController.updateDisplay();
 		},
@@ -231,6 +231,7 @@
 			 });
 		},
 		update: function(val) {
+			if ( isNaN(val)) return;
 			this._datController.setValue(val);
 		},
 		unbind: function() {
@@ -410,7 +411,7 @@
 	setupGUIForVue(guiPacketer,  "selected.");
 	guiPacketer.domElement.setAttribute("v-show", "gotLocation");
 	//setupGUIForVue(guiStater,  "selected.state.");
-	gui.domElement.setAttribute("v-show", "gotLocation && selected.def");
+	gui.domElement.setAttribute("v-show", "selected.def");
 	guiOverwriter.domElement.setAttribute("v-show", "gotLocation &&  selected.defOverwrites");
 	guiOverwriter.domElement.setAttribute("v-node", "selected.defOverwrites");
 	//guiStater.domElement.setAttribute("v-show", "selected.state");
@@ -445,7 +446,7 @@
 		
 		var leafProp = splitExp[splitExp.length - 1];
 		
-		if ( leafBindingHash[leafProp] ) {
+		if ( vueModel.gotLocation && leafBindingHash[leafProp] ) {
 			updateRelatedNodesOfModel(myDiagram.model, _inspectedNodeVal.def, leafBindingHash[leafProp]);
 		}
 	});
@@ -453,9 +454,18 @@
 	
 	// Vuemodel for minimal selected LocationPacket containing LocationDefinition only
 	var vueModelData;
+	function setupNewVueModelData() {
+		return (vueModelData= {  
+			gotLocation:false, 
+			multiSelectedLocations:false,
+			selected: { x:0, y:0, z:0, def: $.extend(true, {}, gui._guiGlueParams) }, 
+			locationDefIds:world.getLocationDefinitionIds(world.getDefaultLocationDefIdHash())	
+		});
+	}
+	
 	var vueModel = new Vue({
 		el:".dg.ac",
-		data: (vueModelData= {  gotLocation:false, selected: { x:0, y:0, z:0, def: $.extend(true, {}, gui._guiGlueParams) }  })
+		data: setupNewVueModelData()
 	});
 	
 
@@ -760,6 +770,7 @@
 					return;
 				}
 				val = val.slice(1);
+				if (val === "" ) val = this.node.val.def.label;
 				if (this.node.val.defOverwrites != null) {
 					delete this.node.val.defOverwrites["label"];
 				}
@@ -800,6 +811,7 @@
 			
 				try {
 					world.addLocationDef(dupLoc);
+					vueModel.locationDefIds.push(dupLoc.id);
 					this.node.val.defOverwrites = null;
 					this.node.val.def = dupLoc;
 					this.isProto = false;
@@ -809,6 +821,45 @@
 					alert(err);
 				}
 				
+			}
+			else if (prefix === "^") {
+			
+				if (this.isProto || this.node.val.def.id =="Point" || this.node.val.def.id ==="Path" || this.node.val.def.id === "Region") {
+					alert("Sorry, cannot rename directly into prototype location definition! Save it first with * prefix!");
+					return;
+				}
+						
+						
+				val = val.slice(1);
+				
+				if (val.charAt(0) === "#") {  
+					val = val.slice(1);
+					if (val ===this.node.val.def.id) {
+						return;
+					}
+					
+					if (val === "") {  // TODO: delete
+						alert("TODO: deletion");
+						return;
+					}
+					else {
+					
+						if ( world.getLocationDef(val) == null ) {  // rename
+							world.removeLocationDef(this.node.val.def);
+							vueModel.locationDefIds.$set( vueModel.locationDefIds.indexOf(this.node.val.def.id), val);
+							this.node.val.def.id = val;
+							world.addLocationDef(this.node.val.def);
+						}
+						else { // consider todo: check trashed definition
+							return;
+						}
+						inspectGoNode(this);
+						return;
+					}
+				}
+				else {
+					return;
+				}
 			}
 			else {  // write label overwrite
 				if (val =="Point" || val ==="Path" || val === "Region") {
@@ -1096,15 +1147,37 @@
 	
 	myDiagramDivs = $("#myDiagramDiv").add($("#myPaletteDiv"));
 	
+	function getMultiSelectedLocations(diagramSelection) {
+		var arr = [];
+		 var it = diagramSelection.iterator;
+		 var selection;
+		  while (it.next()) {
+			selection = it.value;
+			if ( (selection instanceof go.Node) && selection.data && selection.data.node ) {
+				arr.push(selection.data.key);
+			}
+		  }
+		return arr.length > 1 ? arr : false;
+	}
 	
 	myDiagram.addDiagramListener("ChangedSelection", function(e) {
 		var selection = myDiagram.selection.first();
-		  if (selection === null || !(selection instanceof go.GraphObject) || !selection.data || !selection.data.node ) {  // hide UIs
+		
+		if (selection != null) {
+			vueModel.multiSelectedLocations = getMultiSelectedLocations(myDiagram.selection);
+		}
+		else {
+			vueModel.multiSelectedLocations = false;
+		}
+		
+		  if (selection === null || !(selection instanceof go.Node) || !selection.data || !selection.data.node ) {  // hide UIs
+			_inspectedNodeVal = null;
 			if (selection && selection.data != null) _selectedGoNodeData = selection.data
 			
-			//allLocationGUIDom.attr("hidden", true);
-			 vueModel.gotLocation = false;
-		  return;
+			vueModel.gotLocation = false;
+			vueModel.selected = null; 
+			 
+			return;
 		}
 		
 		_selectedGoNodeData = selection.data;
@@ -1159,7 +1232,7 @@
 		  prefixBtnContainer.after('<div style="clear:both"></div><hr/>');
 		  
 		 inspectorBtnContainer =  $("#infoDraggable");
-		  inspectorBtnContainer.append('<div class="formelem"><label>#</label><select style="width:70%"></select><button v-show="gotLocation">Load</button><button v-show="!gotLocation">Edit</button></div><hr/>'); 
+		  inspectorBtnContainer.append('<div class="formelem"><label>#</label><select style="width:70%" v-on:change="loadSelectedLocationDef" v-model="selectedLocationDefId"><option v-for="id in locationDefIds" value="{{id}}">{{id}}</option></select><button v-show="gotLocation" v-on:click="loadSelectedLocationDef">Load</button><button v-show="gotLocation && selectedLocationDefId!=null" v-on:click="applySelectedLocationDef">Apply{{ multiSelectedLocations ? " to all" : ""}}</button><button v-show="!gotLocation" v-on:click="editSelectedLocationDef">Edit</button></div><hr/>'); 
 		
 		 inspectorBtnContainer.append(prefixBtnContainer = $('<div v-show="gotLocation"></div>'));
 		
@@ -1169,7 +1242,109 @@
 		
 		var vuePanel = new Vue({
 			el:"#infoDraggable",
-			data: vueModelData
+			data: vueModelData,
+			methods: {
+				editSelectedLocationDef: function(e) {
+					if (this.gotLocation) {
+						alert("UI Exception: editSelectedLocationDef :: This should not be available! Only available without selected node location");
+						return false;
+					}
+					if ( this.selectedLocationDefId ) {
+						var locDef = world.getLocationDef(this.selectedLocationDefId);
+						if (locDef == null) {
+							alert("editSelectedLocationDef:: Location definition id not found exception: "+this.selectedLocationDefId);
+							return;
+						}
+						if (this.selected && this.selected.def && this.selected.def.id === this.selectedLocationDefId) {   // toggle off instead
+							this.selected  = null;
+							_inspectedNodeVal = null;
+						}
+						else {   // regular case edit
+							var jsonStr = TJSON.encode(locDef);
+							var vueModelSelectedDef = TJSON.parse(jsonStr);
+							_inspectedNodeVal = { def:locDef };
+						
+							this.selected =  { def:vueModelSelectedDef };
+						}
+	
+					}
+				}
+				,loadSelectedLocationDef: function(e) {
+					///*
+					if (!this.gotLocation) {
+						//alert("UI Exception: loadSelectedLocationDef :: This should not be available! Only available with selected node location");
+						return false;
+					}
+					//*/
+					if ( this.selectedLocationDefId ) {
+						var inputText = jQuery("#infoDraggable > .inspector >  .inspector-section input[type='text']");
+						inputText.val("#"+this.selectedLocationDefId);
+					}
+				}
+				,applySelectedLocationDef: function(e) {
+					///*
+					if (!this.gotLocation) {
+						alert("UI Exception: applyLocationDefinition :: This should not be available! Only available with selected node location");
+						return false;
+					}
+					//*/
+					if ( this.selectedLocationDefId ) {
+						var locDef = world.getLocationDef(this.selectedLocationDefId);
+						if (locDef == null) {
+							alert("applyLocationDefinition:: Location definition id not found exception: "+this.selectedLocationDefId);
+							return;
+						}
+						var nodeId;
+						var nodeData;
+						if (!this.multiSelectedLocations) {
+						
+							nodeData = _selectedGoNodeData; //myDiagram.model.findNodeDataForKey(nodeId);
+							if (nodeData == null) {
+								alert("applySelectedLocationDef():: _selectedGoNodeData data not found exception:: "+nodeId);
+								return;
+							}
+							if (nodeData.node == null) {
+								alert("applySelectedLocationDef():: Node data's de.polygonal node not found exception:: "+nodeId);
+								return;
+							}
+							nodeData.node.val.def = locDef;
+							myDiagram.model.updateTargetBindings(nodeData, "text");
+							inspectGoNode(nodeData);
+						}
+						else {
+							var multiSelectedLocations = this.multiSelectedLocations;
+							var i = multiSelectedLocations.length;
+							if (i ==0) {
+								alert("applySelectedLocationDef():: Exception empty array!");
+								return;
+							}
+							while(--i > -1) {
+								nodeId = multiSelectedLocations[i];
+								nodeData = myDiagram.model.findNodeDataForKey(nodeId);
+								if (nodeData == null) {
+									alert("applySelectedLocationDef():: Node data not found exception:: "+nodeId);
+									continue;
+								}
+								if (nodeData.node == null) {
+									alert("applySelectedLocationDef():: Node data's de.polygonal node not found exception:: "+nodeId);
+									continue;
+								}
+								nodeData.node.val.def = locDef;
+								myDiagram.model.updateTargetBindings(nodeData, "text");
+							}
+							//alert(multiSelectedLocations);
+							
+							inspectGoNode(nodeData);
+						}
+						
+						
+						
+						
+						
+					}
+				}
+				
+			}
 		});
 	
   
@@ -1337,14 +1512,23 @@ with allowances for the title (top) and the resize handle (bottom)
 
 .inspector-button-container {
 	float:left;
+	margin-left:0;
 }
-
-
+.inspector-button-container  input {
+	margin:0;
+}
+#prefix-btn-container   button {
+	margin:0;
+	margin-top:6px;
+	width:28px;
+}
 #prefix-btn-container {
 	
 	margin:0 auto;
+	margin-left:0;
+	padding-left:0;
 	display:block;
-	margin:7px;
+	
 	float:left;
 	text-align:center;
 }
@@ -1387,7 +1571,7 @@ with allowances for the title (top) and the resize handle (bottom)
     </div>
 
     <div id="infoDraggable" style="position:relative; display: inline-block; vertical-align: top; padding: 5px; z-index:1">
-      <div id="myInfo" style="visibility:visible; margin-bottom:10px;"><h1>Textifician Mapper</h1>Selecting nodes in the Main Canvas will show linked location definition here</div>
+      <div id="myInfo" style="visibility:visible; margin-bottom:10px;"><h1>Textifician Mapper</h1>Selecting a node in the Main Canvas will show linked location definition here</div>
 	  <div id="infoDraggableInstruct" style="position:absolute;bottom:0;left:0;padding:5px;">
 		 <h4>TEXT <span>prefix</span> legend:</h4>
 		 <p>
@@ -1397,7 +1581,7 @@ with allowances for the title (top) and the resize handle (bottom)
 		<span>*</span> <i>Save into New location definition label and auto-generated id</i><br/>
 		<span>*#</span> <i>Save into New location definition id</i><br/>
 		<span>^#</span> <i>Rename to New location definition id</i><hr/>
-		<i>NOTE: When saving, if text is an empty string, will save all existing overwrites over current location definition id.</i>
+		<i>NOTE: When saving, if text is an empty string, will save all existing overwrites over current location definition id. If renaming and text is empty, will perform deletion.</i>
 </p>
 	  </div>
     </div>
