@@ -384,8 +384,20 @@
 						else alert("TODO: NEED TO resolve controller directive for:"+cn.property);
 						
 					}
+					//alert( .length);
+					
+			
+					var overwriteTrigger = jQuery(jQuery(cn.domElement).parents("li")[0]).find(".overwritetrigger");
+					if (overwriteTrigger.length) {
+						if (!cn._guiGlue._readonly) {
+							overwriteTrigger.attr("v-on:click", "addLocationDefOverwrite('"+dotPath+"')").attr("v-show", "$get('selected.defOverwrites."+dotPath+ "') == null");
+						}
+						else {
+							overwriteTrigger.css("display", 'none').css("visibility", "hidden");
+						}
+					}
 					cn.domElement.firstChild.setAttribute("v-node", expressionPrefix+dotPath);
-					if (gotIf) $( $(cn.domElement).parents("li")[0]).attr("v-if", expressionPrefix + dotPath  +  ifSuffix);
+					if (gotIf) $( $(cn.domElement).parents("li")[0]).attr("v-show", expressionPrefix + dotPath  +  ifSuffix);
 				}
 				
 				for (f in g.__folders) {
@@ -396,7 +408,11 @@
 						if (parentLI.hasClass("bitmask")) {
 							var dotPath =( g._guiGlue._dotPath!= "" ?  g._guiGlue._dotPath + "." : "")+ f;
 							$(folder.domElement.firstChild).data("dat-gui", folder).attr("v-dat-bitmask", expressionPrefix+dotPath ).attr("v-node", expressionPrefix+dotPath);
-							if (gotIf) $( $(folder.domElement).parents("li")[0]).attr("v-if", expressionPrefix + dotPath  +  ifSuffix);
+							var folderLi =  $( $(folder.domElement).parents("li")[0]);
+							if (gotIf) folderLi.attr("v-show", expressionPrefix + dotPath  +  ifSuffix);
+							var overwriteTrigger = folderLi.children(".overwritetrigger");
+							
+							overwriteTrigger.attr("v-on:click", "addLocationDefOverwrite('"+dotPath+"')").attr("v-show", "$get('selected.defOverwrites."+dotPath+ "') == null");;
 						}
 						else {
 							//alert("TODO: need to resolve folder directive for:"+f );<br/>
@@ -406,14 +422,20 @@
 			}
 		}
 	}
+	
+	$(gui.domElement).children("ul").children("li").children().children(".property-name").append('<span class="overwritetrigger">+</span>');
+	$(gui.domElement).children("ul").children("li.instance, li.bitmask").append('<span class="overwritetrigger">+</span>');
 	setupGUIForVue(gui,  "selected.def.");
-	setupGUIForVue(guiOverwriter,  "selected.defOverwrites.", "!=undefined");
+	
+	setupGUIForVue(guiOverwriter,  "selected.defOverwrites.", "!==undefined");
 	setupGUIForVue(guiPacketer,  "selected.");
 	guiPacketer.domElement.setAttribute("v-show", "gotLocation");
 	//setupGUIForVue(guiStater,  "selected.state.");
 	gui.domElement.setAttribute("v-show", "selected.def");
+	gui.domElement.setAttribute("v-bind:class", "{ 'disabled': isProto && gotLocation }");
 	guiOverwriter.domElement.setAttribute("v-show", "gotLocation &&  selected.defOverwrites");
 	guiOverwriter.domElement.setAttribute("v-node", "selected.defOverwrites");
+	
 	//guiStater.domElement.setAttribute("v-show", "selected.state");
 	//guiStater.domElement.setAttribute("v-node", "selected.state");
 	
@@ -454,9 +476,10 @@
 	
 	// Vuemodel for minimal selected LocationPacket containing LocationDefinition only
 	var vueModelData;
-	function setupNewVueModelData() {
+	function setupNewVueModelData() {  // Default vueModel template
 		return (vueModelData= {  
 			gotLocation:false, 
+			isProto:false,
 			multiSelectedLocations:false,
 			selected: { x:0, y:0, z:0, def: $.extend(true, {}, gui._guiGlueParams) }, 
 			locationDefIds:world.getLocationDefinitionIds(world.getDefaultLocationDefIdHash())	
@@ -465,7 +488,14 @@
 	
 	var vueModel = new Vue({
 		el:".dg.ac",
-		data: setupNewVueModelData()
+		data: setupNewVueModelData(),
+		methods: {
+			addLocationDefOverwrite: function(prop) {
+				var result = this.$get("selected.def."+prop);
+				//alert("adding: selected.defOverwrites."+prop+"="+result);
+				this.$set("selected.defOverwrites."+prop, result );
+			}
+		}
 	});
 	
 
@@ -474,6 +504,8 @@
 	function inspectGoNode(goNode) {
 		
 		//allLocationGUIDom.removeAttr("hidden");
+		vueModel.isProto = goNode.isProto;
+	
 		vueModel.gotLocation = true;
 		//guiOverwriter.domElement.removeAttribute("hidden");
 		
@@ -641,7 +673,7 @@
 			 //new go.Binding("fill", "fill"),
 			 // new go.Binding("stroke", "stroke"),
 			   
-			 new go.Binding("desiredSize", "", function(v) { return v.node ? getUniformSize(v.node.val.def.size) : v.size; } )
+			 new go.Binding("desiredSize", "", function(v) { return v.node ? getUniformSize(v.node.val.defOverwrites && v.node.val.defOverwrites.size ?v.node.val.defOverwrites.size : v.node.val.def.size) : v.size; } )
 			  ,
 				   new go.Binding("fromLinkable", "", function(data) {
 						return myDiagram.model.modelData.linkable;
@@ -802,6 +834,7 @@
 						}
 						else writePropertiesOver(this.node.val.def , this.node.val.defOverwrites);
 						this.node.val.defOverwrites = null;
+						inspectGoNode(this);
 						return;
 					}
 					if (this.node.val.defOverwrites == null) this.node.val.defOverwrites = {};
@@ -1212,22 +1245,14 @@
 			//*/
           });
 		  
-		  function assignPrefixBtn(btn) {
-			  btn.click( function() {
-				var txter = $("#infoDraggable > .inspector > .inspector-section");
-				if (txter.length) {
-					
-				}
-			  })
-			return btn;
-		  }
+		 
 		  var inspectorBtnContainer = $("#infoDraggable .inspector-button-container");
 		  inspectorBtnContainer.after($('<div id="prefix-btn-container"></div>'));
 		  var prefixBtnContainer = $("#prefix-btn-container");
-		  prefixBtnContainer.append(assignPrefixBtn($('<button>~</button>')));
-		  prefixBtnContainer.append(assignPrefixBtn($('<button>*</button>')));
-		  prefixBtnContainer.append(assignPrefixBtn($('<button>*#</button>')));
-		  prefixBtnContainer.append(assignPrefixBtn($('<button>^#</button>')));
+		  prefixBtnContainer.append($('<button>~</button>').attr("v-on:click", "addTextPrefix('~')"));
+		  prefixBtnContainer.append($('<button>*</button>').attr("v-on:click", "addTextPrefix('*')") );
+		  prefixBtnContainer.append($('<button>*#</button>').attr("v-on:click", "addTextPrefix('*#')") );
+		  prefixBtnContainer.append($('<button>^#</button>').attr("v-on:click", "addTextPrefix('^*')") );
 		  prefixBtnContainer.attr("v-show", "gotLocation");
 		  prefixBtnContainer.after('<div style="clear:both"></div><hr/>');
 		  
@@ -1244,6 +1269,22 @@
 			el:"#infoDraggable",
 			data: vueModelData,
 			methods: {
+				addTextPrefix: function(prefix) {
+					var inputText = jQuery("#infoDraggable > .inspector >  .inspector-section input[type='text']");
+					if (!inputText.length) 
+					{
+						alert("addTextPrefix() Exception:: Could not find inputText");
+						return;
+					}
+					var curVal = inputText.val();
+					var sect2;
+					
+					sect2 = curVal.slice(2);
+					curVal = curVal.slice(0,2);
+					curVal = curVal.replace(/\*|\#|\^|\~/g, "");
+					curVal = prefix + curVal+sect2;
+					inputText.val(curVal);
+				},
 				editSelectedLocationDef: function(e) {
 					if (this.gotLocation) {
 						alert("UI Exception: editSelectedLocationDef :: This should not be available! Only available without selected node location");
@@ -1308,6 +1349,7 @@
 								return;
 							}
 							nodeData.node.val.def = locDef;
+							nodeData.isProto = false;
 							myDiagram.model.updateTargetBindings(nodeData, "text");
 							inspectGoNode(nodeData);
 						}
@@ -1330,6 +1372,7 @@
 									continue;
 								}
 								nodeData.node.val.def = locDef;
+								nodeData.isProto = false;
 								myDiagram.model.updateTargetBindings(nodeData, "text");
 							}
 							//alert(multiSelectedLocations);
@@ -1381,6 +1424,8 @@
 .dg input[type=text] {
 	font-size:12px;
 }
+
+
 
 .formelem {
 	margin:5px 0;
@@ -1450,6 +1495,7 @@ li.folder.instance  > div > ul >  li.title:before {
 li.folder.instance  > div > ul.closed >  li.title:before {
 	content:'\2610';
 }
+
 
 
 .handle {
@@ -1550,8 +1596,75 @@ with allowances for the title (top) and the resize handle (bottom)
 }
  canvas:focus{outline:none;}
  
+ 
+.dg.main.disabled li.cr:hover:after, .dg.main.disabled li.folder.instance:hover:after {
+	content:'Direct editing is disabled. * Save into a new location definition id first on left sidepanel.';
+	display:block;
+	position:absolute;
+	z-index:1;
+	line-height:18px;
+	right:20px;
+	max-width:100px;
+	background-color:black;
+	padding:2px;
+	
+}
+
+.dg.main li.folder.instance .overwritetrigger {
+/*
+	background-color:black;position:relative;z-index:1;top:0;left:0px;padding-left:10px;                 
+*/
+	}
+.dg.main .property-name  {
+	position:relative;
+}
+.dg.main .property-name .overwritetrigger, .dg.main li.folder.instance .overwritetrigger, .dg.main li.folder.bitmask .overwritetrigger {
+	position:absolute;
+	right:10px;
+	width:auto;
+	top:0px;
+	color:rgb(127,179,176);
+}
+.dg.main li.folder.instance .overwritetrigger, .dg.main li.folder.bitmask .overwritetrigger {
+	top:6px;
+	z-index:1;
+}
+.dg.main li.folder {
+	position:relative;
+}
+.dg.main .overwritetrigger {
+	cursor:pointer;
+}
+.dg.main .overwritetrigger:hover {
+	color:red !important;
+}
+
+.dg.main.disabled .c {
+	pointer-events:none;
+	opacity:.4;
+}
+
+
+.dg.main.disabled .folder.instance ul li.title {
+	pointer-events:none;
+	
+}
+
+
+.dg.main.disabled .folder.bitmask ul li {
+	pointer-events:none;
+
+}
+
+ .dg.main.disabled input {
+	background-color:black !important;
+}
+
+
+
  .dg input[readonly=readonly] {
 	color:yellow !important;
+	background-color:black !important;
 }
 
 </style>

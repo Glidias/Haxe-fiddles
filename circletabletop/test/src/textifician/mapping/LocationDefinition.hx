@@ -216,6 +216,7 @@ class LocationDefinition
 		return this;
 	}
 	
+	
 	public function setupIndoorLocationSpecs(locationSpecs:IndoorLocationSpecs):LocationDefinition {
 		indoorLocationSpecs = locationSpecs;
 		return this;
@@ -227,19 +228,21 @@ class LocationDefinition
 	 * @param	ceilingAmount Amount of ceiling cover. Uses SHELTER_ values. A value of 0 none, 1 sparse, 2 half, or 3 for full
 	 * @return
 	 */
-	@inspect public function setupShelterAmounts(wallAmount:Int, ceilingAmount:Int):LocationDefinition {
+	@inspect([ { inspect: { display:"range" }, range:"SHELTER" }, { inspect: { display:"range" }, range:"SHELTER" } ]) 
+	public function setupShelterAmounts(wallAmount:Int, ceilingAmount:Int):LocationDefinition {
 		resetShelterFlags();
 		envFlags |= wallAmount == 0 ? 0 : wallAmount == 1 ? ENV_WALL_1 : wallAmount == 2 ? ENV_WALL_2 : (ENV_WALL_1 | ENV_WALL_2);
 		envFlags |= ceilingAmount == 0 ? 0 : ceilingAmount == 1 ? ENV_CEILING_1 : ceilingAmount == 2 ? ENV_CEILING_2 : (ENV_CEILING_1 | ENV_CEILING_2);
 		return this;
 	}
 	
-	@inspect public function setWallAmount(wallAmount:Int):LocationDefinition {
+	@inspect({ inspect: { display:"range" }, range:"SHELTER" }) 
+	public function setWallAmount(wallAmount:Int):LocationDefinition {
 		resetShelterWallFlags();
 		envFlags |= wallAmount == 0 ? 0 : wallAmount == 1 ? ENV_WALL_1 : wallAmount == 2 ? ENV_WALL_2 : (ENV_WALL_1 | ENV_WALL_2);
 		return this;
 	}
-	
+	@inspect({ inspect: { display:"range" }, range:"SHELTER" }) 
 	public function setCeilingAmount(ceilingAmount:Int):LocationDefinition {
 		resetShelterCeilingFlags();
 		envFlags |= ceilingAmount == 0 ? 0 : ceilingAmount == 1 ? ENV_CEILING_1 : ceilingAmount == 2 ? ENV_CEILING_2 : (ENV_CEILING_1 | ENV_CEILING_2);
@@ -248,6 +251,7 @@ class LocationDefinition
 	
 	public function new() 
 	{
+		description = "";
 		defaultLighting = LIGHTING_NORMAL;
 		fixtureDensity = DENSITY_NONE;
 		speedcap = 0;
