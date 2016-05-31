@@ -116,6 +116,7 @@
 	
 	var world = new TextificianWorld();
 	world.setupDefaultNew();
+	var worldProtoLocIds = world.getDefaultLocationDefIdHash();
 	
 
 	
@@ -171,7 +172,7 @@
 
 	
 	// some mods for filtering
-	var liNumberRows = $(gui.domElement).find("li.number");	
+	var liNumberRows = $(gui.domElement).add($(guiOverwriter.domElement)).find("li.number");	
 	liNumberRows.find("input").each( function(index, item) {
 		item = $(item);
 		item.attr( "number", "");
@@ -341,9 +342,10 @@
 	
 //	$(guiOverwriter.domElement)
 
-	function setupGUIForVue(gui, expressionPrefix, ifSuffix) {
+	function setupGUIForVue(gui, expressionPrefix, ifSuffix, overwriteMethod) {
 		var guiFolders = gui.getAllGUIs();
 		var gotIf = ifSuffix != null;
+		if (overwriteMethod == null) overwriteMethod = "addLocationDefOverwrite";
 	
 		for (p in guiFolders) {
 			g= guiFolders[p];
@@ -352,11 +354,21 @@
 			if (g._guiGlue._dotPath != undefined) {
 				if (g._guiGlue._dotPath != "") {
 					$(g.domElement.firstChild).data("dat-gui", g).attr("v-dat-instance", expressionPrefix+ g._guiGlue._dotPath).attr("v-node", expressionPrefix+ g._guiGlue._dotPath);
+					
+					var overwriteTrigger = jQuery(jQuery(g.domElement).parents("li")[0]).find(".overwritetrigger").data("dat-gui", g);
+					overwriteTrigger.attr("v-on:click", overwriteMethod+"('"+g._guiGlue._dotPath+"', $event)");
+					//selected && selected.defOverwrites && 
+					if ( expressionPrefix === "selected.def.") overwriteTrigger.attr("v-show", "$get('selected.defOverwrites."+g._guiGlue._dotPath+ "') == null");
+					
 					if (gotIf) {
-						$( $(g.domElement).parents("li")[0]).attr("v-if", expressionPrefix +g._guiGlue._dotPath +  ifSuffix);
+						$( $(g.domElement).parents("li")[0]).attr("v-show", expressionPrefix +g._guiGlue._dotPath +  ifSuffix);
 					}
 					guiSubInstances.push(g);
+					
 				}
+				
+			
+					
 				
 				for (c in g.__controllers) {
 					var cn = g.__controllers[c];
@@ -384,18 +396,19 @@
 						else alert("TODO: NEED TO resolve controller directive for:"+cn.property);
 						
 					}
-					//alert( .length);
 					
-			
-					var overwriteTrigger = jQuery(jQuery(cn.domElement).parents("li")[0]).find(".overwritetrigger");
+					var overwriteTrigger = jQuery(jQuery(cn.domElement).parents("li")[0]).find(".overwritetrigger").data("dat-gui", cn);
 					if (overwriteTrigger.length) {
 						if (!cn._guiGlue._readonly) {
-							overwriteTrigger.attr("v-on:click", "addLocationDefOverwrite('"+dotPath+"')").attr("v-show", "$get('selected.defOverwrites."+dotPath+ "') == null");
+							overwriteTrigger.attr("v-on:click", overwriteMethod+"('"+dotPath+"', $event)");
+							//selected && selected.defOverwrites && 
+							if ( expressionPrefix === "selected.def.") overwriteTrigger.attr("v-show", "$get('selected.defOverwrites."+dotPath+ "') == null");
 						}
 						else {
 							overwriteTrigger.css("display", 'none').css("visibility", "hidden");
 						}
 					}
+					
 					cn.domElement.firstChild.setAttribute("v-node", expressionPrefix+dotPath);
 					if (gotIf) $( $(cn.domElement).parents("li")[0]).attr("v-show", expressionPrefix + dotPath  +  ifSuffix);
 				}
@@ -410,9 +423,11 @@
 							$(folder.domElement.firstChild).data("dat-gui", folder).attr("v-dat-bitmask", expressionPrefix+dotPath ).attr("v-node", expressionPrefix+dotPath);
 							var folderLi =  $( $(folder.domElement).parents("li")[0]);
 							if (gotIf) folderLi.attr("v-show", expressionPrefix + dotPath  +  ifSuffix);
-							var overwriteTrigger = folderLi.children(".overwritetrigger");
+							var overwriteTrigger = folderLi.children(".overwritetrigger").data("dat-gui", f);
 							
-							overwriteTrigger.attr("v-on:click", "addLocationDefOverwrite('"+dotPath+"')").attr("v-show", "$get('selected.defOverwrites."+dotPath+ "') == null");;
+							overwriteTrigger.attr("v-on:click", overwriteMethod+"('"+dotPath+"', $event)");
+							//selected && selected.defOverwrites && 
+							if ( expressionPrefix === "selected.def.") overwriteTrigger.attr("v-show", "$get('selected.defOverwrites."+dotPath+ "') == null");
 						}
 						else {
 							//alert("TODO: need to resolve folder directive for:"+f );<br/>
@@ -425,9 +440,13 @@
 	
 	$(gui.domElement).children("ul").children("li").children().children(".property-name").append('<span class="overwritetrigger">+</span>');
 	$(gui.domElement).children("ul").children("li.instance, li.bitmask").append('<span class="overwritetrigger">+</span>');
+	
+	$(guiOverwriter.domElement).children("ul").children("li").children().children(".property-name").append('<span class="overwritetrigger">-</span>');
+	$(guiOverwriter.domElement).children("ul").children("li.instance, li.bitmask").append('<span class="overwritetrigger">-</span>');
+	
 	setupGUIForVue(gui,  "selected.def.");
 	
-	setupGUIForVue(guiOverwriter,  "selected.defOverwrites.", "!==undefined");
+	setupGUIForVue(guiOverwriter,  "selected.defOverwrites.", "!==undefined", "removeLocationDefOverwrite");
 	setupGUIForVue(guiPacketer,  "selected.");
 	guiPacketer.domElement.setAttribute("v-show", "gotLocation");
 	//setupGUIForVue(guiStater,  "selected.state.");
@@ -490,10 +509,52 @@
 		el:".dg.ac",
 		data: setupNewVueModelData(),
 		methods: {
-			addLocationDefOverwrite: function(prop) {
+			addLocationDefOverwrite: function(prop, e) {
 				var result = this.$get("selected.def."+prop);
+				if (result != null && typeof result === "object") {
+					result = $.extend(true, {}, result);
+					
+				}
+				if (result == null) {
+					var datGui =$(e.target).data("dat-gui");
+					if (datGui._guiGlueParams) {
+					
+						result = $.extend(true, {}, datGui._guiGlueParams);
+					}
+					else {
+						result = datGui._guiGlue.value;
+					}
+					//alert();
+					
+					//result = 
+				
+				}
 				//alert("adding: selected.defOverwrites."+prop+"="+result);
 				this.$set("selected.defOverwrites."+prop, result );
+			}
+			,removeLocationDefOverwrite: function(prop) {
+				var overwrites = this.$get("selected.defOverwrites");
+				//alert("adding: selected.defOverwrites."+prop+"="+result);
+				var propArr = prop.split(".");
+				var leafProp = propArr.pop();
+				
+				if (propArr.length) {
+					alert("THis should not happen under this our case!");
+					Vue.delete( this.$get("selected.defOverwrites."+propArr.join(".")), leafProp);
+				}
+				else {
+					Vue.delete( overwrites, leafProp );
+					
+				}
+				
+				var p;
+				for (p in overwrites) {
+					if (p!= null) return;
+				}
+				Vue.delete(this.selected, "defOverwrites");
+				
+				
+				//
 			}
 		}
 	});
@@ -686,7 +747,7 @@
 			 
 		var goParams = [go.Node, panelLayout,
         { locationSpot: go.Spot.Center },
-        new go.Binding("location", "loc").makeTwoWay(), new go.Binding("category", "", function(v) {  return v.node ? getCategoryStringFromType(v.node.val.def.type) : v.category; }  ) ];
+        new go.Binding("location", "loc").makeTwoWay(), new go.Binding("category", "", function(v) {  return v.node ? getCategoryStringFromType(v.node.val.defOverwrites && v.node.val.defOverwrites.type!=null ? v.node.val.defOverwrites.type : v.node.val.def.type) : v.category; }  ) ];
 			
 		if (panelLayout == go.Panel.Spot)  {
 			goParams.push(shape, textBlock);
@@ -1171,7 +1232,7 @@
 	  pdrag.style.top = 8  + "px";
 	  pdrag.style.left = 270  + "px";
       pdrag.style.width = palette.documentBounds.width + 20  + "px";
-      pdrag.style.height = palette.documentBounds.height + 30 + "px";
+      pdrag.style.height = palette.documentBounds.height + 40 + "px";
     });
 	
 	$("#infoDraggable").focus( function() {
@@ -1252,7 +1313,7 @@
 		  prefixBtnContainer.append($('<button>~</button>').attr("v-on:click", "addTextPrefix('~')"));
 		  prefixBtnContainer.append($('<button>*</button>').attr("v-on:click", "addTextPrefix('*')") );
 		  prefixBtnContainer.append($('<button>*#</button>').attr("v-on:click", "addTextPrefix('*#')") );
-		  prefixBtnContainer.append($('<button>^#</button>').attr("v-on:click", "addTextPrefix('^*')") );
+		  prefixBtnContainer.append($('<button>^#</button>').attr("v-on:click", "addTextPrefix('^#')") );
 		  prefixBtnContainer.attr("v-show", "gotLocation");
 		  prefixBtnContainer.after('<div style="clear:both"></div><hr/>');
 		  
@@ -1265,6 +1326,63 @@
 		 prefixBtnContainer.append('<div class="formelem"><label style="">Query</label><select style="min-width:60%"></select><button>Go</button></div>'); 
 		 
 		
+		 var vuePalette = new Vue({ 
+			el:"#paletteDraggable",
+			data: {
+				vueData: vueModelData,
+				palHash: {}
+			},
+			methods: {
+				addToPalette: function() {
+					//
+					if (!this.vueData.gotLocation) {
+						 alert("No location selected!");
+						 return;
+					}
+					if (!this.vueData.isProto) {
+						// ok
+					}
+					else {
+						if (this.vueData.selected.defOverwrites && this.vueData.selected.defOverwrites.label && !worldProtoLocIds[this.vueData.selected.defOverwrites.label] ) {
+							// ok
+						}
+						else {
+							alert("Can't add to pallette, use a different overwrite text label first!");
+							return;
+						}
+					}
+					var type = this.$get("vueData.selected.defOverwrites.type");
+					if (type == null) type = this.vueData.selected.def.type;
+					var catType;
+					type = catType= LocationDefinition.getLocationDefinitionTypeLabel(type);
+					var key =  (this.$get("vueData.selected.defOverwrites.label") || this.vueData.selected.def.label)  + type;
+					if (this.palHash[key]) {
+						//myPalette.model.removeNodeData(this.palHash[key]);
+						alert("Already registered to palette something similar..");
+						return;
+					}
+					
+					
+					var selFirst = myDiagram.selection.first();
+					var nodeToClone = selFirst.data.node;
+					selFirst.data.node = null;
+					selFirst.data.locid = nodeToClone.val.def.id;
+					selFirst.data.category = catType.toLowerCase();
+
+					var copy = selFirst.copy();
+					
+					selFirst.data.node = nodeToClone;
+					
+					this.palHash[key] =  copy.data;
+					//	myPalette.add(copy);
+					myPalette.model.addNodeData(copy.data);
+					
+					
+					
+				}
+			}
+		 });
+		 
 		var vuePanel = new Vue({
 			el:"#infoDraggable",
 			data: vueModelData,
@@ -1598,7 +1716,7 @@ with allowances for the title (top) and the resize handle (bottom)
  
  
 .dg.main.disabled li.cr:hover:after, .dg.main.disabled li.folder.instance:hover:after {
-	content:'Direct editing is disabled. * Save into a new location definition id first on left sidepanel.';
+	content:'Direct editing is disabled. * Save/Load into a new location definition id first on left sidepanel.';
 	display:block;
 	position:absolute;
 	z-index:1;
@@ -1667,16 +1785,23 @@ with allowances for the title (top) and the resize handle (bottom)
 	background-color:black !important;
 }
 
+#btn_addToPal {
+	position:absolute;
+	bottom:0;
+	left:0;
+}
+
 </style>
 </head>
 <body onload="init()" style="margin:0;padding:0">
 <div id="sample">
 
-    <div id="paletteDraggable" class="draggable" style="height: 300px;	">
+    <div id="paletteDraggable" class="draggable" style="height: 300px;">
       <div id="paletteDraggableHandle" class="handle">Palette</div>
       <div id="paletteContainer">
         <div id="myPaletteDiv"></div>
       </div>
+	 <button id="btn_addToPal" v-on:click="addToPalette()" v-show="vueData.gotLocation">+</button>
     </div>
 
     <div style="display: block; z-index:0;vertical-align: top;  padding:0;margin:0;width:100%; height:100%;position:absolute; top;0; left:0;">

@@ -2,7 +2,7 @@ package textifician.mapping;
 
 
 /**
- * Reusable generic location data definition for a Location node's LocationPacket.
+ * Reu	sable generic location data definition for a Location node's LocationPacket.
  * @author Glenn Ko
  */
 @:rtti
@@ -63,7 +63,7 @@ class LocationDefinition
 	
 	// procedural generation
 	public var generalFixtures:Array<String>;  // array of fixture definitions 
-	@inspect( { display:"range" } ) @range("DENSITY") public var fixtureDensity:Int;  // density of fixtures
+	//@inspect( { display:"range" } ) @range("DENSITY") public var fixtureDensity:Int;  // density of fixtures
 	
 	@inspect({display:"selector"}) @choices("SPEEDCAP") public var speedcap:Int;
 
@@ -222,6 +222,10 @@ class LocationDefinition
 		return this;
 	}
 	
+	public static function getLocationDefinitionTypeLabel(val:Int):String {
+		return val == LocationDefinition.TYPE_PATH ? "Path" : val == LocationDefinition.TYPE_REGION ? "Region" : "Point";
+	}
+	
 	/**
 	 * 
 	 * @param	wallAmount	Amount of wall cover.  Uses SHELTER_ values. A value of 0 none, 1 sparse, 2 half, or 3 for full
@@ -253,7 +257,7 @@ class LocationDefinition
 	{
 		description = "";
 		defaultLighting = LIGHTING_NORMAL;
-		fixtureDensity = DENSITY_NONE;
+		//fixtureDensity = DENSITY_NONE;
 		speedcap = 0;
 	//	indoorLocationSpecs = new IndoorLocationSpecs();
 		//if (Math.random() > .5) flags |= FLAG_ENTRANCE | FLAG_DOOR;
