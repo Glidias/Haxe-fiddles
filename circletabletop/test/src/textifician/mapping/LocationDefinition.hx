@@ -13,7 +13,7 @@ class LocationDefinition
 	public static inline var FLAG_DOOR:Int = (1 << 1);  // indicates openable closable state
 	public static inline var FLAG_KEY:Int = (1 << 2);
 	public static inline var FLAG_LANDMARK:Int = (1 << 3);
-	public static inline var FLAG_ENCLOSED:Int = (1 << 4);  // force flag enclosed
+	public static inline var FLAG_VIS_ENCLOSED:Int = (1 << 4);  // force flag enclosed
 	
 	public static inline var TYPE_POINT:Int = 0;
 	public static inline var TYPE_PATH:Int = 1;
@@ -114,7 +114,9 @@ class LocationDefinition
 		return locDef;
 	}
 	
-	
+	public function toString():String {
+		return "[LocationDefinition:"+id+"]";
+	}
 	
 	public static inline function slugify(label:String):String
 	{

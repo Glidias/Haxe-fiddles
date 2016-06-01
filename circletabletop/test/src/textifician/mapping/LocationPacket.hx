@@ -19,12 +19,34 @@ class LocationPacket implements IXYZ
 		return defOverwrites != null && defOverwrites.label != null ? defOverwrites.label : def.label;
 	}
 	
-	public function cloneOverwrites():Dynamic {
+	public inline function setEmptyDefOverwrites():Void {
+		defOverwrites = Type.createEmptyInstance(LocationDefinition);
+	}
+	
+	public function setupNewDefOverwrites(obj:Dynamic):Void {
+		Type.createEmptyInstance
+		defOverwrites = { };// Type.createEmptyInstance(LocationDefinition);
+		applyDefOverwrites(obj);
+		
+	}
+	
+	public inline function applyDefOverwrites(obj:Dynamic):Void {
+		if (defOverwrites == null) setEmptyDefOverwrites();
+		var fields = 	Reflect.fields(obj);
+		for (p in fields) {
+			// we assume no need setProperty here..
+			Reflect.setField(defOverwrites, p, Reflect.field(obj, p) );
+			//obj[p] = defOverwrites[p];
+		}
+	}
+	
+	
+	public function cloneOverwritesDynamic():Dynamic {
 		if (defOverwrites == null) {
 				return null;
 		
 		}
-		var obj:Dynamic = { };
+		var obj:Dynamic = { };// Type.createEmptyInstance(LocationDefinition);
 		 // todo: proper clone for non-shallow cases
 		 var fields = 	Reflect.fields(defOverwrites);
 		for (p in fields) {
