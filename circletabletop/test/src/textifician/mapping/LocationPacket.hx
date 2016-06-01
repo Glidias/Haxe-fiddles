@@ -24,7 +24,7 @@ class LocationPacket implements IXYZ
 	}
 	
 	public function setupNewDefOverwrites(obj:Dynamic):Void {
-		Type.createEmptyInstance
+
 		defOverwrites = { };// Type.createEmptyInstance(LocationDefinition);
 		applyDefOverwrites(obj);
 		
