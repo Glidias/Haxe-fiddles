@@ -167,12 +167,12 @@
 
 	var guiArcMethods = {
 		selectMutualArc: function() {
-			// warn: gui vis assumptions assumed
+			// warning: gui vis assumptions assumed
 			var goArcData = myDiagram.model.findLinkDataForKey(vueModelData.selectedArc.mutualGoArc);
 			myDiagram.select( myDiagram.findLinkForData(goArcData) );
 		}
 		,selectConnectingArc: function() {
-			// warn: gui vis assumptions assumed
+			// warning: gui vis assumptions assumed
 			var multiSelectedLocations=  vueModel.multiSelectedLocations;
 			var from = myDiagram.model.findNodeDataForKey( multiSelectedLocations[0]); 
 			from = from._node;
@@ -203,7 +203,7 @@
 	
 	guiPacketer.addFolder( "position");
 	guiPacketer.add(guiArcMethods, "selectConnectingArc");
-	 getGuiControllerLi(guiPacketer, "selectConnectingArc").attr("v-show", "gotLocation && goSelectionCount==2 && multiSelectedLocations && multiSelectedLocations.length==2").find(".property-name").html("Select Connecting Arc");
+	 getGuiControllerLi(guiPacketer, "selectConnectingArc").attr("v-show", "gotLocation && goSelectionCount==2 && multiSelectedLocations && multiSelectedLocations.length==2 && hasConnectingArcBetween()").find(".property-name").html("Select Connecting Arc");
 	guiPacketer = setupGUIGeneric( guiGlueRender( DatUtil.setup(new LocationPacket()), null, {}, guiPacketer) );
 	guiPacketer.domElement.setAttribute("id", "guiPacketer");
 	$( guiPacketer.getFolderByName("state").domElement.firstChild ).children("li.title").html("Location state{{selected.state ? ':' : '?' }}");
@@ -638,6 +638,17 @@
 				
 				
 				//
+			}
+			,hasConnectingArcBetween: function() {
+				// warning: gui vis assumptions assumed
+				var multiSelectedLocations=  vueModel.multiSelectedLocations;
+				var from = myDiagram.model.findNodeDataForKey( multiSelectedLocations[0]); 
+				from = from._node;
+				var to = myDiagram.model.findNodeDataForKey( multiSelectedLocations[1]);
+				to = to._node;
+				
+				var arc = from.getArc(to);
+				return arc != null;
 			}
 		}
 	});
