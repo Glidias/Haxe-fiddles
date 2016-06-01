@@ -125,6 +125,10 @@
 	var allLocationGUIDom = $("");
 	
 	
+	function getGuiControllerLi(gui, controllerName) {
+		return $( $(gui.getControllerByName(controllerName).domElement).parents("li")[0] );
+	}
+	
 	function guiFunction(obj, labelProp, func) {
 		var labelToUse =obj[labelProp];
 		obj[labelToUse] = func;
@@ -141,29 +145,65 @@
 	var gui = setupGUIGeneric( guiGlueRender(specsLocationDefinition, null, {}) );
 	gui.domElement.setAttribute("id", "locationDefGUI");
 	gui.getControllerByName("size").__input.setAttribute("step", "any");
-
-	/*
-	var guiCmdLabels = {
-		"ADD_LOCATION_STATE": "Add location state..."
+	
+	// Vuemodel for minimal selected LocationPacket containing LocationDefinition only
+	var vueModelData;
+	function setupNewVueModelData() {  // Default vueModel template
+		return (vueModelData= {  
+			gotLocation:false, 
+			isProto:false,
+			multiSelectedLocations:false,
+			selectedArc: null,
+			goSelectionCount: true,
+			selectedArcOptions: {
+				autoSyncMutual:false
+			},
+			selected: { x:0, y:0, z:0, def: $.extend(true, {}, gui._guiGlueParams) }, 
+			locationDefIds:world.getLocationDefinitionIds(world.getDefaultLocationDefIdHash())	
+		});
 	}
-	var guiCmd = setupGUIGeneric(new dat.GUI() ).add( guiCmdLabels,
-		guiFunction(guiCmdLabels, "ADD_LOCATION_STATE", function() {
-			alert("A");
-		}) 
-	);
-	guiCmd.domElement.setAttribute("id", "guiCmd");
-	*/
+	setupNewVueModelData();
 	
-	
+
+	var guiArcMethods = {
+		selectMutualArc: function() {
+			// warn: gui vis assumptions assumed
+			var goArcData = myDiagram.model.findLinkDataForKey(vueModelData.selectedArc.mutualGoArc);
+			myDiagram.select( myDiagram.findLinkForData(goArcData) );
+		}
+		,selectConnectingArc: function() {
+			// warn: gui vis assumptions assumed
+			var multiSelectedLocations=  vueModel.multiSelectedLocations;
+			var from = myDiagram.model.findNodeDataForKey( multiSelectedLocations[0]); 
+			from = from._node;
+			var to = myDiagram.model.findNodeDataForKey( multiSelectedLocations[1]);
+			to = to._node;
+			
+			var arc = from.getArc(to);
+			if (arc !=null) {
+				var goJsArcData = world.getHashEditable(arc);
+				if (goJsArcData == null) {
+					alert("selectConnectingArc:: goJsArcData hash search  null exception found!");
+					return;
+				}
+			
+				myDiagram.select( myDiagram.findPartForData(goJsArcData) );
+			}
+		}
+	}
 	
 	var guiOverwriter = setupGUIGeneric( guiGlueRender(specsLocationDefinition, null, {}) );
 	guiOverwriter.domElement.setAttribute("id", "locationDefGUIOverwriter");
+	
 	
 	//var guiStater = setupGUIGeneric( guiGlueRender( DatUtil.setup( new LocationState() ), null, {}) );
 	//guiStater.domElement.setAttribute("id", "locationStateGUI");
 	
 	var guiPacketer = new dat.GUI();
+	
 	guiPacketer.addFolder( "position");
+	guiPacketer.add(guiArcMethods, "selectConnectingArc");
+	 getGuiControllerLi(guiPacketer, "selectConnectingArc").attr("v-show", "gotLocation && goSelectionCount==2 && multiSelectedLocations && multiSelectedLocations.length==2").find(".property-name").html("Select Connecting Arc");
 	guiPacketer = setupGUIGeneric( guiGlueRender( DatUtil.setup(new LocationPacket()), null, {}, guiPacketer) );
 	guiPacketer.domElement.setAttribute("id", "guiPacketer");
 	$( guiPacketer.getFolderByName("state").domElement.firstChild ).children("li.title").html("Location state{{selected.state ? ':' : '?' }}");
@@ -171,9 +211,24 @@
 	$( guiPacketer.getFolderByName("position").domElement.firstChild).append( $(guiPacketer.domElement).find("li.position") );
 	
 	
-	var guiArc = setupGUIGeneric( guiGlueRender( DatUtil.setup( new ArcNodeVM() ) , null, {}  ) );
+	
+	
+	var guiArc = new dat.GUI();
 	guiArc.domElement.setAttribute("id", "arcGUI");
-	$(guiArc.domElement).attr("v-show", "selectedArc!=null" ).find(".primaryArc > div > ul > li.title").html("Arc state{{selectedArc && selectedArc.val ? ':' : '?' }}");
+	$(guiArc.domElement).attr("v-show", "selectedArc!=null" );
+	
+	guiArc.add(guiArcMethods, "selectMutualArc");
+	
+	guiArc.add(vueModelData.selectedArcOptions, "autoSyncMutual");
+	getGuiControllerLi(guiArc, "autoSyncMutual").find(".property-name").html("Auto-sync~mutual");  //.attr("v-show", "selectedArc.mutualGoArc != null")
+	 setupGUIGeneric( guiGlueRender( DatUtil.setup( new ArcNodeVM() ) , null, {}, guiArc  ) );
+	$(guiArc.getFolderByName("val").domElement.firstChild).children("li.title").html("Arc state{{selectedArc && selectedArc.val ? ':' : '?' }}");
+	 
+	 getGuiControllerLi(guiArc, "selectMutualArc").attr("v-show", "selectedArc.mutualGoArc != null").find(".property-name").html("Select Mutual Arc");
+	
+	
+	//alert( $(guiArc.getControllerByName("selectMutualArc").domElement).children().html() );
+	//$(guiArc.getControllerByName("selectMutualArc").domElement).find(".property-name").html("Select Mutual Arc");
 	
 	// some mods for filtering
 	var liNumberRows = $(gui.domElement).add($(guiOverwriter.domElement)).find("li.number");	
@@ -379,6 +434,7 @@
 				
 				for (c in g.__controllers) {
 					var cn = g.__controllers[c];
+					if (!cn._guiGlue) continue;
 					
 					var dotPath =( g._guiGlue._dotPath!= "" ?  g._guiGlue._dotPath + "." : "")+ cn.property;
 					
@@ -531,22 +587,11 @@
 	});
 	
 	
-	// Vuemodel for minimal selected LocationPacket containing LocationDefinition only
-	var vueModelData;
-	function setupNewVueModelData() {  // Default vueModel template
-		return (vueModelData= {  
-			gotLocation:false, 
-			isProto:false,
-			multiSelectedLocations:false,
-			selectedArc: null,
-			selected: { x:0, y:0, z:0, def: $.extend(true, {}, gui._guiGlueParams) }, 
-			locationDefIds:world.getLocationDefinitionIds(world.getDefaultLocationDefIdHash())	
-		});
-	}
+
 	
 	var vueModel = new Vue({
 		el:".dg.ac",
-		data: setupNewVueModelData(),
+		data: vueModelData,
 		methods: {
 			addLocationDefOverwrite: function(prop, e) {
 				var result = this.$get("selected.def."+prop);
@@ -609,9 +654,26 @@
 		else {
 			newVueModelData  = null;
 		}
+		
+		var fromGoNodeData = myDiagram.model.findNodeDataForKey(goArc.from); 
+		//var fromGoNodeData = myDiagram.model.findNodeDataForKey(goArc.from); 
+		var fromGoNodule = fromGoNodeData._node;
+		if (fromGoNodule ==null) {
+			alert("inspectGoArc:: _Node  null exception found!");
+			return;
+		}
+		var mutualArc = arc.node.getArc(fromGoNodule);
+		if (mutualArc != null) {
+			mutualArc = world.getHashEditable(mutualArc);
+			if (mutualArc == null) {
+				alert("inspectGoArc:: mutualArc hash search  null exception found!");
+				return;
+			}
+			mutualArc = mutualArc.key;
+		}
 
 		//console.log("New vue model:"+ newVueModelData);
-		vueModel.selectedArc = { val:newVueModelData }; //, cost:arc.cost
+		vueModel.selectedArc = { val:newVueModelData, mutualGoArc:mutualArc }; //, cost:arc.cost
 	}
 	
 
@@ -1405,6 +1467,7 @@
 		var selection = myDiagram.selection.first();
 		
 		myDiagram.clearHighlighteds();
+		vueModel.goSelectionCount = myDiagram.selection.count;
 		
 		if (selection instanceof go.Link) {
 			_inspectedNodeVal = null;
@@ -1434,6 +1497,8 @@
 		else {
 			vueModel.multiSelectedLocations = false;
 		}
+		
+		
 		
 		
 		  if (selection === null || !(selection instanceof go.Node) || !selection.data || !selection.data._node ) {  // hide UIs
@@ -1927,6 +1992,12 @@ with allowances for the title (top) and the resize handle (bottom)
 	background-color:black;
 	padding:2px;
 	
+}
+
+/*.dg.main .cr.boolean .property-name,*/
+.dg.main .cr.function .property-name {
+	overflow:visible;
+	white-space: nowrap;
 }
 
 .dg.main li.folder.instance .overwritetrigger {
