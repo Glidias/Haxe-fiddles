@@ -192,6 +192,8 @@ class GraphNode<T> implements Hashable
 		arcList = arc;
 		
 		numArcs++;
+		
+		
 	}
 	
 	/**
@@ -201,8 +203,8 @@ class GraphNode<T> implements Hashable
 	**/
 	public function removeArc(target:GraphNode<T>):Bool
 	{
-		assert(target != this, "target is null");
-		assert(getArc(target) != null, "arc to target does not exist");
+		//assert(target != this, "target is null");
+		//assert(getArc(target) != null, "arc to target does not exist");
 		
 		var arc = getArc(target);
 		if (arc != null)

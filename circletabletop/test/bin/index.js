@@ -793,6 +793,520 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath) {
 	Reflect.setField(fieldHash,"_hxclass",Type.getClassName(classe));
 	return fieldHash;
 };
+var de_polygonal_Printf = function() { };
+$hxClasses["de.polygonal.Printf"] = de_polygonal_Printf;
+de_polygonal_Printf.__name__ = ["de","polygonal","Printf"];
+de_polygonal_Printf.init = function() {
+	de_polygonal_Printf.dataTypeMap = de_polygonal_Printf.makeDataTypeMap();
+	de_polygonal_Printf.formatIntFuncHash = new haxe_ds_IntMap();
+	de_polygonal_Printf.formatIntFuncHash.h[1] = de_polygonal_Printf.formatSignedDecimal;
+	de_polygonal_Printf.formatIntFuncHash.h[2] = de_polygonal_Printf.formatUnsignedDecimal;
+	de_polygonal_Printf.formatIntFuncHash.h[0] = de_polygonal_Printf.formatCharacter;
+	de_polygonal_Printf.formatIntFuncHash.h[4] = de_polygonal_Printf.formatHexadecimal;
+	de_polygonal_Printf.formatIntFuncHash.h[3] = de_polygonal_Printf.formatOctal;
+	de_polygonal_Printf.formatIntFuncHash.h[5] = de_polygonal_Printf.formatBinary;
+	de_polygonal_Printf.formatFloatFuncHash = new haxe_ds_IntMap();
+	de_polygonal_Printf.formatFloatFuncHash.h[0] = de_polygonal_Printf.formatNormalFloat;
+	de_polygonal_Printf.formatFloatFuncHash.h[1] = de_polygonal_Printf.formatScientific;
+	de_polygonal_Printf.formatFloatFuncHash.h[2] = de_polygonal_Printf.formatNaturalFloat;
+	de_polygonal_Printf.formatStringFuncHash = new haxe_ds_IntMap();
+	de_polygonal_Printf.formatStringFuncHash.h[2] = de_polygonal_Printf.formatString;
+};
+de_polygonal_Printf.makeDataTypeMap = function() {
+	var hash = new haxe_ds_IntMap();
+	hash.set(105,de_polygonal__$Printf_FormatDataType.FmtInteger(de_polygonal__$Printf_IntegerType.ISignedDecimal));
+	hash.set(100,de_polygonal__$Printf_FormatDataType.FmtInteger(de_polygonal__$Printf_IntegerType.ISignedDecimal));
+	hash.set(117,de_polygonal__$Printf_FormatDataType.FmtInteger(de_polygonal__$Printf_IntegerType.IUnsignedDecimal));
+	hash.set(99,de_polygonal__$Printf_FormatDataType.FmtInteger(de_polygonal__$Printf_IntegerType.ICharacter));
+	hash.set(120,de_polygonal__$Printf_FormatDataType.FmtInteger(de_polygonal__$Printf_IntegerType.IHex));
+	hash.set(88,de_polygonal__$Printf_FormatDataType.FmtInteger(de_polygonal__$Printf_IntegerType.IHex));
+	hash.set(111,de_polygonal__$Printf_FormatDataType.FmtInteger(de_polygonal__$Printf_IntegerType.IOctal));
+	hash.set(98,de_polygonal__$Printf_FormatDataType.FmtInteger(de_polygonal__$Printf_IntegerType.IBin));
+	hash.set(102,de_polygonal__$Printf_FormatDataType.FmtFloat(de_polygonal__$Printf_FloatType.FNormal));
+	hash.set(101,de_polygonal__$Printf_FormatDataType.FmtFloat(de_polygonal__$Printf_FloatType.FScientific));
+	hash.set(69,de_polygonal__$Printf_FormatDataType.FmtFloat(de_polygonal__$Printf_FloatType.FScientific));
+	hash.set(103,de_polygonal__$Printf_FormatDataType.FmtFloat(de_polygonal__$Printf_FloatType.FNatural));
+	hash.set(71,de_polygonal__$Printf_FormatDataType.FmtFloat(de_polygonal__$Printf_FloatType.FNatural));
+	hash.h[115] = de_polygonal__$Printf_FormatDataType.FmtString;
+	hash.h[112] = de_polygonal__$Printf_FormatDataType.FmtPointer;
+	hash.h[110] = de_polygonal__$Printf_FormatDataType.FmtNothing;
+	return hash;
+};
+de_polygonal_Printf.format = function(fmt,args) {
+	if(!de_polygonal_Printf._initialized) {
+		de_polygonal_Printf._initialized = true;
+		de_polygonal_Printf.init();
+	}
+	var _g1 = 0;
+	var _g = args.length;
+	while(_g1 < _g) {
+		var i = _g1++;
+		if(args[i] == null) args[i] = "null";
+	}
+	var output = "";
+	var argIndex = 0;
+	var tokens = de_polygonal_Printf.tokenize(fmt);
+	var _g2 = 0;
+	while(_g2 < tokens.length) {
+		var token = tokens[_g2];
+		++_g2;
+		switch(token[1]) {
+		case 3:
+			throw new js__$Boot_HaxeError("invalid format specifier");
+			break;
+		case 0:
+			var str = token[2];
+			output += str;
+			break;
+		case 2:
+			var name = token[2];
+			if(!Object.prototype.hasOwnProperty.call(args[0],name)) throw new js__$Boot_HaxeError("no field named " + name);
+			output += Std.string(Reflect.field(args[0],name));
+			break;
+		case 1:
+			var tagArgs = token[3];
+			var type = token[2];
+			if(tagArgs.width != null) tagArgs.width = tagArgs.width; else tagArgs.width = js_Boot.__cast(args[argIndex++] , Int);
+			if(tagArgs.precision != null) tagArgs.precision = tagArgs.precision; else tagArgs.precision = js_Boot.__cast(args[argIndex++] , Int);
+			var value = args[argIndex++];
+			var formatFunction;
+			switch(type[1]) {
+			case 1:
+				var floatType = type[2];
+				formatFunction = de_polygonal_Printf.formatFloatFuncHash.h[floatType[1]];
+				break;
+			case 0:
+				var integerType = type[2];
+				formatFunction = de_polygonal_Printf.formatIntFuncHash.h[integerType[1]];
+				break;
+			case 2:
+				formatFunction = de_polygonal_Printf.formatStringFuncHash.h[2];
+				break;
+			case 3:
+				throw new js__$Boot_HaxeError("specifier 'p' is not supported");
+				break;
+			case 4:
+				throw new js__$Boot_HaxeError("specifier 'n' is not supported");
+				break;
+			}
+			output += formatFunction(value,tagArgs);
+			break;
+		}
+	}
+	return output;
+};
+de_polygonal_Printf.tokenize = function(fmt) {
+	var length = fmt.length;
+	var lastStr = new StringBuf();
+	var i = 0;
+	var c = 0;
+	var tokens = [];
+	while(i < length) {
+		var c1 = de_polygonal_Printf.codeAt(fmt,i++);
+		if(c1 == 37) {
+			c1 = de_polygonal_Printf.codeAt(fmt,i++);
+			if(c1 == 37) lastStr.b += String.fromCharCode(c1); else {
+				if(lastStr.b.length > 0) {
+					tokens.push(de_polygonal__$Printf_FormatToken.BareString(lastStr.b));
+					lastStr = new StringBuf();
+				}
+				var token;
+				if(c1 == 40) {
+					var endPos = fmt.indexOf(")",i);
+					if(endPos == -1) token = de_polygonal__$Printf_FormatToken.Unknown("named param",i); else {
+						var paramName = HxOverrides.substr(fmt,i,endPos - i);
+						i = endPos + 1;
+						token = de_polygonal__$Printf_FormatToken.Property(paramName);
+					}
+				} else {
+					var params = { flags : 0, pos : -1, width : -1, precision : -1};
+					while(c1 == 45 || c1 == 43 || c1 == 35 || c1 == 48 || c1 == 32) {
+						if(c1 == 45) params.flags |= 1 << de_polygonal__$Printf_FormatFlags.Minus[1]; else if(c1 == 43) params.flags |= 1 << de_polygonal__$Printf_FormatFlags.Plus[1]; else if(c1 == 35) params.flags |= 1 << de_polygonal__$Printf_FormatFlags.Sharp[1]; else if(c1 == 48) params.flags |= 1 << de_polygonal__$Printf_FormatFlags.Zero[1]; else if(c1 == 32) params.flags |= 1 << de_polygonal__$Printf_FormatFlags.Space[1];
+						c1 = de_polygonal_Printf.codeAt(fmt,i++);
+					}
+					if((params.flags & 1 << de_polygonal__$Printf_FormatFlags.Minus[1]) != 0 && (params.flags & 1 << de_polygonal__$Printf_FormatFlags.Zero[1]) != 0) params.flags &= 268435455 - (1 << de_polygonal__$Printf_FormatFlags.Zero[1]);
+					if((params.flags & 1 << de_polygonal__$Printf_FormatFlags.Space[1]) != 0 && (params.flags & 1 << de_polygonal__$Printf_FormatFlags.Plus[1]) != 0) params.flags &= 268435455 - (1 << de_polygonal__$Printf_FormatFlags.Space[1]);
+					if(c1 == 42) {
+						params.width = null;
+						c1 = de_polygonal_Printf.codeAt(fmt,i++);
+					} else if(c1 >= 48 && c1 <= 57) {
+						params.width = 0;
+						while(c1 >= 48 && c1 <= 57) {
+							params.width = c1 - 48 + params.width * 10;
+							c1 = de_polygonal_Printf.codeAt(fmt,i++);
+						}
+						if(c1 == 36) {
+							params.pos = params.width - 1;
+							params.width = -1;
+							c1 = de_polygonal_Printf.codeAt(fmt,i++);
+							if(c1 == 42) {
+								params.width = null;
+								c1 = de_polygonal_Printf.codeAt(fmt,i++);
+							} else if(c1 >= 48 && c1 <= 57) {
+								params.width = 0;
+								while(c1 >= 48 && c1 <= 57) {
+									params.width = c1 - 48 + params.width * 10;
+									c1 = de_polygonal_Printf.codeAt(fmt,i++);
+								}
+							}
+						}
+					}
+					if(c1 == 46) {
+						c1 = de_polygonal_Printf.codeAt(fmt,i++);
+						if(c1 == 42) {
+							params.precision = null;
+							c1 = de_polygonal_Printf.codeAt(fmt,i++);
+						} else if(c1 >= 48 && c1 <= 57) {
+							params.precision = 0;
+							while(c1 >= 48 && c1 <= 57) {
+								params.precision = c1 - 48 + params.precision * 10;
+								c1 = de_polygonal_Printf.codeAt(fmt,i++);
+							}
+						} else params.precision = 0;
+					}
+					while(c1 == 104 || c1 == 108 || c1 == 76) {
+						switch(c1) {
+						case 104:
+							params.flags |= 1 << de_polygonal__$Printf_FormatFlags.LengthH[1];
+							break;
+						case 108:
+							params.flags |= 1 << de_polygonal__$Printf_FormatFlags.Lengthl[1];
+							break;
+						case 76:
+							params.flags |= 1 << de_polygonal__$Printf_FormatFlags.LengthL[1];
+							break;
+						}
+						c1 = de_polygonal_Printf.codeAt(fmt,i++);
+					}
+					if(c1 == 69 || c1 == 71 || c1 == 88) params.flags |= 1 << de_polygonal__$Printf_FormatFlags.UpperCase[1];
+					var type = de_polygonal_Printf.dataTypeMap.h[c1];
+					if(type == null) token = de_polygonal__$Printf_FormatToken.Unknown(String.fromCharCode(c1),i); else token = de_polygonal__$Printf_FormatToken.Tag(type,params);
+				}
+				tokens.push(token);
+			}
+		} else lastStr.b += String.fromCharCode(c1);
+	}
+	if(lastStr.b.length > 0) tokens.push(de_polygonal__$Printf_FormatToken.BareString(lastStr.b));
+	return tokens;
+};
+de_polygonal_Printf.formatBinary = function(value,args) {
+	var output = "";
+	var flags = args.flags;
+	var precision = args.precision;
+	var width = args.width;
+	if(precision == -1) precision = 1;
+	if(value != 0) {
+		if((flags & 1 << de_polygonal__$Printf_FormatFlags.LengthH[1]) != 0) value &= 65535;
+		var i = value;
+		do {
+			output = ((i & 1) > 0?"1":"0") + output;
+			i >>>= 1;
+		} while(i > 0);
+		if(precision > 1) {
+			if(precision > output.length) output = de_polygonal_Printf.lpad(output,"0",precision);
+			if((flags & 1 << de_polygonal__$Printf_FormatFlags.Sharp[1]) != 0) output = "b" + output;
+		}
+	}
+	if((flags & 1 << de_polygonal__$Printf_FormatFlags.Minus[1]) != 0) {
+		if(width > output.length) return de_polygonal_Printf.rpad(output," ",width); else return output;
+	} else if(width > output.length) return de_polygonal_Printf.lpad(output,(flags & 1 << de_polygonal__$Printf_FormatFlags.Zero[1]) != 0?"0":" ",width); else return output;
+};
+de_polygonal_Printf.formatOctal = function(value,args) {
+	var output = "";
+	var flags = args.flags;
+	var precision = args.precision;
+	var width = args.width;
+	if(precision == -1) precision = 1;
+	if(value != 0) {
+		if((flags & 1 << de_polygonal__$Printf_FormatFlags.LengthH[1]) != 0) value &= 65535;
+		output = de_polygonal_Printf.toOct(value);
+		if((flags & 1 << de_polygonal__$Printf_FormatFlags.Sharp[1]) != 0) output = "0" + output;
+		if(precision > 1 && output.length < precision) output = de_polygonal_Printf.lpad(output,"0",precision);
+	}
+	if((flags & 1 << de_polygonal__$Printf_FormatFlags.Minus[1]) != 0) {
+		if(width > output.length) return de_polygonal_Printf.rpad(output," ",width); else return output;
+	} else if(width > output.length) return de_polygonal_Printf.lpad(output,(flags & 1 << de_polygonal__$Printf_FormatFlags.Zero[1]) != 0?"0":" ",width); else return output;
+};
+de_polygonal_Printf.formatHexadecimal = function(value,args) {
+	var output = "";
+	var flags = args.flags;
+	var precision = args.precision;
+	var width = args.width;
+	if(precision == -1) precision = 1;
+	if(value != 0) {
+		if((flags & 1 << de_polygonal__$Printf_FormatFlags.LengthH[1]) != 0) value &= 65535;
+		output = de_polygonal_Printf.toHex(value);
+		if(precision > 1 && output.length < precision) output = de_polygonal_Printf.lpad(output,"0",precision);
+		if((flags & 1 << de_polygonal__$Printf_FormatFlags.Sharp[1]) != 0 && value != 0) output = "0x" + output;
+		if((flags & 1 << de_polygonal__$Printf_FormatFlags.UpperCase[1]) != 0) output = output.toUpperCase(); else output = output.toLowerCase();
+	}
+	if((flags & 1 << de_polygonal__$Printf_FormatFlags.Minus[1]) != 0) {
+		if(width > output.length) return de_polygonal_Printf.rpad(output," ",width); else return output;
+	} else if(width > output.length) return de_polygonal_Printf.lpad(output,(flags & 1 << de_polygonal__$Printf_FormatFlags.Zero[1]) != 0?"0":" ",width); else return output;
+};
+de_polygonal_Printf.formatUnsignedDecimal = function(value,args) {
+	var output;
+	var precision = args.precision;
+	if(value >= 0) output = de_polygonal_Printf.formatSignedDecimal(value,args); else {
+		var x;
+		var x1 = new haxe__$Int64__$_$_$Int64(0,value);
+		x = x1;
+		output = haxe__$Int64_Int64_$Impl_$.toString(x);
+		if(precision > 1 && output.length < precision) output = de_polygonal_Printf.lpad(output,"0",precision);
+		output = de_polygonal_Printf.padNumber(output,value,args.flags,args.width);
+	}
+	return output;
+};
+de_polygonal_Printf.formatNaturalFloat = function(value,args) {
+	args.precision = 0;
+	var formatedFloat = de_polygonal_Printf.formatNormalFloat(value,args);
+	var formatedScientific = de_polygonal_Printf.formatScientific(value,args);
+	if((args.flags & 1 << de_polygonal__$Printf_FormatFlags.Sharp[1]) != 0) {
+		if(formatedFloat.indexOf(".") != -1) {
+			var pos = formatedFloat.length - 1;
+			while(formatedFloat.charCodeAt(pos) == 48) pos--;
+			formatedFloat = HxOverrides.substr(formatedFloat,0,pos);
+		}
+	}
+	if(formatedFloat.length <= formatedScientific.length) return formatedFloat; else return formatedScientific;
+};
+de_polygonal_Printf.formatScientific = function(value,args) {
+	var output = "";
+	var flags = args.flags;
+	var precision = args.precision;
+	if(precision == -1) precision = 6;
+	var sign;
+	var exponent;
+	if(value == 0) {
+		sign = 0;
+		exponent = 0;
+		output += "0";
+		if(precision > 0) {
+			output += ".";
+			var _g = 0;
+			while(_g < precision) {
+				var i = _g++;
+				output += "0";
+			}
+		}
+	} else {
+		if(value > 0.) sign = 1; else if(value < 0.) sign = -1; else sign = 0;
+		value = Math.abs(value);
+		exponent = Math.floor(Math.log(value) / 2.302585092994046);
+		value = value / Math.pow(10,exponent);
+		var p = Math.pow(0.1,precision);
+		value = Math.round(value / p) * p;
+	}
+	if(sign < 0) output += "-"; else if((flags & 1 << de_polygonal__$Printf_FormatFlags.Plus[1]) != 0) output += "+"; else output += "";
+	if(value != 0) output += de_polygonal_Printf.rpad((function($this) {
+		var $r;
+		var _this = de_polygonal_Printf.str(value);
+		$r = HxOverrides.substr(_this,0,precision + 2);
+		return $r;
+	}(this)),"0",precision + 2);
+	if((flags & 1 << de_polygonal__$Printf_FormatFlags.UpperCase[1]) != 0) output += "E"; else output += "e";
+	if(exponent >= 0) output += "+"; else output += "-";
+	if(exponent < 10) output += "00"; else if(exponent < 100) output += "0";
+	output += de_polygonal_Printf.str(de_polygonal_Printf.iabs(exponent));
+	return output;
+};
+de_polygonal_Printf.formatSignedDecimal = function(value,args) {
+	var output;
+	var flags = args.flags;
+	var precision = args.precision;
+	var width = args.width;
+	if(precision == 0 && value == 0) output = ""; else {
+		if((flags & 1 << de_polygonal__$Printf_FormatFlags.LengthH[1]) != 0) value &= 65535;
+		output = de_polygonal_Printf.str(de_polygonal_Printf.iabs(value));
+		if(precision > 1 && output.length < precision) output = de_polygonal_Printf.lpad(output,"0",precision);
+		if((flags & 1 << de_polygonal__$Printf_FormatFlags.Zero[1]) != 0) output = de_polygonal_Printf.lpad(output,"0",value < 0?width - 1:width);
+		if(value < 0) output = "-" + output;
+	}
+	if(value >= 0) {
+		if((flags & 1 << de_polygonal__$Printf_FormatFlags.Plus[1]) != 0) output = "+" + output; else if((flags & 1 << de_polygonal__$Printf_FormatFlags.Space[1]) != 0) output = " " + output;
+	}
+	if((flags & 1 << de_polygonal__$Printf_FormatFlags.Minus[1]) != 0) output = de_polygonal_Printf.rpad(output," ",args.width); else output = de_polygonal_Printf.lpad(output," ",args.width);
+	return output;
+};
+de_polygonal_Printf.formatString = function(x,args) {
+	var output = x;
+	var precision = args.precision;
+	var width = args.width;
+	if(precision > 0) output = HxOverrides.substr(x,0,precision);
+	var k = output.length;
+	if(width > 0 && k < width) {
+		if((args.flags & 1 << de_polygonal__$Printf_FormatFlags.Minus[1]) != 0) output = de_polygonal_Printf.rpad(output," ",width); else output = de_polygonal_Printf.lpad(output," ",width);
+	}
+	return output;
+};
+de_polygonal_Printf.formatNormalFloat = function(value,args) {
+	var output;
+	var flags = args.flags;
+	var precision = args.precision;
+	var width = args.width;
+	if(precision == -1) precision = 6;
+	if(precision == 0) {
+		output = de_polygonal_Printf.str(de_polygonal_Printf.iabs(Math.round(value)));
+		if((flags & 1 << de_polygonal__$Printf_FormatFlags.Sharp[1]) != 0) output += ".";
+	} else {
+		value = de_polygonal_Printf.roundTo(value,Math.pow(.1,precision));
+		var decimalPlaces = precision;
+		if(isNaN(value)) output = "NaN"; else {
+			var t = Std["int"](Math.pow(10,decimalPlaces));
+			output = de_polygonal_Printf.str((value * t | 0) / t);
+			var i = output.indexOf(".");
+			if(i != -1) {
+				var _g = HxOverrides.substr(output,i + 1,null).length;
+				while(_g < decimalPlaces) {
+					var i1 = _g++;
+					output += "0";
+				}
+			} else {
+				output += ".";
+				var _g1 = 0;
+				while(_g1 < decimalPlaces) {
+					var i2 = _g1++;
+					output += "0";
+				}
+			}
+		}
+	}
+	if((flags & 1 << de_polygonal__$Printf_FormatFlags.Plus[1]) != 0 && value >= 0) output = "+" + output; else if((flags & 1 << de_polygonal__$Printf_FormatFlags.Space[1]) != 0 && value >= 0) output = " " + output;
+	if((flags & 1 << de_polygonal__$Printf_FormatFlags.Zero[1]) != 0) output = de_polygonal_Printf.lpad(output,"0",value < 0?width - 1:width);
+	if((flags & 1 << de_polygonal__$Printf_FormatFlags.Minus[1]) != 0) output = de_polygonal_Printf.rpad(output," ",width); else output = de_polygonal_Printf.lpad(output," ",width);
+	return output;
+};
+de_polygonal_Printf.formatCharacter = function(x,args) {
+	var output = String.fromCharCode(x);
+	if(args.width > 1) {
+		if((args.flags & 1 << de_polygonal__$Printf_FormatFlags.Minus[1]) != 0) output = de_polygonal_Printf.rpad(output," ",args.width); else output = de_polygonal_Printf.lpad(output," ",args.width);
+	}
+	return output;
+};
+de_polygonal_Printf.padNumber = function(x,n,flags,width) {
+	var k = x.length;
+	if(width > 0 && k < width) {
+		if((flags & 1 << de_polygonal__$Printf_FormatFlags.Minus[1]) != 0) x = de_polygonal_Printf.rpad(x," ",width); else if(n >= 0) x = de_polygonal_Printf.lpad(x,(flags & 1 << de_polygonal__$Printf_FormatFlags.Zero[1]) != 0?"0":" ",width); else if((flags & 1 << de_polygonal__$Printf_FormatFlags.Zero[1]) != 0) x = "-" + de_polygonal_Printf.lpad(HxOverrides.substr(x,1,null),"0",width); else x = de_polygonal_Printf.lpad(x," ",width);
+	}
+	return x;
+};
+de_polygonal_Printf.lpad = function(s,c,l) {
+	if(c.length <= 0) throw new js__$Boot_HaxeError("c.length <= 0");
+	while(s.length < l) s = c + s;
+	return s;
+};
+de_polygonal_Printf.rpad = function(s,c,l) {
+	if(c.length <= 0) throw new js__$Boot_HaxeError("c.length <= 0");
+	while(s.length < l) s = s + c;
+	return s;
+};
+de_polygonal_Printf.toHex = function(x) {
+	var s = "";
+	var hexChars = "0123456789ABCDEF";
+	do {
+		s = hexChars.charAt(x & 15) + s;
+		x >>>= 4;
+	} while(x > 0);
+	return s;
+};
+de_polygonal_Printf.toOct = function(x) {
+	var s = "";
+	var t = x;
+	do {
+		s = (t & 7) + s;
+		t >>>= 3;
+	} while(t > 0);
+	return s;
+};
+de_polygonal_Printf.iabs = function(x) {
+	return Std["int"](Math.abs(x));
+};
+de_polygonal_Printf.str = function(x) {
+	return Std.string(x);
+};
+de_polygonal_Printf.codeAt = function(x,i) {
+	return x.charCodeAt(i);
+};
+de_polygonal_Printf.isDigit = function(x) {
+	return x >= 48 && x <= 57;
+};
+de_polygonal_Printf.roundTo = function(x,y) {
+	return Math.round(x / y) * y;
+};
+var de_polygonal__$Printf_FormatFlags = $hxClasses["de.polygonal._Printf.FormatFlags"] = { __ename__ : ["de","polygonal","_Printf","FormatFlags"], __constructs__ : ["Minus","Plus","Space","Sharp","Zero","LengthH","LengthL","Lengthl","UpperCase"] };
+de_polygonal__$Printf_FormatFlags.Minus = ["Minus",0];
+de_polygonal__$Printf_FormatFlags.Minus.toString = $estr;
+de_polygonal__$Printf_FormatFlags.Minus.__enum__ = de_polygonal__$Printf_FormatFlags;
+de_polygonal__$Printf_FormatFlags.Plus = ["Plus",1];
+de_polygonal__$Printf_FormatFlags.Plus.toString = $estr;
+de_polygonal__$Printf_FormatFlags.Plus.__enum__ = de_polygonal__$Printf_FormatFlags;
+de_polygonal__$Printf_FormatFlags.Space = ["Space",2];
+de_polygonal__$Printf_FormatFlags.Space.toString = $estr;
+de_polygonal__$Printf_FormatFlags.Space.__enum__ = de_polygonal__$Printf_FormatFlags;
+de_polygonal__$Printf_FormatFlags.Sharp = ["Sharp",3];
+de_polygonal__$Printf_FormatFlags.Sharp.toString = $estr;
+de_polygonal__$Printf_FormatFlags.Sharp.__enum__ = de_polygonal__$Printf_FormatFlags;
+de_polygonal__$Printf_FormatFlags.Zero = ["Zero",4];
+de_polygonal__$Printf_FormatFlags.Zero.toString = $estr;
+de_polygonal__$Printf_FormatFlags.Zero.__enum__ = de_polygonal__$Printf_FormatFlags;
+de_polygonal__$Printf_FormatFlags.LengthH = ["LengthH",5];
+de_polygonal__$Printf_FormatFlags.LengthH.toString = $estr;
+de_polygonal__$Printf_FormatFlags.LengthH.__enum__ = de_polygonal__$Printf_FormatFlags;
+de_polygonal__$Printf_FormatFlags.LengthL = ["LengthL",6];
+de_polygonal__$Printf_FormatFlags.LengthL.toString = $estr;
+de_polygonal__$Printf_FormatFlags.LengthL.__enum__ = de_polygonal__$Printf_FormatFlags;
+de_polygonal__$Printf_FormatFlags.Lengthl = ["Lengthl",7];
+de_polygonal__$Printf_FormatFlags.Lengthl.toString = $estr;
+de_polygonal__$Printf_FormatFlags.Lengthl.__enum__ = de_polygonal__$Printf_FormatFlags;
+de_polygonal__$Printf_FormatFlags.UpperCase = ["UpperCase",8];
+de_polygonal__$Printf_FormatFlags.UpperCase.toString = $estr;
+de_polygonal__$Printf_FormatFlags.UpperCase.__enum__ = de_polygonal__$Printf_FormatFlags;
+var de_polygonal__$Printf_FormatToken = $hxClasses["de.polygonal._Printf.FormatToken"] = { __ename__ : ["de","polygonal","_Printf","FormatToken"], __constructs__ : ["BareString","Tag","Property","Unknown"] };
+de_polygonal__$Printf_FormatToken.BareString = function(str) { var $x = ["BareString",0,str]; $x.__enum__ = de_polygonal__$Printf_FormatToken; $x.toString = $estr; return $x; };
+de_polygonal__$Printf_FormatToken.Tag = function(type,args) { var $x = ["Tag",1,type,args]; $x.__enum__ = de_polygonal__$Printf_FormatToken; $x.toString = $estr; return $x; };
+de_polygonal__$Printf_FormatToken.Property = function(name) { var $x = ["Property",2,name]; $x.__enum__ = de_polygonal__$Printf_FormatToken; $x.toString = $estr; return $x; };
+de_polygonal__$Printf_FormatToken.Unknown = function(str,pos) { var $x = ["Unknown",3,str,pos]; $x.__enum__ = de_polygonal__$Printf_FormatToken; $x.toString = $estr; return $x; };
+var de_polygonal__$Printf_FormatDataType = $hxClasses["de.polygonal._Printf.FormatDataType"] = { __ename__ : ["de","polygonal","_Printf","FormatDataType"], __constructs__ : ["FmtInteger","FmtFloat","FmtString","FmtPointer","FmtNothing"] };
+de_polygonal__$Printf_FormatDataType.FmtInteger = function(integerType) { var $x = ["FmtInteger",0,integerType]; $x.__enum__ = de_polygonal__$Printf_FormatDataType; $x.toString = $estr; return $x; };
+de_polygonal__$Printf_FormatDataType.FmtFloat = function(floatType) { var $x = ["FmtFloat",1,floatType]; $x.__enum__ = de_polygonal__$Printf_FormatDataType; $x.toString = $estr; return $x; };
+de_polygonal__$Printf_FormatDataType.FmtString = ["FmtString",2];
+de_polygonal__$Printf_FormatDataType.FmtString.toString = $estr;
+de_polygonal__$Printf_FormatDataType.FmtString.__enum__ = de_polygonal__$Printf_FormatDataType;
+de_polygonal__$Printf_FormatDataType.FmtPointer = ["FmtPointer",3];
+de_polygonal__$Printf_FormatDataType.FmtPointer.toString = $estr;
+de_polygonal__$Printf_FormatDataType.FmtPointer.__enum__ = de_polygonal__$Printf_FormatDataType;
+de_polygonal__$Printf_FormatDataType.FmtNothing = ["FmtNothing",4];
+de_polygonal__$Printf_FormatDataType.FmtNothing.toString = $estr;
+de_polygonal__$Printf_FormatDataType.FmtNothing.__enum__ = de_polygonal__$Printf_FormatDataType;
+var de_polygonal__$Printf_IntegerType = $hxClasses["de.polygonal._Printf.IntegerType"] = { __ename__ : ["de","polygonal","_Printf","IntegerType"], __constructs__ : ["ICharacter","ISignedDecimal","IUnsignedDecimal","IOctal","IHex","IBin"] };
+de_polygonal__$Printf_IntegerType.ICharacter = ["ICharacter",0];
+de_polygonal__$Printf_IntegerType.ICharacter.toString = $estr;
+de_polygonal__$Printf_IntegerType.ICharacter.__enum__ = de_polygonal__$Printf_IntegerType;
+de_polygonal__$Printf_IntegerType.ISignedDecimal = ["ISignedDecimal",1];
+de_polygonal__$Printf_IntegerType.ISignedDecimal.toString = $estr;
+de_polygonal__$Printf_IntegerType.ISignedDecimal.__enum__ = de_polygonal__$Printf_IntegerType;
+de_polygonal__$Printf_IntegerType.IUnsignedDecimal = ["IUnsignedDecimal",2];
+de_polygonal__$Printf_IntegerType.IUnsignedDecimal.toString = $estr;
+de_polygonal__$Printf_IntegerType.IUnsignedDecimal.__enum__ = de_polygonal__$Printf_IntegerType;
+de_polygonal__$Printf_IntegerType.IOctal = ["IOctal",3];
+de_polygonal__$Printf_IntegerType.IOctal.toString = $estr;
+de_polygonal__$Printf_IntegerType.IOctal.__enum__ = de_polygonal__$Printf_IntegerType;
+de_polygonal__$Printf_IntegerType.IHex = ["IHex",4];
+de_polygonal__$Printf_IntegerType.IHex.toString = $estr;
+de_polygonal__$Printf_IntegerType.IHex.__enum__ = de_polygonal__$Printf_IntegerType;
+de_polygonal__$Printf_IntegerType.IBin = ["IBin",5];
+de_polygonal__$Printf_IntegerType.IBin.toString = $estr;
+de_polygonal__$Printf_IntegerType.IBin.__enum__ = de_polygonal__$Printf_IntegerType;
+var de_polygonal__$Printf_FloatType = $hxClasses["de.polygonal._Printf.FloatType"] = { __ename__ : ["de","polygonal","_Printf","FloatType"], __constructs__ : ["FNormal","FScientific","FNatural"] };
+de_polygonal__$Printf_FloatType.FNormal = ["FNormal",0];
+de_polygonal__$Printf_FloatType.FNormal.toString = $estr;
+de_polygonal__$Printf_FloatType.FNormal.__enum__ = de_polygonal__$Printf_FloatType;
+de_polygonal__$Printf_FloatType.FScientific = ["FScientific",1];
+de_polygonal__$Printf_FloatType.FScientific.toString = $estr;
+de_polygonal__$Printf_FloatType.FScientific.__enum__ = de_polygonal__$Printf_FloatType;
+de_polygonal__$Printf_FloatType.FNatural = ["FNatural",2];
+de_polygonal__$Printf_FloatType.FNatural.toString = $estr;
+de_polygonal__$Printf_FloatType.FNatural.__enum__ = de_polygonal__$Printf_FloatType;
 var de_polygonal_ds_Cloneable = function() { };
 $hxClasses["de.polygonal.ds.Cloneable"] = de_polygonal_ds_Cloneable;
 de_polygonal_ds_Cloneable.__name__ = ["de","polygonal","ds","Cloneable"];
@@ -1838,6 +2352,1881 @@ de_polygonal_ds_HashableItem.prototype = {
 	key: null
 	,__class__: de_polygonal_ds_HashableItem
 };
+var de_polygonal_ds_Set = function() { };
+$hxClasses["de.polygonal.ds.Set"] = de_polygonal_ds_Set;
+de_polygonal_ds_Set.__name__ = ["de","polygonal","ds","Set"];
+de_polygonal_ds_Set.__interfaces__ = [de_polygonal_ds_Collection];
+de_polygonal_ds_Set.prototype = {
+	has: null
+	,set: null
+	,unset: null
+	,__class__: de_polygonal_ds_Set
+};
+var de_polygonal_ds_IntHashSet = function(slotCount,initialCapacity) {
+	if(initialCapacity == null) initialCapacity = -1;
+	this.mSize = 0;
+	this.mFree = 0;
+	this.reuseIterator = false;
+	this.growthRate = -3;
+	this.key = de_polygonal_ds_HashKey._counter++;
+	if(initialCapacity == -1) initialCapacity = slotCount;
+	if(2 > initialCapacity) initialCapacity = 2; else initialCapacity = initialCapacity;
+	this.mMinCapacity = this.capacity = initialCapacity;
+	this.slotCount = slotCount;
+	this.mMask = slotCount - 1;
+	this.mHash = de_polygonal_ds_tools_NativeArrayTools.init(new Array(slotCount),-1);
+	this.mData = new Array(this.capacity << 1);
+	this.mNext = new Array(this.capacity);
+	var j = 1;
+	var t = this.mData;
+	var _g1 = 0;
+	var _g = this.capacity;
+	while(_g1 < _g) {
+		var i = _g1++;
+		t[j - 1] = -2147483648;
+		t[j] = -1;
+		j += 2;
+	}
+	t = this.mNext;
+	var _g11 = 0;
+	var _g2 = this.capacity - 1;
+	while(_g11 < _g2) {
+		var i1 = _g11++;
+		t[i1] = i1 + 1;
+	}
+	t[this.capacity - 1] = -1;
+};
+$hxClasses["de.polygonal.ds.IntHashSet"] = de_polygonal_ds_IntHashSet;
+de_polygonal_ds_IntHashSet.__name__ = ["de","polygonal","ds","IntHashSet"];
+de_polygonal_ds_IntHashSet.__interfaces__ = [de_polygonal_ds_Set];
+de_polygonal_ds_IntHashSet.prototype = {
+	key: null
+	,capacity: null
+	,growthRate: null
+	,reuseIterator: null
+	,get_loadFactor: function() {
+		return this.mSize / this.slotCount;
+	}
+	,slotCount: null
+	,mHash: null
+	,mData: null
+	,mNext: null
+	,mMask: null
+	,mFree: null
+	,mSize: null
+	,mMinCapacity: null
+	,mIterator: null
+	,getCollisionCount: function() {
+		var c = 0;
+		var j;
+		var d = this.mData;
+		var h = this.mHash;
+		var _g1 = 0;
+		var _g = this.slotCount;
+		while(_g1 < _g) {
+			var i = _g1++;
+			j = h[i];
+			if(j == -1) continue;
+			j = d[j + 1];
+			while(j != -1) {
+				j = d[j + 1];
+				c++;
+			}
+		}
+		return c;
+	}
+	,hasFront: function(x) {
+		var h = this.mHash;
+		var b = x * 73856093 & this.mMask;
+		var i = h[b];
+		if(i == -1) return false; else {
+			var d = this.mData;
+			if(d[i] == x) return true; else {
+				var exists = false;
+				var first = i;
+				var i0 = first;
+				i = d[i + 1];
+				while(i != -1) {
+					if(d[i] == x) {
+						d[i0 + 1] = d[i + 1];
+						d[i + 1] = first;
+						d[b] = i;
+						exists = true;
+						break;
+					}
+					i = de_polygonal_ds_tools_NativeArrayTools.get(d,(i0 = i) + 1);
+				}
+				return exists;
+			}
+		}
+	}
+	,rehash: function(slotCount) {
+		if(this.slotCount == slotCount) return;
+		var t = new de_polygonal_ds_IntHashSet(slotCount,this.capacity);
+		var d = this.mData;
+		var _g1 = 0;
+		var _g = this.capacity;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var v = d[i << 1];
+			if(v != -2147483648) t.set(v);
+		}
+		this.mHash = t.mHash;
+		this.mData = t.mData;
+		this.mNext = t.mNext;
+		this.slotCount = slotCount;
+		this.mMask = t.mMask;
+		this.mFree = t.mFree;
+	}
+	,pack: function() {
+		if(this.capacity == this.mMinCapacity) return this;
+		var oldCapacity = this.capacity;
+		var x = this.mSize;
+		var y = this.mMinCapacity;
+		if(x > y) this.capacity = x; else this.capacity = y;
+		var src = this.mData;
+		var dst;
+		var e = 0;
+		var t = this.mHash;
+		var j;
+		dst = new Array(this.capacity << 1);
+		var _g1 = 0;
+		var _g = this.slotCount;
+		while(_g1 < _g) {
+			var i = _g1++;
+			j = t[i];
+			if(j == -1) continue;
+			t[i] = e;
+			de_polygonal_ds_tools_NativeArrayTools.set(dst,e++,src[j]);
+			de_polygonal_ds_tools_NativeArrayTools.set(dst,e++,-1);
+			j = src[j + 1];
+			while(j != -1) {
+				dst[e - 1] = e;
+				de_polygonal_ds_tools_NativeArrayTools.set(dst,e++,src[j]);
+				de_polygonal_ds_tools_NativeArrayTools.set(dst,e++,-1);
+				j = src[j + 1];
+			}
+		}
+		this.mData = dst;
+		this.mNext = new Array(this.capacity);
+		var n = this.mNext;
+		var _g11 = 0;
+		var _g2 = this.capacity - 1;
+		while(_g11 < _g2) {
+			var i1 = _g11++;
+			n[i1] = i1 + 1;
+		}
+		n[this.capacity - 1] = -1;
+		this.mFree = -1;
+		return this;
+	}
+	,toString: function() {
+		var b = new StringBuf();
+		b.add(de_polygonal_Printf.format("{ IntHashSet size/capacity: %d/%d, load factor: %.2f }",[this.mSize,this.capacity,this.get_loadFactor()]));
+		if(this.mSize == 0) return b.b;
+		b.b += "\n[\n";
+		var $it0 = this.iterator();
+		while( $it0.hasNext() ) {
+			var x = $it0.next();
+			b.b += Std.string("  " + x + "\n");
+		}
+		b.b += "]";
+		return b.b;
+	}
+	,hashCode: function(x) {
+		return x * 73856093 & this.mMask;
+	}
+	,grow: function() {
+		var oldCapacity = this.capacity;
+		this.capacity = de_polygonal_ds_tools_GrowthRate.compute(this.growthRate,this.capacity);
+		var t;
+		t = new Array(this.capacity);
+		de_polygonal_ds_tools_NativeArrayTools.blit(this.mNext,0,t,0,oldCapacity);
+		this.mNext = t;
+		t = new Array(this.capacity << 1);
+		de_polygonal_ds_tools_NativeArrayTools.blit(this.mData,0,t,0,oldCapacity << 1);
+		this.mData = t;
+		t = this.mNext;
+		var _g1 = oldCapacity - 1;
+		var _g = this.capacity - 1;
+		while(_g1 < _g) {
+			var i = _g1++;
+			t[i] = i + 1;
+		}
+		t[this.capacity - 1] = -1;
+		this.mFree = oldCapacity;
+		var j = oldCapacity << 1;
+		var t1 = this.mData;
+		var _g11 = 0;
+		var _g2 = this.capacity - oldCapacity;
+		while(_g11 < _g2) {
+			var i1 = _g11++;
+			t1[j] = -2147483648;
+			t1[j + 1] = -1;
+			j += 2;
+		}
+	}
+	,has: function(x) {
+		var i = this.mHash[x * 73856093 & this.mMask];
+		if(i == -1) return false; else {
+			var d = this.mData;
+			if(d[i] == x) return true; else {
+				var exists = false;
+				i = d[i + 1];
+				while(i != -1) {
+					if(d[i] == x) {
+						exists = true;
+						break;
+					}
+					i = d[i + 1];
+				}
+				return exists;
+			}
+		}
+	}
+	,set: function(x) {
+		var b = x * 73856093 & this.mMask;
+		var d = this.mData;
+		var j = this.mHash[b];
+		if(j == -1) {
+			if(this.mSize == this.capacity) {
+				this.grow();
+				d = this.mData;
+			}
+			j = this.mFree << 1;
+			this.mFree = this.mNext[this.mFree];
+			this.mHash[b] = j;
+			d[j] = x;
+			this.mSize++;
+			return true;
+		} else if(d[j] == x) return false; else {
+			var p = d[j + 1];
+			while(p != -1) {
+				if(d[p] == x) {
+					j = -1;
+					break;
+				}
+				j = p;
+				p = d[p + 1];
+			}
+			if(j == -1) return false; else {
+				if(this.mSize == this.capacity) {
+					this.grow();
+					d = this.mData;
+				}
+				p = this.mFree << 1;
+				this.mFree = this.mNext[this.mFree];
+				d[p] = x;
+				d[j + 1] = p;
+				this.mSize++;
+				return true;
+			}
+		}
+	}
+	,unset: function(x) {
+		return this.remove(x);
+	}
+	,get_size: function() {
+		return this.mSize;
+	}
+	,free: function() {
+		this.mHash = null;
+		this.mData = null;
+		this.mNext = null;
+		if(this.mIterator != null) {
+			this.mIterator.free();
+			this.mIterator = null;
+		}
+	}
+	,contains: function(x) {
+		return this.has(x);
+	}
+	,remove: function(x) {
+		var b = x * 73856093 & this.mMask;
+		var i = this.mHash[b];
+		if(i == -1) return false; else {
+			var d = this.mData;
+			if(x == d[i]) {
+				if(d[i + 1] == -1) this.mHash[b] = -1; else this.mHash[b] = d[i + 1];
+				var j = i >> 1;
+				this.mNext[j] = this.mFree;
+				this.mFree = j;
+				d[i] = -2147483648;
+				d[i + 1] = -1;
+				this.mSize--;
+				return true;
+			} else {
+				var exists = false;
+				var i0 = i;
+				i = d[i + 1];
+				while(i != -1) {
+					if(d[i] == x) {
+						exists = true;
+						break;
+					}
+					i = de_polygonal_ds_tools_NativeArrayTools.get(d,(i0 = i) + 1);
+				}
+				if(exists) {
+					d[i0 + 1] = d[i + 1];
+					var j1 = i >> 1;
+					this.mNext[j1] = this.mFree;
+					this.mFree = j1;
+					d[i] = -2147483648;
+					d[i + 1] = -1;
+					--this.mSize;
+					return true;
+				} else return false;
+			}
+		}
+	}
+	,clear: function(gc) {
+		if(gc == null) gc = false;
+		var h = this.mHash;
+		var _g1 = 0;
+		var _g = this.slotCount;
+		while(_g1 < _g) {
+			var i = _g1++;
+			h[i] = -1;
+		}
+		var j = 1;
+		var t = this.mData;
+		var _g11 = 0;
+		var _g2 = this.capacity;
+		while(_g11 < _g2) {
+			var i1 = _g11++;
+			t[j - 1] = -2147483648;
+			t[j] = -1;
+			j += 2;
+		}
+		t = this.mNext;
+		var _g12 = 0;
+		var _g3 = this.capacity - 1;
+		while(_g12 < _g3) {
+			var i2 = _g12++;
+			t[i2] = i2 + 1;
+		}
+		t[this.capacity - 1] = -1;
+		this.mFree = 0;
+		this.mSize = 0;
+	}
+	,iterator: function() {
+		if(this.reuseIterator) {
+			if(this.mIterator == null) this.mIterator = new de_polygonal_ds_IntHashSetIterator(this); else this.mIterator.reset();
+			return this.mIterator;
+		} else return new de_polygonal_ds_IntHashSetIterator(this);
+	}
+	,isEmpty: function() {
+		return this.mSize == 0;
+	}
+	,toArray: function() {
+		if(this.mSize == 0) return [];
+		var out = de_polygonal_ds_tools_ArrayTools.alloc(this.mSize);
+		var j = 0;
+		var v;
+		var d = this.mData;
+		var _g1 = 0;
+		var _g = this.capacity;
+		while(_g1 < _g) {
+			var i = _g1++;
+			v = d[i << 1];
+			if(v != -2147483648) out[j++] = v;
+		}
+		return out;
+	}
+	,clone: function(assign,copier) {
+		if(assign == null) assign = true;
+		var c = new de_polygonal_ds_IntHashSet(this.slotCount,this.mSize);
+		de_polygonal_ds_tools_NativeArrayTools.blit(this.mHash,0,c.mHash,0,this.slotCount);
+		de_polygonal_ds_tools_NativeArrayTools.blit(this.mData,0,c.mData,0,this.mSize << 1);
+		de_polygonal_ds_tools_NativeArrayTools.blit(this.mNext,0,c.mNext,0,this.mSize);
+		c.mMask = this.mMask;
+		c.slotCount = this.slotCount;
+		c.capacity = this.capacity;
+		c.mFree = this.mFree;
+		c.mSize = this.mSize;
+		return c;
+	}
+	,__class__: de_polygonal_ds_IntHashSet
+	,__properties__: {get_size:"get_size",get_loadFactor:"get_loadFactor"}
+};
+var de_polygonal_ds_IntHashSetIterator = function(x) {
+	this.mObject = x;
+	this.mData = x.mData;
+	this.mI = 0;
+	this.mS = x.capacity;
+	this.scan();
+};
+$hxClasses["de.polygonal.ds.IntHashSetIterator"] = de_polygonal_ds_IntHashSetIterator;
+de_polygonal_ds_IntHashSetIterator.__name__ = ["de","polygonal","ds","IntHashSetIterator"];
+de_polygonal_ds_IntHashSetIterator.__interfaces__ = [de_polygonal_ds_Itr];
+de_polygonal_ds_IntHashSetIterator.prototype = {
+	mObject: null
+	,mI: null
+	,mS: null
+	,mData: null
+	,free: function() {
+		this.mObject = null;
+		this.mData = null;
+	}
+	,reset: function() {
+		this.mData = this.mObject.mData;
+		this.mI = 0;
+		this.mS = this.mObject.capacity;
+		this.scan();
+		return this;
+	}
+	,hasNext: function() {
+		return this.mI < this.mS;
+	}
+	,next: function() {
+		var x = de_polygonal_ds_tools_NativeArrayTools.get(this.mData,this.mI++ << 1);
+		this.scan();
+		return x;
+	}
+	,remove: function() {
+		throw new js__$Boot_HaxeError("unsupported operation");
+	}
+	,scan: function() {
+		while(this.mI < this.mS && this.mData[this.mI << 1] == -2147483648) this.mI++;
+	}
+	,__class__: de_polygonal_ds_IntHashSetIterator
+};
+var de_polygonal_ds_Map = function() { };
+$hxClasses["de.polygonal.ds.Map"] = de_polygonal_ds_Map;
+de_polygonal_ds_Map.__name__ = ["de","polygonal","ds","Map"];
+de_polygonal_ds_Map.__interfaces__ = [de_polygonal_ds_Collection];
+de_polygonal_ds_Map.prototype = {
+	has: null
+	,hasKey: null
+	,get: null
+	,set: null
+	,unset: null
+	,remap: null
+	,toValSet: null
+	,toKeySet: null
+	,keys: null
+	,__class__: de_polygonal_ds_Map
+};
+var de_polygonal_ds_IntHashTable = function(slotCount,initialCapacity) {
+	if(initialCapacity == null) initialCapacity = -1;
+	this.mTmpKeyBuffer = [];
+	this.mIterator = null;
+	this.mSize = 0;
+	this.mFree = 0;
+	this.reuseIterator = false;
+	this.key = de_polygonal_ds_HashKey._counter++;
+	if(initialCapacity == -1) initialCapacity = slotCount;
+	if(2 > initialCapacity) initialCapacity = 2; else initialCapacity = initialCapacity;
+	this.mMinCapacity = this.capacity = initialCapacity;
+	this.mH = new de_polygonal_ds_IntIntHashTable(slotCount,this.capacity);
+	this.mVals = new Array(this.capacity);
+	this.mNext = new Array(this.capacity);
+	this.mKeys = de_polygonal_ds_tools_NativeArrayTools.init(new Array(this.capacity),-2147483648,0,this.capacity);
+	var t = this.mNext;
+	var _g1 = 0;
+	var _g = this.capacity - 1;
+	while(_g1 < _g) {
+		var i = _g1++;
+		t[i] = i + 1;
+	}
+	t[this.capacity - 1] = -1;
+};
+$hxClasses["de.polygonal.ds.IntHashTable"] = de_polygonal_ds_IntHashTable;
+de_polygonal_ds_IntHashTable.__name__ = ["de","polygonal","ds","IntHashTable"];
+de_polygonal_ds_IntHashTable.__interfaces__ = [de_polygonal_ds_Map];
+de_polygonal_ds_IntHashTable.prototype = {
+	key: null
+	,capacity: null
+	,get_growthRate: function() {
+		return this.mH.growthRate;
+	}
+	,set_growthRate: function(value) {
+		return this.mH.growthRate = value;
+	}
+	,reuseIterator: null
+	,get_loadFactor: function() {
+		return this.mH.get_loadFactor();
+	}
+	,get_slotCount: function() {
+		return this.mH.slotCount;
+	}
+	,mH: null
+	,mVals: null
+	,mNext: null
+	,mKeys: null
+	,mFree: null
+	,mSize: null
+	,mMinCapacity: null
+	,mShrinkSize: null
+	,mIterator: null
+	,mTmpKeyBuffer: null
+	,getCollisionCount: function() {
+		return this.mH.getCollisionCount();
+	}
+	,getFront: function(key) {
+		var i = this.mH.getFront(key);
+		if(i == -2147483648) return null; else return this.mVals[i];
+	}
+	,setIfAbsent: function(key,val) {
+		if(this.mSize == this.capacity) this.grow();
+		var i = this.mFree;
+		if(this.mH.setIfAbsent(key,i)) {
+			this.mVals[i] = val;
+			this.mKeys[i] = key;
+			this.mFree = this.mNext[i];
+			this.mSize++;
+			return true;
+		} else return false;
+	}
+	,rehash: function(slotCount) {
+		this.mH.rehash(slotCount);
+	}
+	,remap: function(key,val) {
+		var i = this.mH.get(key);
+		if(i != -2147483648) {
+			this.mVals[i] = val;
+			return true;
+		} else return false;
+	}
+	,toKeyArray: function() {
+		return this.mH.toKeyArray();
+	}
+	,toString: function() {
+		var b = new StringBuf();
+		b.add(de_polygonal_Printf.format("{ IntHashTable size/capacity: %d/%d, load factor: %.2f }",[this.mSize,this.capacity,this.get_loadFactor()]));
+		if(this.mSize == 0) return b.b;
+		b.b += "\n[\n";
+		var max = 0.;
+		var $it0 = this.keys();
+		while( $it0.hasNext() ) {
+			var key = $it0.next();
+			max = Math.max(max,key);
+		}
+		var i = 1;
+		while(max != 0) {
+			i++;
+			max = max / 10 | 0;
+		}
+		var args = [];
+		var fmt = "  %- " + i + "d -> %d\n";
+		var $it1 = this.keys();
+		while( $it1.hasNext() ) {
+			var key1 = $it1.next();
+			args[0] = key1;
+			args[1] = Std.string(this.mVals[this.mH.get(key1)]);
+			b.add(de_polygonal_Printf.format(fmt,args));
+		}
+		b.b += "]";
+		return b.b;
+	}
+	,has: function(val) {
+		var k = this.mKeys;
+		var v = this.mVals;
+		var _g1 = 0;
+		var _g = this.capacity;
+		while(_g1 < _g) {
+			var i = _g1++;
+			if(k[i] == -2147483648) continue;
+			if(v[i] == val) return true;
+		}
+		return false;
+	}
+	,hasKey: function(key) {
+		return this.mH.hasKey(key);
+	}
+	,count: function(key) {
+		return this.mH.count(key);
+	}
+	,get: function(key) {
+		var i = this.mH.get(key);
+		if(i == -2147483648) return null; else return this.mVals[i];
+	}
+	,getAll: function(key,out) {
+		var i = this.mH.get(key);
+		if(i == -2147483648) return 0; else {
+			var b = this.mTmpKeyBuffer;
+			var c = this.mH.getAll(key,b);
+			var v = this.mVals;
+			var _g = 0;
+			while(_g < c) {
+				var i1 = _g++;
+				out[i1] = v[b[i1]];
+			}
+			return c;
+		}
+	}
+	,set: function(key,val) {
+		if(this.mSize == this.capacity) this.grow();
+		var i = this.mFree;
+		var first = this.mH.set(key,i);
+		this.mVals[i] = val;
+		this.mKeys[i] = key;
+		this.mFree = this.mNext[i];
+		this.mSize++;
+		return first;
+	}
+	,unset: function(key) {
+		var i = this.mH.get(key);
+		if(i == -2147483648) return false;
+		this.mVals[i] = null;
+		this.mKeys[i] = -2147483648;
+		this.mNext[i] = this.mFree;
+		this.mFree = i;
+		this.mH.unset(key);
+		this.mSize--;
+		return true;
+	}
+	,toValSet: function() {
+		var s = new de_polygonal_ds_ListSet();
+		var k = this.mKeys;
+		var v = this.mVals;
+		var _g1 = 0;
+		var _g = this.capacity;
+		while(_g1 < _g) {
+			var i = _g1++;
+			if(k[i] != -2147483648) s.set(v[i]);
+		}
+		return s;
+	}
+	,toKeySet: function() {
+		return this.mH.toKeySet();
+	}
+	,keys: function() {
+		return this.mH.keys();
+	}
+	,pack: function() {
+		this.mH.pack();
+		if(this.mH.capacity == this.capacity) return this;
+		this.capacity = this.mH.capacity;
+		this.mNext = new Array(this.capacity);
+		var t = this.mNext;
+		var _g1 = 0;
+		var _g = this.capacity - 1;
+		while(_g1 < _g) {
+			var i = _g1++;
+			t[i] = i + 1;
+		}
+		t[this.capacity - 1] = -1;
+		this.mFree = 0;
+		var srcKeys = this.mKeys;
+		var dstKeys = new Array(this.capacity);
+		var srcVals = this.mVals;
+		var dstVals = new Array(this.capacity);
+		var j = this.mFree;
+		var $it0 = this.mH.iterator();
+		while( $it0.hasNext() ) {
+			var i1 = $it0.next();
+			dstKeys[j] = srcKeys[i1];
+			dstVals[j] = srcVals[i1];
+			j = this.mNext[j];
+		}
+		this.mFree = j;
+		this.mKeys = dstKeys;
+		this.mVals = dstVals;
+		var _g11 = 0;
+		var _g2 = this.mSize;
+		while(_g11 < _g2) {
+			var i2 = _g11++;
+			this.mH.remap(dstKeys[i2],i2);
+		}
+		return this;
+	}
+	,grow: function() {
+		var oldCapacity = this.capacity;
+		this.capacity = de_polygonal_ds_tools_GrowthRate.compute(this.get_growthRate(),this.capacity);
+		var t;
+		t = new Array(this.capacity);
+		de_polygonal_ds_tools_NativeArrayTools.blit(this.mNext,0,t,0,oldCapacity);
+		this.mNext = t;
+		t = new Array(this.capacity);
+		de_polygonal_ds_tools_NativeArrayTools.blit(this.mKeys,0,t,0,oldCapacity);
+		this.mKeys = t;
+		t = this.mKeys;
+		var _g1 = oldCapacity;
+		var _g = this.capacity;
+		while(_g1 < _g) {
+			var i = _g1++;
+			t[i] = -2147483648;
+		}
+		t = this.mNext;
+		var _g11 = oldCapacity - 1;
+		var _g2 = this.capacity - 1;
+		while(_g11 < _g2) {
+			var i1 = _g11++;
+			t[i1] = i1 + 1;
+		}
+		t[this.capacity - 1] = -1;
+		this.mFree = oldCapacity;
+		var t1 = new Array(this.capacity);
+		de_polygonal_ds_tools_NativeArrayTools.blit(this.mVals,0,t1,0,oldCapacity);
+		this.mVals = t1;
+	}
+	,get_size: function() {
+		return this.mSize;
+	}
+	,free: function() {
+		de_polygonal_ds_tools_NativeArrayTools.nullify(this.mVals);
+		this.mVals = null;
+		this.mKeys = null;
+		this.mNext = null;
+		this.mH.free();
+		this.mH = null;
+		if(this.mIterator != null) {
+			this.mIterator.free();
+			this.mIterator = null;
+		}
+		this.mTmpKeyBuffer = null;
+	}
+	,contains: function(val) {
+		return this.has(val);
+	}
+	,remove: function(x) {
+		var b = this.mTmpKeyBuffer;
+		var c = 0;
+		var k = this.mKeys;
+		var v = this.mVals;
+		var j;
+		var _g1 = 0;
+		var _g = this.capacity;
+		while(_g1 < _g) {
+			var i = _g1++;
+			j = k[i];
+			if(j != -2147483648) {
+				if(v[i] == x) b[c++] = j;
+			}
+		}
+		var _g2 = 0;
+		while(_g2 < c) {
+			var i1 = _g2++;
+			this.unset(b[i1]);
+		}
+		return c > 0;
+	}
+	,clear: function(gc) {
+		if(gc == null) gc = false;
+		this.mH.clear(gc);
+		de_polygonal_ds_tools_NativeArrayTools.init(this.mKeys,-2147483648,0,this.capacity);
+		var t = this.mNext;
+		var _g1 = 0;
+		var _g = this.capacity - 1;
+		while(_g1 < _g) {
+			var i = _g1++;
+			t[i] = i + 1;
+		}
+		t[this.capacity - 1] = -1;
+		this.mFree = 0;
+		this.mSize = 0;
+	}
+	,iterator: function() {
+		if(this.reuseIterator) {
+			if(this.mIterator == null) this.mIterator = new de_polygonal_ds_IntHashTableIterator(this); else this.mIterator.reset();
+			return this.mIterator;
+		} else return new de_polygonal_ds_IntHashTableIterator(this);
+	}
+	,isEmpty: function() {
+		return this.mSize == 0;
+	}
+	,toArray: function() {
+		if(this.mSize == 0) return [];
+		var out = de_polygonal_ds_tools_ArrayTools.alloc(this.mSize);
+		var j = 0;
+		var k = this.mKeys;
+		var v = this.mVals;
+		var _g1 = 0;
+		var _g = this.capacity;
+		while(_g1 < _g) {
+			var i = _g1++;
+			if(k[i] != -2147483648) out[j++] = v[i];
+		}
+		return out;
+	}
+	,clone: function(assign,copier) {
+		if(assign == null) assign = true;
+		var c = new de_polygonal_ds_IntHashTable(this.mH.slotCount,this.mSize);
+		c.mH = this.mH.clone(false);
+		c.mSize = this.mSize;
+		c.mFree = this.mFree;
+		var src = this.mVals;
+		var dst = c.mVals;
+		if(assign) de_polygonal_ds_tools_NativeArrayTools.blit(src,0,dst,0,this.mSize); else {
+			var k = this.mKeys;
+			if(copier != null) {
+				var _g1 = 0;
+				var _g = this.mSize;
+				while(_g1 < _g) {
+					var i = _g1++;
+					if(k[i] != -2147483648) de_polygonal_ds_tools_NativeArrayTools.set(dst,i,copier(src[i]));
+				}
+			} else {
+				var _g11 = 0;
+				var _g2 = this.mSize;
+				while(_g11 < _g2) {
+					var i1 = _g11++;
+					if(k[i1] != -2147483648) de_polygonal_ds_tools_NativeArrayTools.set(dst,i1,(js_Boot.__cast(src[i1] , de_polygonal_ds_Cloneable)).clone());
+				}
+			}
+		}
+		de_polygonal_ds_tools_NativeArrayTools.blit(this.mKeys,0,c.mKeys,0,this.mSize);
+		de_polygonal_ds_tools_NativeArrayTools.blit(this.mNext,0,c.mNext,0,this.mSize);
+		return c;
+	}
+	,__class__: de_polygonal_ds_IntHashTable
+	,__properties__: {get_size:"get_size",get_slotCount:"get_slotCount",get_loadFactor:"get_loadFactor",set_growthRate:"set_growthRate",get_growthRate:"get_growthRate"}
+};
+var de_polygonal_ds_IntHashTableIterator = function(x) {
+	this.mObject = x;
+	this.reset();
+};
+$hxClasses["de.polygonal.ds.IntHashTableIterator"] = de_polygonal_ds_IntHashTableIterator;
+de_polygonal_ds_IntHashTableIterator.__name__ = ["de","polygonal","ds","IntHashTableIterator"];
+de_polygonal_ds_IntHashTableIterator.__interfaces__ = [de_polygonal_ds_Itr];
+de_polygonal_ds_IntHashTableIterator.prototype = {
+	mObject: null
+	,mVals: null
+	,mKeys: null
+	,mI: null
+	,mS: null
+	,free: function() {
+		this.mObject = null;
+		this.mVals = null;
+		this.mKeys = null;
+	}
+	,reset: function() {
+		this.mVals = this.mObject.mVals;
+		this.mKeys = this.mObject.mKeys;
+		this.mS = this.mObject.mH.capacity;
+		this.mI = 0;
+		while(this.mI < this.mS && this.mKeys[this.mI] == -2147483648) this.mI++;
+		return this;
+	}
+	,hasNext: function() {
+		return this.mI < this.mS;
+	}
+	,next: function() {
+		var v = this.mVals[this.mI];
+		while(++this.mI < this.mS && this.mKeys[this.mI] == -2147483648) {
+		}
+		return v;
+	}
+	,remove: function() {
+		throw new js__$Boot_HaxeError("unsupported operation");
+	}
+	,__class__: de_polygonal_ds_IntHashTableIterator
+};
+var de_polygonal_ds_IntIntHashTable = function(slotCount,initialCapacity) {
+	if(initialCapacity == null) initialCapacity = -1;
+	this.mTmpBufferSize = 16;
+	this.mSize = 0;
+	this.mFree = 0;
+	this.reuseIterator = false;
+	this.growthRate = -3;
+	this.key = de_polygonal_ds_HashKey._counter++;
+	if(initialCapacity == -1) initialCapacity = slotCount; else {
+	}
+	this.capacity = initialCapacity;
+	this.mMinCapacity = initialCapacity;
+	this.slotCount = slotCount;
+	this.mMask = slotCount - 1;
+	this.mHash = de_polygonal_ds_tools_NativeArrayTools.init(new Array(slotCount),-1);
+	this.mData = new Array(this.capacity * 3);
+	this.mNext = new Array(this.capacity);
+	var j = 2;
+	var t = this.mData;
+	var _g1 = 0;
+	var _g = this.capacity;
+	while(_g1 < _g) {
+		var i = _g1++;
+		t[j - 1] = -2147483648;
+		t[j] = -1;
+		j += 3;
+	}
+	t = this.mNext;
+	var _g11 = 0;
+	var _g2 = this.capacity - 1;
+	while(_g11 < _g2) {
+		var i1 = _g11++;
+		t[i1] = i1 + 1;
+	}
+	t[this.capacity - 1] = -1;
+	this.mTmpBuffer = new Array(this.mTmpBufferSize);
+};
+$hxClasses["de.polygonal.ds.IntIntHashTable"] = de_polygonal_ds_IntIntHashTable;
+de_polygonal_ds_IntIntHashTable.__name__ = ["de","polygonal","ds","IntIntHashTable"];
+de_polygonal_ds_IntIntHashTable.__interfaces__ = [de_polygonal_ds_Map];
+de_polygonal_ds_IntIntHashTable.prototype = {
+	key: null
+	,capacity: null
+	,growthRate: null
+	,reuseIterator: null
+	,get_loadFactor: function() {
+		return this.mSize / this.slotCount;
+	}
+	,slotCount: null
+	,mHash: null
+	,mData: null
+	,mNext: null
+	,mMask: null
+	,mFree: null
+	,mSize: null
+	,mMinCapacity: null
+	,mIterator: null
+	,mTmpBuffer: null
+	,mTmpBufferSize: null
+	,getCollisionCount: function() {
+		var c = 0;
+		var j;
+		var d = this.mData;
+		var h = this.mHash;
+		var _g1 = 0;
+		var _g = this.slotCount;
+		while(_g1 < _g) {
+			var i = _g1++;
+			j = h[i];
+			if(j == -1) continue;
+			j = d[j + 2];
+			while(j != -1) {
+				j = d[j + 2];
+				c++;
+			}
+		}
+		return c;
+	}
+	,getFront: function(key) {
+		var b = key * 73856093 & this.mMask;
+		var i = this.mHash[b];
+		if(i == -1) return -2147483648; else {
+			var d = this.mData;
+			if(d[i] == key) return d[i + 1]; else {
+				var v = -2147483648;
+				var first = i;
+				var i0 = first;
+				i = d[i + 2];
+				while(i != -1) {
+					if(d[i] == key) {
+						v = d[i + 1];
+						d[i0 + 2] = d[i + 2];
+						d[i + 2] = first;
+						this.mHash[b] = i;
+						break;
+					}
+					i = de_polygonal_ds_tools_NativeArrayTools.get(d,(i0 = i) + 2);
+				}
+				return v;
+			}
+		}
+	}
+	,setIfAbsent: function(key,val) {
+		var b = key * 73856093 & this.mMask;
+		var d = this.mData;
+		var j = this.mHash[b];
+		if(j == -1) {
+			if(this.mSize == this.capacity) {
+				this.grow();
+				d = this.mData;
+			}
+			var i = this.mFree * 3;
+			this.mFree = this.mNext[this.mFree];
+			this.mHash[b] = i;
+			d[i] = key;
+			d[i + 1] = val;
+			this.mSize++;
+			return true;
+		} else if(d[j] == key) return false; else {
+			var t = d[j + 2];
+			while(t != -1) {
+				if(d[t] == key) {
+					j = -1;
+					break;
+				}
+				t = de_polygonal_ds_tools_NativeArrayTools.get(d,(j = t) + 2);
+			}
+			if(j == -1) return false; else {
+				if(this.mSize == this.capacity) {
+					this.grow();
+					d = this.mData;
+				}
+				var i1 = this.mFree * 3;
+				this.mFree = this.mNext[this.mFree];
+				d[j + 2] = i1;
+				d[i1] = key;
+				d[i1 + 1] = val;
+				this.mSize++;
+				return true;
+			}
+		}
+	}
+	,rehash: function(slotCount) {
+		if(this.slotCount == slotCount) return;
+		var t = new de_polygonal_ds_IntIntHashTable(slotCount,this.capacity);
+		var d = this.mData;
+		var _g1 = 0;
+		var _g = this.capacity;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var v = d[i * 3 + 1];
+			if(v != -2147483648) t.set(d[i * 3],v);
+		}
+		this.mHash = t.mHash;
+		this.mData = t.mData;
+		this.mNext = t.mNext;
+		this.slotCount = slotCount;
+		this.mMask = t.mMask;
+		this.mFree = t.mFree;
+	}
+	,remap: function(key,val) {
+		var i = this.mHash[key * 73856093 & this.mMask];
+		if(i == -1) return false; else {
+			var d = this.mData;
+			if(d[i] == key) {
+				d[i + 1] = val;
+				return true;
+			} else {
+				i = d[i + 2];
+				while(i != -1) {
+					if(d[i] == key) {
+						d[i + 1] = val;
+						break;
+					}
+					i = d[i + 2];
+				}
+				return i != -1;
+			}
+		}
+	}
+	,extract: function(key) {
+		var b = key * 73856093 & this.mMask;
+		var h = this.mHash;
+		var i = h[b];
+		if(i == -1) return -2147483648; else {
+			var d = this.mData;
+			if(key == d[i]) {
+				var val = d[i + 1];
+				if(d[i + 2] == -1) h[b] = -1; else h[b] = d[i + 2];
+				var j = i / 3 | 0;
+				this.mNext[j] = this.mFree;
+				this.mFree = j;
+				d[i + 1] = -2147483648;
+				d[i + 2] = -1;
+				this.mSize--;
+				return val;
+			} else {
+				var i0 = i;
+				i = d[i + 2];
+				var val1 = -2147483648;
+				while(i != -1) {
+					if(d[i] == key) {
+						val1 = d[i + 1];
+						break;
+					}
+					i = de_polygonal_ds_tools_NativeArrayTools.get(d,(i0 = i) + 2);
+				}
+				if(val1 != -2147483648) {
+					d[i0 + 2] = d[i + 2];
+					var j1 = i / 3 | 0;
+					this.mNext[j1] = this.mFree;
+					this.mFree = j1;
+					d[i + 1] = -2147483648;
+					d[i + 2] = -1;
+					this.mSize--;
+					return val1;
+				} else return -2147483648;
+			}
+		}
+	}
+	,toKeyArray: function() {
+		if(this.mSize == 0) return [];
+		var out = de_polygonal_ds_tools_ArrayTools.alloc(this.mSize);
+		var j = 0;
+		var o;
+		var d = this.mData;
+		var _g1 = 0;
+		var _g = this.capacity;
+		while(_g1 < _g) {
+			var i = _g1++;
+			if(d[i * 3 + 1] != -2147483648) out[j++] = d[i * 3];
+		}
+		return out;
+	}
+	,toString: function() {
+		var b = new StringBuf();
+		b.add(de_polygonal_Printf.format("{ IntIntHashTable size/capacity: %d/%d, load factor: %.2f }",[this.mSize,this.capacity,this.get_loadFactor()]));
+		if(this.mSize == 0) return b.b;
+		b.b += "\n[\n";
+		var max = 0.;
+		var $it0 = this.keys();
+		while( $it0.hasNext() ) {
+			var key = $it0.next();
+			max = Math.max(max,key);
+		}
+		var i = 1;
+		while(max != 0) {
+			i++;
+			max = max / 10 | 0;
+		}
+		var args = [];
+		var fmt = "  %- " + i + "d -> %d\n";
+		var $it1 = this.keys();
+		while( $it1.hasNext() ) {
+			var key1 = $it1.next();
+			args[0] = key1;
+			args[1] = this.get(key1);
+			b.add(de_polygonal_Printf.format(fmt,args));
+		}
+		b.b += "]";
+		return b.b;
+	}
+	,has: function(val) {
+		var exists = false;
+		var d = this.mData;
+		var _g1 = 0;
+		var _g = this.capacity;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var v = d[i * 3 + 1];
+			if(v == val) {
+				exists = true;
+				break;
+			}
+		}
+		return exists;
+	}
+	,hasKey: function(key) {
+		var i = this.mHash[key * 73856093 & this.mMask];
+		if(i == -1) return false; else {
+			var d = this.mData;
+			if(d[i] == key) return true; else {
+				var exists = false;
+				i = d[i + 2];
+				while(i != -1) {
+					if(d[i] == key) {
+						exists = true;
+						break;
+					}
+					i = d[i + 2];
+				}
+				return exists;
+			}
+		}
+	}
+	,count: function(key) {
+		var c = 0;
+		var i = this.mHash[key * 73856093 & this.mMask];
+		if(i == -1) return c; else {
+			var d = this.mData;
+			while(i != -1) {
+				if(d[i] == key) c++;
+				i = d[i + 2];
+			}
+			return c;
+		}
+	}
+	,get: function(key) {
+		var i = this.mHash[key * 73856093 & this.mMask];
+		if(i == -1) return -2147483648; else {
+			var d = this.mData;
+			if(d[i] == key) return d[i + 1]; else {
+				var v = -2147483648;
+				i = d[i + 2];
+				while(i != -1) {
+					if(d[i] == key) {
+						v = d[i + 1];
+						break;
+					}
+					i = d[i + 2];
+				}
+				return v;
+			}
+		}
+	}
+	,getAll: function(key,out) {
+		var i = this.mHash[key * 73856093 & this.mMask];
+		if(i == -1) return 0; else {
+			var c = 0;
+			var d = this.mData;
+			if(d[i] == key) out[c++] = d[i + 1];
+			i = d[i + 2];
+			while(i != -1) {
+				if(d[i] == key) out[c++] = d[i + 1];
+				i = d[i + 2];
+			}
+			return c;
+		}
+	}
+	,hasPair: function(key,val) {
+		var i = this.mHash[key * 73856093 & this.mMask];
+		if(i == -1) return false; else {
+			var d = this.mData;
+			if(d[i] == key) {
+				if(d[i + 1] == val) return true;
+			}
+			i = d[i + 2];
+			while(i != -1) {
+				if(d[i] == key) {
+					if(d[i + 1] == val) return true;
+				}
+				i = d[i + 2];
+			}
+			return false;
+		}
+	}
+	,clrPair: function(key,val) {
+		var b = key * 73856093 & this.mMask;
+		var h = this.mHash;
+		var i = h[b];
+		if(i == -1) return false; else {
+			var d = this.mData;
+			if(key == d[i] && val == d[i + 1]) {
+				if(d[i + 2] == -1) h[b] = -1; else h[b] = d[i + 2];
+				var j = i / 3 | 0;
+				this.mNext[j] = this.mFree;
+				this.mFree = j;
+				d[i + 1] = -2147483648;
+				d[i + 2] = -1;
+				this.mSize--;
+				return true;
+			} else {
+				var exists = false;
+				var i0 = i;
+				i = d[i + 2];
+				while(i != -1) {
+					if(d[i] == key && d[i + 1] == val) {
+						exists = true;
+						break;
+					}
+					i = de_polygonal_ds_tools_NativeArrayTools.get(d,(i0 = i) + 2);
+				}
+				if(exists) {
+					d[i0 + 2] = d[i + 2];
+					var j1 = i / 3 | 0;
+					this.mNext[j1] = this.mFree;
+					this.mFree = j1;
+					d[i + 1] = -2147483648;
+					d[i + 2] = -1;
+					--this.mSize;
+					return true;
+				} else return false;
+			}
+		}
+	}
+	,set: function(key,val) {
+		if(this.mSize == this.capacity) this.grow();
+		var d = this.mData;
+		var h = this.mHash;
+		var i = this.mFree * 3;
+		this.mFree = this.mNext[this.mFree];
+		d[i] = key;
+		d[i + 1] = val;
+		var b = key * 73856093 & this.mMask;
+		var j = h[b];
+		if(j == -1) {
+			h[b] = i;
+			this.mSize++;
+			return true;
+		} else {
+			var first = d[j] != key;
+			var t = d[j + 2];
+			while(t != -1) {
+				if(d[t] == key) first = false;
+				j = t;
+				t = d[t + 2];
+			}
+			d[j + 2] = i;
+			this.mSize++;
+			return first;
+		}
+	}
+	,unset: function(key) {
+		var b = key * 73856093 & this.mMask;
+		var h = this.mHash;
+		var i = h[b];
+		if(i == -1) return false; else {
+			var d = this.mData;
+			if(key == d[i]) {
+				if(d[i + 2] == -1) h[b] = -1; else h[b] = d[i + 2];
+				var j = i / 3 | 0;
+				this.mNext[j] = this.mFree;
+				this.mFree = j;
+				d[i + 1] = -2147483648;
+				d[i + 2] = -1;
+				this.mSize--;
+				return true;
+			} else {
+				var exists = false;
+				var i0 = i;
+				i = d[i + 2];
+				while(i != -1) {
+					if(d[i] == key) {
+						exists = true;
+						break;
+					}
+					i = de_polygonal_ds_tools_NativeArrayTools.get(d,(i0 = i) + 2);
+				}
+				if(exists) {
+					d[i0 + 2] = d[i + 2];
+					var j1 = i / 3 | 0;
+					this.mNext[j1] = this.mFree;
+					this.mFree = j1;
+					d[i + 1] = -2147483648;
+					d[i + 2] = -1;
+					this.mSize--;
+					return true;
+				} else return false;
+			}
+		}
+	}
+	,toValSet: function() {
+		var s = new de_polygonal_ds_IntHashSet(this.capacity);
+		var d = this.mData;
+		var _g1 = 0;
+		var _g = this.capacity;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var v = d[i * 3 + 1];
+			if(v != -2147483648) s.set(v);
+		}
+		return s;
+	}
+	,toKeySet: function() {
+		var s = new de_polygonal_ds_IntHashSet(this.capacity);
+		var d = this.mData;
+		var _g1 = 0;
+		var _g = this.capacity;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var v = d[i * 3 + 1];
+			if(v != -2147483648) s.set(d[i * 3]);
+		}
+		return s;
+	}
+	,keys: function() {
+		return new de_polygonal_ds_IntIntHashTableKeyIterator(this);
+	}
+	,pack: function() {
+		if(this.capacity == this.mMinCapacity) return this;
+		var oldCapacity = this.capacity;
+		var x = this.mSize;
+		var y = this.mMinCapacity;
+		if(x > y) this.capacity = x; else this.capacity = y;
+		var src = this.mData;
+		var dst;
+		var e = 0;
+		var t = this.mHash;
+		var j;
+		dst = new Array(this.capacity * 3);
+		var j1 = 2;
+		var _g1 = 0;
+		var _g = this.capacity;
+		while(_g1 < _g) {
+			var i = _g1++;
+			dst[j1 - 1] = -2147483648;
+			dst[j1] = -1;
+			j1 += 3;
+		}
+		var _g11 = 0;
+		var _g2 = this.slotCount;
+		while(_g11 < _g2) {
+			var i1 = _g11++;
+			j1 = t[i1];
+			if(j1 == -1) continue;
+			t[i1] = e;
+			dst[e] = src[j1];
+			dst[e + 1] = src[j1 + 1];
+			dst[e + 2] = -1;
+			e += 3;
+			j1 = src[j1 + 2];
+			while(j1 != -1) {
+				dst[e - 1] = e;
+				dst[e] = src[j1];
+				dst[e + 1] = src[j1 + 1];
+				dst[e + 2] = -1;
+				e += 3;
+				j1 = src[j1 + 2];
+			}
+		}
+		this.mData = dst;
+		this.mNext = new Array(this.capacity);
+		var n = this.mNext;
+		var _g12 = 0;
+		var _g3 = this.capacity - 1;
+		while(_g12 < _g3) {
+			var i2 = _g12++;
+			n[i2] = i2 + 1;
+		}
+		n[this.capacity - 1] = -1;
+		this.mFree = -1;
+		return this;
+	}
+	,hashCode: function(x) {
+		return x * 73856093 & this.mMask;
+	}
+	,grow: function() {
+		var oldCapacity = this.capacity;
+		this.capacity = de_polygonal_ds_tools_GrowthRate.compute(this.growthRate,this.capacity);
+		var t;
+		t = new Array(this.capacity);
+		de_polygonal_ds_tools_NativeArrayTools.blit(this.mNext,0,t,0,oldCapacity);
+		this.mNext = t;
+		t = new Array(this.capacity * 3);
+		de_polygonal_ds_tools_NativeArrayTools.blit(this.mData,0,t,0,oldCapacity * 3);
+		this.mData = t;
+		t = this.mNext;
+		var _g1 = oldCapacity - 1;
+		var _g = this.capacity - 1;
+		while(_g1 < _g) {
+			var i = _g1++;
+			t[i] = i + 1;
+		}
+		t[this.capacity - 1] = -1;
+		this.mFree = oldCapacity;
+		var j = oldCapacity * 3 + 2;
+		var t1 = this.mData;
+		var _g11 = 0;
+		var _g2 = this.capacity - oldCapacity;
+		while(_g11 < _g2) {
+			var i1 = _g11++;
+			t1[j - 1] = -2147483648;
+			t1[j] = -1;
+			j += 3;
+		}
+	}
+	,get_size: function() {
+		return this.mSize;
+	}
+	,free: function() {
+		this.mHash = null;
+		this.mData = null;
+		this.mNext = null;
+		if(this.mIterator != null) {
+			this.mIterator.free();
+			this.mIterator = null;
+		}
+		this.mTmpBuffer = null;
+	}
+	,contains: function(val) {
+		return this.has(val);
+	}
+	,remove: function(val) {
+		var c = 0;
+		var keys = this.mTmpBuffer;
+		var max = this.mTmpBufferSize;
+		var d = this.mData;
+		var j;
+		var _g1 = 0;
+		var _g = this.capacity;
+		while(_g1 < _g) {
+			var i = _g1++;
+			j = i * 3;
+			if(d[j + 1] == val) {
+				if(c == max) {
+					max <<= 1;
+					this.mTmpBufferSize = max;
+					var t = new Array(max);
+					de_polygonal_ds_tools_NativeArrayTools.blit(this.mTmpBuffer,0,t,0,c);
+					this.mTmpBuffer = keys = t;
+				}
+				de_polygonal_ds_tools_NativeArrayTools.set(keys,c++,d[j]);
+			}
+		}
+		var _g2 = 0;
+		while(_g2 < c) {
+			var i1 = _g2++;
+			this.unset(keys[i1]);
+		}
+		return c > 0;
+	}
+	,clear: function(gc) {
+		if(gc == null) gc = false;
+		var h = this.mHash;
+		var _g1 = 0;
+		var _g = this.slotCount;
+		while(_g1 < _g) {
+			var i = _g1++;
+			h[i] = -1;
+		}
+		var j = 2;
+		var t = this.mData;
+		var _g11 = 0;
+		var _g2 = this.capacity;
+		while(_g11 < _g2) {
+			var i1 = _g11++;
+			t[j - 1] = -2147483648;
+			t[j] = -1;
+			j += 3;
+		}
+		t = this.mNext;
+		var _g12 = 0;
+		var _g3 = this.capacity - 1;
+		while(_g12 < _g3) {
+			var i2 = _g12++;
+			t[i2] = i2 + 1;
+		}
+		t[this.capacity - 1] = -1;
+		this.mFree = 0;
+		this.mSize = 0;
+	}
+	,iterator: function() {
+		if(this.reuseIterator) {
+			if(this.mIterator == null) this.mIterator = new de_polygonal_ds_IntIntHashTableValIterator(this); else this.mIterator.reset();
+			return this.mIterator;
+		} else return new de_polygonal_ds_IntIntHashTableValIterator(this);
+	}
+	,isEmpty: function() {
+		return this.mSize == 0;
+	}
+	,toArray: function() {
+		if(this.mSize == 0) return [];
+		var out = de_polygonal_ds_tools_ArrayTools.alloc(this.mSize);
+		var j = 0;
+		var v;
+		var d = this.mData;
+		var _g1 = 0;
+		var _g = this.capacity;
+		while(_g1 < _g) {
+			var i = _g1++;
+			v = d[i * 3 + 1];
+			if(v != -2147483648) out[j++] = v;
+		}
+		return out;
+	}
+	,clone: function(assign,copier) {
+		if(assign == null) assign = true;
+		var c = new de_polygonal_ds_IntIntHashTable(this.slotCount,this.capacity);
+		de_polygonal_ds_tools_NativeArrayTools.blit(this.mHash,0,c.mHash,0,this.slotCount);
+		de_polygonal_ds_tools_NativeArrayTools.blit(this.mData,0,c.mData,0,this.capacity * 3);
+		de_polygonal_ds_tools_NativeArrayTools.blit(this.mNext,0,c.mNext,0,this.capacity);
+		c.mMask = this.mMask;
+		c.slotCount = this.slotCount;
+		c.capacity = this.capacity;
+		c.mFree = this.mFree;
+		c.mSize = this.mSize;
+		return c;
+	}
+	,__class__: de_polygonal_ds_IntIntHashTable
+	,__properties__: {get_size:"get_size",get_loadFactor:"get_loadFactor"}
+};
+var de_polygonal_ds_IntIntHashTableValIterator = function(x) {
+	this.mObject = x;
+	this.mData = x.mData;
+	this.mI = 0;
+	this.mS = x.capacity;
+	this.scan();
+};
+$hxClasses["de.polygonal.ds.IntIntHashTableValIterator"] = de_polygonal_ds_IntIntHashTableValIterator;
+de_polygonal_ds_IntIntHashTableValIterator.__name__ = ["de","polygonal","ds","IntIntHashTableValIterator"];
+de_polygonal_ds_IntIntHashTableValIterator.__interfaces__ = [de_polygonal_ds_Itr];
+de_polygonal_ds_IntIntHashTableValIterator.prototype = {
+	mObject: null
+	,mI: null
+	,mS: null
+	,mData: null
+	,free: function() {
+		this.mObject = null;
+		this.mData = null;
+	}
+	,reset: function() {
+		this.mData = this.mObject.mData;
+		this.mI = 0;
+		this.mS = this.mObject.capacity;
+		this.scan();
+		return this;
+	}
+	,hasNext: function() {
+		return this.mI < this.mS;
+	}
+	,next: function() {
+		var val = de_polygonal_ds_tools_NativeArrayTools.get(this.mData,this.mI++ * 3 + 1);
+		this.scan();
+		return val;
+	}
+	,remove: function() {
+		throw new js__$Boot_HaxeError("unsupported operation");
+	}
+	,scan: function() {
+		while(this.mI < this.mS && this.mData[this.mI * 3 + 1] == -2147483648) this.mI++;
+	}
+	,__class__: de_polygonal_ds_IntIntHashTableValIterator
+};
+var de_polygonal_ds_IntIntHashTableKeyIterator = function(x) {
+	this.mObject = x;
+	this.mData = x.mData;
+	this.mI = 0;
+	this.mS = x.capacity;
+	this.scan();
+};
+$hxClasses["de.polygonal.ds.IntIntHashTableKeyIterator"] = de_polygonal_ds_IntIntHashTableKeyIterator;
+de_polygonal_ds_IntIntHashTableKeyIterator.__name__ = ["de","polygonal","ds","IntIntHashTableKeyIterator"];
+de_polygonal_ds_IntIntHashTableKeyIterator.__interfaces__ = [de_polygonal_ds_Itr];
+de_polygonal_ds_IntIntHashTableKeyIterator.prototype = {
+	mObject: null
+	,mI: null
+	,mS: null
+	,mData: null
+	,free: function() {
+		this.mObject = null;
+		this.mData = null;
+	}
+	,reset: function() {
+		this.mData = this.mObject.mData;
+		this.mI = 0;
+		this.mS = this.mObject.capacity;
+		this.scan();
+		return this;
+	}
+	,hasNext: function() {
+		return this.mI < this.mS;
+	}
+	,next: function() {
+		var key = de_polygonal_ds_tools_NativeArrayTools.get(this.mData,this.mI++ * 3);
+		this.scan();
+		return key;
+	}
+	,remove: function() {
+		throw new js__$Boot_HaxeError("unsupported operation");
+	}
+	,scan: function() {
+		while(this.mI < this.mS && this.mData[this.mI * 3 + 1] == -2147483648) this.mI++;
+	}
+	,__class__: de_polygonal_ds_IntIntHashTableKeyIterator
+};
+var de_polygonal_ds_ListSet = function(initialCapacity,source) {
+	if(initialCapacity == null) initialCapacity = 16;
+	this.mIterator = null;
+	this.mSize = 0;
+	this.reuseIterator = false;
+	this.growthRate = -2;
+	this.key = de_polygonal_ds_HashKey._counter++;
+	if(1 > initialCapacity) this.mInitialCapacity = 1; else this.mInitialCapacity = initialCapacity;
+	this.capacity = this.mInitialCapacity;
+	if(source != null) this.capacity = source.length;
+	this.mData = new Array(this.capacity);
+	if(source != null) {
+		var _g = 0;
+		while(_g < source.length) {
+			var i = source[_g];
+			++_g;
+			this.set(i);
+		}
+	}
+};
+$hxClasses["de.polygonal.ds.ListSet"] = de_polygonal_ds_ListSet;
+de_polygonal_ds_ListSet.__name__ = ["de","polygonal","ds","ListSet"];
+de_polygonal_ds_ListSet.__interfaces__ = [de_polygonal_ds_Set];
+de_polygonal_ds_ListSet.prototype = {
+	key: null
+	,capacity: null
+	,growthRate: null
+	,reuseIterator: null
+	,mData: null
+	,mInitialCapacity: null
+	,mSize: null
+	,mIterator: null
+	,reserve: function(n) {
+		if(n > this.capacity) {
+			this.capacity = n;
+			this.resizeContainer(n);
+		}
+		return this;
+	}
+	,pack: function() {
+		if(this.capacity > this.mInitialCapacity) {
+			var x = this.mInitialCapacity;
+			var y = this.mSize;
+			if(x > y) this.capacity = x; else this.capacity = y;
+			this.resizeContainer(this.capacity);
+		} else {
+			var d = this.mData;
+			var _g1 = this.mSize;
+			var _g = this.capacity;
+			while(_g1 < _g) {
+				var i = _g1++;
+				d[i] = null;
+			}
+		}
+		return this;
+	}
+	,toString: function() {
+		var b_b = "";
+		b_b += Std.string("{ ListSet size: " + this.mSize + " }");
+		if(this.isEmpty()) return b_b;
+		b_b += "\n[\n";
+		var _g1 = 0;
+		var _g = this.mSize;
+		while(_g1 < _g) {
+			var i = _g1++;
+			b_b += Std.string("  " + Std.string(this.mData[i]) + "\n");
+		}
+		b_b += "]";
+		return b_b;
+	}
+	,has: function(x) {
+		if(this.isEmpty()) return false;
+		var d = this.mData;
+		var _g1 = 0;
+		var _g = this.mSize;
+		while(_g1 < _g) {
+			var i = _g1++;
+			if(d[i] == x) return true;
+		}
+		return false;
+	}
+	,set: function(x) {
+		var d = this.mData;
+		var _g1 = 0;
+		var _g = this.mSize;
+		while(_g1 < _g) {
+			var i = _g1++;
+			if(d[i] == x) return false;
+		}
+		if(this.mSize == this.capacity) {
+			this.grow();
+			d = this.mData;
+		}
+		de_polygonal_ds_tools_NativeArrayTools.set(d,this.mSize++,x);
+		return true;
+	}
+	,unset: function(x) {
+		return this.remove(x);
+	}
+	,merge: function(x,assign,copier) {
+		if(assign) {
+			var $it0 = x.iterator();
+			while( $it0.hasNext() ) {
+				var val = $it0.next();
+				this.set(val);
+			}
+		} else if(copier != null) {
+			var $it1 = x.iterator();
+			while( $it1.hasNext() ) {
+				var val1 = $it1.next();
+				this.set(copier(val1));
+			}
+		} else {
+			var $it2 = x.iterator();
+			while( $it2.hasNext() ) {
+				var val2 = $it2.next();
+				this.set((js_Boot.__cast(val2 , de_polygonal_ds_Cloneable)).clone());
+			}
+		}
+	}
+	,get_size: function() {
+		return this.mSize;
+	}
+	,free: function() {
+		de_polygonal_ds_tools_NativeArrayTools.nullify(this.mData);
+		this.mData = null;
+		if(this.mIterator != null) {
+			this.mIterator.free();
+			this.mIterator = null;
+		}
+	}
+	,contains: function(x) {
+		return this.has(x);
+	}
+	,remove: function(x) {
+		var d = this.mData;
+		var _g1 = 0;
+		var _g = this.mSize;
+		while(_g1 < _g) {
+			var i = _g1++;
+			if(d[i] == x) {
+				de_polygonal_ds_tools_NativeArrayTools.set(d,i,de_polygonal_ds_tools_NativeArrayTools.get(this.mData,--this.mSize));
+				return true;
+			}
+		}
+		return false;
+	}
+	,clear: function(gc) {
+		if(gc == null) gc = false;
+		if(gc) de_polygonal_ds_tools_NativeArrayTools.nullify(this.mData);
+		this.mSize = 0;
+	}
+	,iterator: function() {
+		if(this.reuseIterator) {
+			if(this.mIterator == null) this.mIterator = new de_polygonal_ds_ListSetIterator(this); else this.mIterator.reset();
+			return this.mIterator;
+		} else return new de_polygonal_ds_ListSetIterator(this);
+	}
+	,isEmpty: function() {
+		return this.mSize == 0;
+	}
+	,toArray: function() {
+		return de_polygonal_ds_tools_NativeArrayTools.toArray(this.mData,0,this.mSize);
+	}
+	,clone: function(assign,copier) {
+		if(assign == null) assign = true;
+		var out = new de_polygonal_ds_ListSet();
+		out.capacity = this.mSize;
+		out.mSize = this.mSize;
+		out.mData = new Array(this.mSize);
+		var src = this.mData;
+		var dst = out.mData;
+		if(assign) de_polygonal_ds_tools_NativeArrayTools.blit(src,0,dst,0,this.mSize); else if(copier == null) {
+			var _g1 = 0;
+			var _g = this.mSize;
+			while(_g1 < _g) {
+				var i = _g1++;
+				de_polygonal_ds_tools_NativeArrayTools.set(dst,i,(js_Boot.__cast(src[i] , de_polygonal_ds_Cloneable)).clone());
+			}
+		} else {
+			var _g11 = 0;
+			var _g2 = this.mSize;
+			while(_g11 < _g2) {
+				var i1 = _g11++;
+				de_polygonal_ds_tools_NativeArrayTools.set(dst,i1,copier(src[i1]));
+			}
+		}
+		return out;
+	}
+	,grow: function() {
+		this.capacity = de_polygonal_ds_tools_GrowthRate.compute(this.growthRate,this.capacity);
+		this.resizeContainer(this.capacity);
+	}
+	,resizeContainer: function(newSize) {
+		var t = new Array(newSize);
+		de_polygonal_ds_tools_NativeArrayTools.blit(this.mData,0,t,0,this.mSize);
+		this.mData = t;
+	}
+	,__class__: de_polygonal_ds_ListSet
+	,__properties__: {get_size:"get_size"}
+};
+var de_polygonal_ds_ListSetIterator = function(x) {
+	this.mObject = x;
+	{
+		this.mData = this.mObject.mData;
+		this.mS = this.mObject.mSize;
+		this.mI = 0;
+		this;
+	}
+};
+$hxClasses["de.polygonal.ds.ListSetIterator"] = de_polygonal_ds_ListSetIterator;
+de_polygonal_ds_ListSetIterator.__name__ = ["de","polygonal","ds","ListSetIterator"];
+de_polygonal_ds_ListSetIterator.__interfaces__ = [de_polygonal_ds_Itr];
+de_polygonal_ds_ListSetIterator.prototype = {
+	mObject: null
+	,mData: null
+	,mI: null
+	,mS: null
+	,free: function() {
+		this.mObject = null;
+		this.mData = null;
+	}
+	,reset: function() {
+		this.mData = this.mObject.mData;
+		this.mS = this.mObject.mSize;
+		this.mI = 0;
+		return this;
+	}
+	,hasNext: function() {
+		return this.mI < this.mS;
+	}
+	,next: function() {
+		return de_polygonal_ds_tools_NativeArrayTools.get(this.mData,this.mI++);
+	}
+	,remove: function() {
+		de_polygonal_ds_tools_NativeArrayTools.set(this.mData,this.mI,de_polygonal_ds_tools_NativeArrayTools.get(this.mData,--this.mS));
+	}
+	,__class__: de_polygonal_ds_ListSetIterator
+};
 var de_polygonal_ds_tools_ArrayTools = function() { };
 $hxClasses["de.polygonal.ds.tools.ArrayTools"] = de_polygonal_ds_tools_ArrayTools;
 de_polygonal_ds_tools_ArrayTools.__name__ = ["de","polygonal","ds","tools","ArrayTools"];
@@ -2055,6 +4444,28 @@ de_polygonal_ds_tools_ArrayTools._quickSort = function(a,first,k,cmp) {
 var de_polygonal_ds_tools_Assert = function() { };
 $hxClasses["de.polygonal.ds.tools.Assert"] = de_polygonal_ds_tools_Assert;
 de_polygonal_ds_tools_Assert.__name__ = ["de","polygonal","ds","tools","Assert"];
+var de_polygonal_ds_tools_GrowthRate = function() { };
+$hxClasses["de.polygonal.ds.tools.GrowthRate"] = de_polygonal_ds_tools_GrowthRate;
+de_polygonal_ds_tools_GrowthRate.__name__ = ["de","polygonal","ds","tools","GrowthRate"];
+de_polygonal_ds_tools_GrowthRate.compute = function(rate,capacity) {
+	if(rate > 0) capacity += rate; else switch(rate) {
+	case 0:
+		throw new js__$Boot_HaxeError("out of space");
+		break;
+	case -1:
+		var newSize = capacity + 1;
+		capacity = (newSize >> 3) + (newSize < 9?3:6);
+		capacity += newSize;
+		break;
+	case -2:
+		capacity = (capacity * 3 >> 1) + 1;
+		break;
+	case -3:
+		capacity <<= 1;
+		break;
+	}
+	return capacity;
+};
 var de_polygonal_ds_tools_NativeArrayTools = function() { };
 $hxClasses["de.polygonal.ds.tools.NativeArrayTools"] = de_polygonal_ds_tools_NativeArrayTools;
 de_polygonal_ds_tools_NativeArrayTools.__name__ = ["de","polygonal","ds","tools","NativeArrayTools"];
@@ -2214,6 +4625,229 @@ haxe_IMap.prototype = {
 	get: null
 	,keys: null
 	,__class__: haxe_IMap
+};
+var haxe__$Int32_Int32_$Impl_$ = {};
+$hxClasses["haxe._Int32.Int32_Impl_"] = haxe__$Int32_Int32_$Impl_$;
+haxe__$Int32_Int32_$Impl_$.__name__ = ["haxe","_Int32","Int32_Impl_"];
+haxe__$Int32_Int32_$Impl_$.ucompare = function(a,b) {
+	if(a < 0) if(b < 0) return ~b - ~a | 0; else return 1;
+	if(b < 0) return -1; else return a - b | 0;
+};
+var haxe__$Int64_Int64_$Impl_$ = {};
+$hxClasses["haxe._Int64.Int64_Impl_"] = haxe__$Int64_Int64_$Impl_$;
+haxe__$Int64_Int64_$Impl_$.__name__ = ["haxe","_Int64","Int64_Impl_"];
+haxe__$Int64_Int64_$Impl_$.toString = function(this1) {
+	var i = this1;
+	if((function($this) {
+		var $r;
+		var b;
+		{
+			var x = new haxe__$Int64__$_$_$Int64(0,0);
+			b = x;
+		}
+		$r = i.high == b.high && i.low == b.low;
+		return $r;
+	}(this))) return "0";
+	var str = "";
+	var neg = false;
+	if(i.high < 0) {
+		neg = true;
+		var high = ~i.high;
+		var low = -i.low;
+		if(low == 0) {
+			var ret = high++;
+			high = high | 0;
+			ret;
+		}
+		var x1 = new haxe__$Int64__$_$_$Int64(high,low);
+		i = x1;
+	}
+	var ten;
+	{
+		var x2 = new haxe__$Int64__$_$_$Int64(0,10);
+		ten = x2;
+	}
+	while((function($this) {
+		var $r;
+		var b1;
+		{
+			var x3 = new haxe__$Int64__$_$_$Int64(0,0);
+			b1 = x3;
+		}
+		$r = i.high != b1.high || i.low != b1.low;
+		return $r;
+	}(this))) {
+		var r = haxe__$Int64_Int64_$Impl_$.divMod(i,ten);
+		str = r.modulus.low + str;
+		i = r.quotient;
+	}
+	if(neg) str = "-" + str;
+	return str;
+};
+haxe__$Int64_Int64_$Impl_$.divMod = function(dividend,divisor) {
+	if(divisor.high == 0) {
+		var _g = divisor.low;
+		switch(_g) {
+		case 0:
+			throw new js__$Boot_HaxeError("divide by zero");
+			break;
+		case 1:
+			return { quotient : (function($this) {
+				var $r;
+				var x = new haxe__$Int64__$_$_$Int64(dividend.high,dividend.low);
+				$r = x;
+				return $r;
+			}(this)), modulus : (function($this) {
+				var $r;
+				var x1 = new haxe__$Int64__$_$_$Int64(0,0);
+				$r = x1;
+				return $r;
+			}(this))};
+		}
+	}
+	var divSign = dividend.high < 0 != divisor.high < 0;
+	var modulus;
+	if(dividend.high < 0) {
+		var high = ~dividend.high;
+		var low = -dividend.low;
+		if(low == 0) {
+			var ret = high++;
+			high = high | 0;
+			ret;
+		}
+		var x2 = new haxe__$Int64__$_$_$Int64(high,low);
+		modulus = x2;
+	} else {
+		var x3 = new haxe__$Int64__$_$_$Int64(dividend.high,dividend.low);
+		modulus = x3;
+	}
+	if(divisor.high < 0) {
+		var high1 = ~divisor.high;
+		var low1 = -divisor.low;
+		if(low1 == 0) {
+			var ret1 = high1++;
+			high1 = high1 | 0;
+			ret1;
+		}
+		var x4 = new haxe__$Int64__$_$_$Int64(high1,low1);
+		divisor = x4;
+	} else divisor = divisor;
+	var quotient;
+	{
+		var x5 = new haxe__$Int64__$_$_$Int64(0,0);
+		quotient = x5;
+	}
+	var mask;
+	{
+		var x6 = new haxe__$Int64__$_$_$Int64(0,1);
+		mask = x6;
+	}
+	while(!(divisor.high < 0)) {
+		var cmp;
+		var v = haxe__$Int32_Int32_$Impl_$.ucompare(divisor.high,modulus.high);
+		if(v != 0) cmp = v; else cmp = haxe__$Int32_Int32_$Impl_$.ucompare(divisor.low,modulus.low);
+		var b = 1;
+		b &= 63;
+		if(b == 0) {
+			var x7 = new haxe__$Int64__$_$_$Int64(divisor.high,divisor.low);
+			divisor = x7;
+		} else if(b < 32) {
+			var x8 = new haxe__$Int64__$_$_$Int64(divisor.high << b | divisor.low >>> 32 - b,divisor.low << b);
+			divisor = x8;
+		} else {
+			var x9 = new haxe__$Int64__$_$_$Int64(divisor.low << b - 32,0);
+			divisor = x9;
+		}
+		var b1 = 1;
+		b1 &= 63;
+		if(b1 == 0) {
+			var x10 = new haxe__$Int64__$_$_$Int64(mask.high,mask.low);
+			mask = x10;
+		} else if(b1 < 32) {
+			var x11 = new haxe__$Int64__$_$_$Int64(mask.high << b1 | mask.low >>> 32 - b1,mask.low << b1);
+			mask = x11;
+		} else {
+			var x12 = new haxe__$Int64__$_$_$Int64(mask.low << b1 - 32,0);
+			mask = x12;
+		}
+		if(cmp >= 0) break;
+	}
+	while((function($this) {
+		var $r;
+		var b2;
+		{
+			var x13 = new haxe__$Int64__$_$_$Int64(0,0);
+			b2 = x13;
+		}
+		$r = mask.high != b2.high || mask.low != b2.low;
+		return $r;
+	}(this))) {
+		if((function($this) {
+			var $r;
+			var v1 = haxe__$Int32_Int32_$Impl_$.ucompare(modulus.high,divisor.high);
+			$r = v1 != 0?v1:haxe__$Int32_Int32_$Impl_$.ucompare(modulus.low,divisor.low);
+			return $r;
+		}(this)) >= 0) {
+			var x14 = new haxe__$Int64__$_$_$Int64(quotient.high | mask.high,quotient.low | mask.low);
+			quotient = x14;
+			var high2 = modulus.high - divisor.high | 0;
+			var low2 = modulus.low - divisor.low | 0;
+			if(haxe__$Int32_Int32_$Impl_$.ucompare(modulus.low,divisor.low) < 0) {
+				var ret2 = high2--;
+				high2 = high2 | 0;
+				ret2;
+			}
+			var x15 = new haxe__$Int64__$_$_$Int64(high2,low2);
+			modulus = x15;
+		}
+		var b3 = 1;
+		b3 &= 63;
+		if(b3 == 0) {
+			var x16 = new haxe__$Int64__$_$_$Int64(mask.high,mask.low);
+			mask = x16;
+		} else if(b3 < 32) {
+			var x17 = new haxe__$Int64__$_$_$Int64(mask.high >>> b3,mask.high << 32 - b3 | mask.low >>> b3);
+			mask = x17;
+		} else {
+			var x18 = new haxe__$Int64__$_$_$Int64(0,mask.high >>> b3 - 32);
+			mask = x18;
+		}
+		var b4 = 1;
+		b4 &= 63;
+		if(b4 == 0) {
+			var x19 = new haxe__$Int64__$_$_$Int64(divisor.high,divisor.low);
+			divisor = x19;
+		} else if(b4 < 32) {
+			var x20 = new haxe__$Int64__$_$_$Int64(divisor.high >>> b4,divisor.high << 32 - b4 | divisor.low >>> b4);
+			divisor = x20;
+		} else {
+			var x21 = new haxe__$Int64__$_$_$Int64(0,divisor.high >>> b4 - 32);
+			divisor = x21;
+		}
+	}
+	if(divSign) {
+		var high3 = ~quotient.high;
+		var low3 = -quotient.low;
+		if(low3 == 0) {
+			var ret3 = high3++;
+			high3 = high3 | 0;
+			ret3;
+		}
+		var x22 = new haxe__$Int64__$_$_$Int64(high3,low3);
+		quotient = x22;
+	}
+	if(dividend.high < 0) {
+		var high4 = ~modulus.high;
+		var low4 = -modulus.low;
+		if(low4 == 0) {
+			var ret4 = high4++;
+			high4 = high4 | 0;
+			ret4;
+		}
+		var x23 = new haxe__$Int64__$_$_$Int64(high4,low4);
+		modulus = x23;
+	}
+	return { quotient : quotient, modulus : modulus};
 };
 var haxe__$Int64__$_$_$Int64 = function(high,low) {
 	this.high = high;
@@ -2812,6 +5446,11 @@ haxe_ds_IntMap.prototype = {
 	}
 	,get: function(key) {
 		return this.h[key];
+	}
+	,remove: function(key) {
+		if(!this.h.hasOwnProperty(key)) return false;
+		delete(this.h[key]);
+		return true;
 	}
 	,keys: function() {
 		var a = [];
@@ -4793,6 +7432,7 @@ var textifician_mapping_TextificianWorld = $hx_exports.textifician.mapping.Texti
 	this.zones = new haxe_ds_StringMap();
 	this.graph = new de_polygonal_ds_Graph();
 	this.locationDefs = new haxe_ds_StringMap();
+	this.editableHash = new haxe_ds_IntMap();
 };
 $hxClasses["textifician.mapping.TextificianWorld"] = textifician_mapping_TextificianWorld;
 textifician_mapping_TextificianWorld.__name__ = ["textifician","mapping","TextificianWorld"];
@@ -4820,6 +7460,16 @@ textifician_mapping_TextificianWorld.prototype = {
 	graph: null
 	,zones: null
 	,locationDefs: null
+	,editableHash: null
+	,registerHashEditable: function(hashable,editableContent) {
+		this.editableHash.set(hashable.key,editableContent);
+	}
+	,removeHashEditable: function(hashable) {
+		return this.editableHash.remove(hashable.key);
+	}
+	,getHashEditable: function(hashable) {
+		return this.editableHash.h[hashable.key];
+	}
 	,setupDefaultNew: function(zone) {
 		if(zone == null) zone = textifician_mapping_Zone.create("DefaultZone","");
 		this.addZone(zone);
@@ -5525,7 +8175,19 @@ Xml.Comment = 3;
 Xml.DocType = 4;
 Xml.ProcessingInstruction = 5;
 Xml.Document = 6;
+de_polygonal_Printf._initialized = false;
 de_polygonal_ds_HashKey._counter = 0;
+de_polygonal_ds_IntHashSet.VAL_ABSENT = -2147483648;
+de_polygonal_ds_IntHashSet.EMPTY_SLOT = -1;
+de_polygonal_ds_IntHashSet.NULL_POINTER = -1;
+de_polygonal_ds_IntIntHashTable.KEY_ABSENT = -2147483648;
+de_polygonal_ds_IntIntHashTable.VAL_ABSENT = -2147483648;
+de_polygonal_ds_IntIntHashTable.EMPTY_SLOT = -1;
+de_polygonal_ds_IntIntHashTable.NULL_POINTER = -1;
+de_polygonal_ds_tools_GrowthRate.FIXED = 0;
+de_polygonal_ds_tools_GrowthRate.MILD = -1;
+de_polygonal_ds_tools_GrowthRate.NORMAL = -2;
+de_polygonal_ds_tools_GrowthRate.DOUBLE = -3;
 haxe_Serializer.USE_CACHE = false;
 haxe_Serializer.USE_ENUM_INDEX = false;
 haxe_Serializer.BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789%:";
@@ -5551,19 +8213,20 @@ haxe_xml_Parser.escapes = (function($this) {
 }(this));
 js_Boot.__toStr = {}.toString;
 js_html_compat_Uint8Array.BYTES_PER_ELEMENT = 1;
-textifician_mapping_ArcPacket.__meta__ = { fields : { flags : { inspect : null, bitmask : ["FLAG"]}, label : { inspect : null}, description : { inspect : [{ display : "textarea"}]}, cardinal : { inspect : [{ display : "selector"}], choices : ["CARDINAL"]}, pathArcInfo : { inspect : null}}};
-textifician_mapping_ArcPacket.__rtti = "<class path=\"textifician.mapping.ArcPacket\" params=\"\">\n\t<CARDINAL_AUTO public=\"1\" get=\"inline\" set=\"null\" expr=\"0\" line=\"12\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>0</e></m></meta>\n\t</CARDINAL_AUTO>\n\t<CARDINAL_EAST public=\"1\" get=\"inline\" set=\"null\" expr=\"1\" line=\"13\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</CARDINAL_EAST>\n\t<CARDINAL_SOUTH_EAST public=\"1\" get=\"inline\" set=\"null\" expr=\"2\" line=\"14\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>2</e></m></meta>\n\t</CARDINAL_SOUTH_EAST>\n\t<CARDINAL_SOUTH public=\"1\" get=\"inline\" set=\"null\" expr=\"3\" line=\"15\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>3</e></m></meta>\n\t</CARDINAL_SOUTH>\n\t<CARDINAL_SOUTH_WEST public=\"1\" get=\"inline\" set=\"null\" expr=\"4\" line=\"16\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>4</e></m></meta>\n\t</CARDINAL_SOUTH_WEST>\n\t<CARDINAL_WEST public=\"1\" get=\"inline\" set=\"null\" expr=\"5\" line=\"17\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>5</e></m></meta>\n\t</CARDINAL_WEST>\n\t<CARDINAL_NORTH_WEST public=\"1\" get=\"inline\" set=\"null\" expr=\"6\" line=\"18\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>6</e></m></meta>\n\t</CARDINAL_NORTH_WEST>\n\t<CARDINAL_NORTH public=\"1\" get=\"inline\" set=\"null\" expr=\"7\" line=\"19\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>7</e></m></meta>\n\t</CARDINAL_NORTH>\n\t<CARDINAL_NORTH_EAST public=\"1\" get=\"inline\" set=\"null\" expr=\"8\" line=\"20\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>8</e></m></meta>\n\t</CARDINAL_NORTH_EAST>\n\t<CARDINAL_UP public=\"1\" get=\"inline\" set=\"null\" expr=\"9\" line=\"21\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>9</e></m></meta>\n\t</CARDINAL_UP>\n\t<CARDINAL_DOWN public=\"1\" get=\"inline\" set=\"null\" expr=\"10\" line=\"22\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>10</e></m></meta>\n\t</CARDINAL_DOWN>\n\t<FLAG_VISIBILITY_ONLY public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;0)\" line=\"25\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<0)]]></e></m></meta>\n\t</FLAG_VISIBILITY_ONLY>\n\t<FLAG_TELEPORT public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;1)\" line=\"26\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<1)]]></e></m></meta>\n\t</FLAG_TELEPORT>\n\t<flags public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"/>\n\t\t\t<m n=\"bitmask\"><e>\"FLAG\"</e></m>\n\t\t</meta>\n\t</flags>\n\t<label public=\"1\">\n\t\t<c path=\"String\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</label>\n\t<description public=\"1\">\n\t\t<c path=\"String\"/>\n\t\t<meta><m n=\"inspect\"><e>{display:\"textarea\"}</e></m></meta>\n\t</description>\n\t<cardinal public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"><e>{display:\"selector\"}</e></m>\n\t\t\t<m n=\"choices\"><e>\"CARDINAL\"</e></m>\n\t\t</meta>\n\t</cardinal>\n\t<pathArcInfo public=\"1\">\n\t\t<c path=\"textifician.mapping.PathArcInfo\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</pathArcInfo>\n\t<new public=\"1\" set=\"method\" line=\"37\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
+textifician_mapping_ArcPacket.__meta__ = { fields : { flags : { inspect : null, bitmask : ["FLAG"]}, label : { inspect : null}, description : { inspect : [{ display : "textarea"}]}, cardinal : { inspect : [{ display : "selector", complement : "sign"}], choices : ["CARDINAL"]}, pathArcInfo : { inspect : null}}};
+textifician_mapping_ArcPacket.__rtti = "<class path=\"textifician.mapping.ArcPacket\" params=\"\">\n\t<CARDINAL_AUTO public=\"1\" get=\"inline\" set=\"null\" expr=\"0\" line=\"12\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>0</e></m></meta>\n\t</CARDINAL_AUTO>\n\t<CARDINAL_LABEL public=\"1\" get=\"inline\" set=\"null\" expr=\"-999\" line=\"13\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>-999</e></m></meta>\n\t</CARDINAL_LABEL>\n\t<CARDINAL_EAST public=\"1\" get=\"inline\" set=\"null\" expr=\"1\" line=\"14\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</CARDINAL_EAST>\n\t<CARDINAL_SOUTH_EAST public=\"1\" get=\"inline\" set=\"null\" expr=\"2\" line=\"15\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>2</e></m></meta>\n\t</CARDINAL_SOUTH_EAST>\n\t<CARDINAL_SOUTH public=\"1\" get=\"inline\" set=\"null\" expr=\"3\" line=\"16\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>3</e></m></meta>\n\t</CARDINAL_SOUTH>\n\t<CARDINAL_SOUTH_WEST public=\"1\" get=\"inline\" set=\"null\" expr=\"4\" line=\"17\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>4</e></m></meta>\n\t</CARDINAL_SOUTH_WEST>\n\t<CARDINAL_UP public=\"1\" get=\"inline\" set=\"null\" expr=\"5\" line=\"18\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>5</e></m></meta>\n\t</CARDINAL_UP>\n\t<CARDINAL_WEST public=\"1\" get=\"inline\" set=\"null\" expr=\"-1\" line=\"19\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>-1</e></m></meta>\n\t</CARDINAL_WEST>\n\t<CARDINAL_NORTH_WEST public=\"1\" get=\"inline\" set=\"null\" expr=\"-2\" line=\"20\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>-2</e></m></meta>\n\t</CARDINAL_NORTH_WEST>\n\t<CARDINAL_NORTH public=\"1\" get=\"inline\" set=\"null\" expr=\"-3\" line=\"21\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>-3</e></m></meta>\n\t</CARDINAL_NORTH>\n\t<CARDINAL_NORTH_EAST public=\"1\" get=\"inline\" set=\"null\" expr=\"-4\" line=\"22\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>-4</e></m></meta>\n\t</CARDINAL_NORTH_EAST>\n\t<CARDINAL_DOWN public=\"1\" get=\"inline\" set=\"null\" expr=\"-5\" line=\"23\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>-5</e></m></meta>\n\t</CARDINAL_DOWN>\n\t<FLAG_VISIBILITY_ONLY public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;0)\" line=\"27\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<0)]]></e></m></meta>\n\t</FLAG_VISIBILITY_ONLY>\n\t<FLAG_TELEPORT public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;1)\" line=\"28\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<1)]]></e></m></meta>\n\t</FLAG_TELEPORT>\n\t<flags public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"/>\n\t\t\t<m n=\"bitmask\"><e>\"FLAG\"</e></m>\n\t\t</meta>\n\t</flags>\n\t<label public=\"1\">\n\t\t<c path=\"String\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</label>\n\t<description public=\"1\">\n\t\t<c path=\"String\"/>\n\t\t<meta><m n=\"inspect\"><e>{display:\"textarea\"}</e></m></meta>\n\t</description>\n\t<cardinal public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"><e>{display:\"selector\",complement:\"sign\"}</e></m>\n\t\t\t<m n=\"choices\"><e>\"CARDINAL\"</e></m>\n\t\t</meta>\n\t</cardinal>\n\t<pathArcInfo public=\"1\">\n\t\t<c path=\"textifician.mapping.PathArcInfo\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</pathArcInfo>\n\t<new public=\"1\" set=\"method\" line=\"39\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
 textifician_mapping_ArcPacket.CARDINAL_AUTO = 0;
+textifician_mapping_ArcPacket.CARDINAL_LABEL = -999;
 textifician_mapping_ArcPacket.CARDINAL_EAST = 1;
 textifician_mapping_ArcPacket.CARDINAL_SOUTH_EAST = 2;
 textifician_mapping_ArcPacket.CARDINAL_SOUTH = 3;
 textifician_mapping_ArcPacket.CARDINAL_SOUTH_WEST = 4;
-textifician_mapping_ArcPacket.CARDINAL_WEST = 5;
-textifician_mapping_ArcPacket.CARDINAL_NORTH_WEST = 6;
-textifician_mapping_ArcPacket.CARDINAL_NORTH = 7;
-textifician_mapping_ArcPacket.CARDINAL_NORTH_EAST = 8;
-textifician_mapping_ArcPacket.CARDINAL_UP = 9;
-textifician_mapping_ArcPacket.CARDINAL_DOWN = 10;
+textifician_mapping_ArcPacket.CARDINAL_UP = 5;
+textifician_mapping_ArcPacket.CARDINAL_WEST = -1;
+textifician_mapping_ArcPacket.CARDINAL_NORTH_WEST = -2;
+textifician_mapping_ArcPacket.CARDINAL_NORTH = -3;
+textifician_mapping_ArcPacket.CARDINAL_NORTH_EAST = -4;
+textifician_mapping_ArcPacket.CARDINAL_DOWN = -5;
 textifician_mapping_ArcPacket.FLAG_VISIBILITY_ONLY = 1;
 textifician_mapping_ArcPacket.FLAG_TELEPORT = 2;
 textifician_mapping_PathArcInfo.__meta__ = { fields : { breakpoint : { inspect : [{ step : 0.0001, value : 0.5, display : "range", min : 0, max : 1}]}, customDistance : { inspect : null}}};

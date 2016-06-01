@@ -2,8 +2,11 @@ package textifician.mapping ;
 import de.polygonal.ds.Graph;
 import de.polygonal.ds.GraphArc;
 import de.polygonal.ds.GraphNode;
+import de.polygonal.ds.Hashable;
 import de.polygonal.ds.HashableItem;
 import de.polygonal.ds.HashKey;
+import de.polygonal.ds.IntHashTable;
+import haxe.ds.IntMap;
 import haxe.ds.StringMap;
 import haxe.rtti.Meta;
 import haxe.Serializer;
@@ -45,7 +48,8 @@ class TextificianWorld
 	// A library hash of location definitions that you can use under this world
 	private var locationDefs:StringMap<LocationDefinition>;
 	
-	
+	//IntMap<Dynamic>; // 
+	public var editableHash:IntMap<Dynamic>; // IntHashTable<Dynamic>;
 	
 
 	public function new() 
@@ -56,9 +60,27 @@ class TextificianWorld
 		graph = new Graph();
 		locationDefs = new StringMap<LocationDefinition>();
 		//locationDefs.set("", 
+		
+		editableHash =new  IntMap<Dynamic>();//new IntHashTable<Dynamic>(1024);  // lazy instantatition here
 	}
-
 	
+	// for bridging to other editors
+	public inline function registerHashEditable(hashable:Hashable, editableContent:Dynamic):Void {
+		// new  IntMap<Dynamic>(); // 
+		//if (editableHash == null) 
+		editableHash.set(hashable.key, editableContent);
+	}
+	
+	public inline function removeHashEditable(hashable:Hashable):Bool {
+		//if (editableHash == null)  return false;
+		return editableHash.remove(hashable.key);  // editableHash.unset(hashable.key);
+	}
+	
+	public inline function getHashEditable(hashable:Hashable):Dynamic {
+		return editableHash.get(hashable.key);
+	}
+	
+	//public function removeEditableNode(node
 
 	public function setupDefaultNew(zone:Zone = null):Void {
 		if (zone == null) {

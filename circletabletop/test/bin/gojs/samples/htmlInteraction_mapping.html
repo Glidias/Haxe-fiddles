@@ -642,6 +642,18 @@
 	}
 	
 	//myDiagram.linkTemplate.curve = go.Link.Bezier;
+	 myDiagram.linkTemplate = GO(go.Link,
+      { routing: go.Link.Normal, toShortLength: 4, selectable: true },
+      GO(go.Shape,
+        { isPanelMain: true, stroke: "black", strokeWidth: 1 },
+        // the Shape.stroke color depends on whether Link.isHighlighted is true
+        new go.Binding("stroke", "isHighlighted", function(h) { return h ? "red" : "black"; })
+            .ofObject()),
+      GO(go.Shape,
+        { toArrow: "standard", stroke: null, strokeWidth: 0, name:"arrow" },
+        // the Shape.fill color depends on whether Link.isHighlighted is true
+        new go.Binding("fill", "isHighlighted", function(h) { return h ? "red" : "black"; }).ofObject())
+    );
 	myDiagram.linkTemplate.curviness = 1;
 	//myDiagram.linkTemplate.bind(new go.Binding("curviness", "curviness"));
 
@@ -937,7 +949,7 @@
 					}
 					
 					if (val === "") {  // TODO: delete
-						alert("TODO: deletion");
+						alert("TODO: deletion of location definition");
 						return;
 					}
 					else {
@@ -1030,6 +1042,36 @@
 	}
 	
 	
+	function addDiagramLink(params) {
+		var fromNode = myDiagram.findNodeForKey(params.from).data.node;
+		fromNode.addArc(myDiagram.findNodeForKey(params.to).data.node);
+		params._arc = fromNode.arcList;
+		return fromNode.arcList;
+	
+	}
+	function removeDiagramLink(params) {
+		var fromTest =  myDiagram.findNodeForKey(params.from);
+		var targTest = myDiagram.findNodeForKey(params.to);
+		if (fromTest ===null || targTest == null) {  // hmm..GOJS, is this intended? WHy is it null?
+			//alert("TARGEST NULL FOUND:"+[params.from, params.to]);
+			return;
+		}
+		
+		var resultTest =fromTest.data.node.removeArc( 	targTest.data.node  );
+		//alert(resultTest + ", <- removeDiagramLink");
+		if (!resultTest) alert("removeDiagramLink de.polygonal operation failed exception!");
+		return resultTest;
+	}
+	
+	
+	function testResultAssert(testResult, str) {
+		if (!testResult) {
+			alert("testResultAssert failed:"+str);
+		}
+		//else alert("SUCCESS:"+str);
+		return testResult;
+	}
+	
   myDiagram.model.linkKeyProperty = "key";
   myDiagram.model.addChangedListener(function(e) {
     if (e.isTransactionFinished) {
@@ -1052,16 +1094,21 @@
 							nodesToAdd.push( c.newValue );
 						}
 						else if (c.propertyName == "linkDataArray") {  // create link
+							world.registerHashEditable( addDiagramLink(c.newValue), c.newValue);
+							//console.log("LINK CREATED:", c.newValue);
 							
 						}
 					}
 					else if (c.newValue == null && c.oldValue != null) { // removal infered
 						if (c.propertyName == "nodeDataArray") {  // remove node
-							//alert("REMOVE NODE");
-							
+							//console.log("REMOVE NODE:", c.oldValue);
+							//myDiagram.findNodeForKey(c.
+							world.graph.removeNode( c.oldValue.node );
+							testResultAssert(  world.removeHashEditable(c.oldValue.node), "Remove node" );
 						}
 						else if (c.propertyName == "linkDataArray") {  // remove link
-							//alert("REMOVE LINK");
+							removeDiagramLink(c.oldValue);
+							testResultAssert(  world.removeHashEditable(c.oldValue._arc), "Remove arc" );
 						}
 					}
 					else {
@@ -1137,6 +1184,7 @@
 					if (o.node != null) {  // DUPLICATE NODE CASE
 						//alert(flagDownKeys );
 						e.model.setDataProperty(o,"node",v= world.addLocationNode(world.getLocationDef(o.node.val.def.id), o.loc.x, o.loc.y, 0, null, ( false ? o.node.val.cloneOverwritesDynamic() : o.node.val.defOverwrites) ));
+						world.registerHashEditable(v, o);
 					}
 					else {  // NEW NODE CASE
 						
@@ -1144,6 +1192,7 @@
 						if (o.defOverwrites != null) {
 							o.node.val.setupNewDefOverwrites(o.defOverwrites);
 						}
+						world.registerHashEditable(v, o);
 					}
 					
 					
@@ -1265,6 +1314,22 @@
 	myDiagram.addDiagramListener("ChangedSelection", function(e) {
 		var selection = myDiagram.selection.first();
 		
+		myDiagram.clearHighlighteds();
+		
+		if (selection instanceof go.Link) {
+			_inspectedNodeVal = null;
+			_selectedGoNodeData = null;
+			vueModel.gotLocation = false;
+			vueModel.selected = null; 
+			
+			
+			selection.isHighlighted  = true;
+			
+			return;
+		}
+		
+		
+		
 		if (selection != null) {
 			vueModel.multiSelectedLocations = getMultiSelectedLocations(myDiagram.selection);
 		}
@@ -1272,15 +1337,17 @@
 			vueModel.multiSelectedLocations = false;
 		}
 		
+		
 		  if (selection === null || !(selection instanceof go.Node) || !selection.data || !selection.data.node ) {  // hide UIs
 			_inspectedNodeVal = null;
 			if (selection && selection.data != null) _selectedGoNodeData = selection.data
-			
 			vueModel.gotLocation = false;
 			vueModel.selected = null; 
 			 
 			return;
 		}
+		
+		
 		
 		_selectedGoNodeData = selection.data;
 		inspectGoNode(selection.data);
