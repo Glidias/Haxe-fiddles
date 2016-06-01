@@ -141,7 +141,7 @@
 	var gui = setupGUIGeneric( guiGlueRender(specsLocationDefinition, null, {}) );
 	gui.domElement.setAttribute("id", "locationDefGUI");
 	gui.getControllerByName("size").__input.setAttribute("step", "any");
-	
+
 	/*
 	var guiCmdLabels = {
 		"ADD_LOCATION_STATE": "Add location state..."
@@ -169,7 +169,11 @@
 	$( guiPacketer.getFolderByName("state").domElement.firstChild ).children("li.title").html("Location state{{selected.state ? ':' : '?' }}");
 	$( guiPacketer.getFolderByName("position").domElement.firstChild ).children("li.title").html("position: {{ (selected && selected.x!== undefined ? '('+selected.x + ',' + selected.y + ',' + selected.z+')' : '') }}");
 	$( guiPacketer.getFolderByName("position").domElement.firstChild).append( $(guiPacketer.domElement).find("li.position") );
-
+	
+	
+	var guiArc = setupGUIGeneric( guiGlueRender( DatUtil.setup( new ArcNodeVM() ) , null, {}  ) );
+	guiArc.domElement.setAttribute("id", "arcGUI");
+	$(guiArc.domElement).attr("v-show", "selectedArc!=null" ).find(".primaryArc > div > ul > li.title").html("Arc state{{selectedArc && selectedArc.val ? ':' : '?' }}");
 	
 	// some mods for filtering
 	var liNumberRows = $(gui.domElement).add($(guiOverwriter.domElement)).find("li.number");	
@@ -342,10 +346,13 @@
 	
 //	$(guiOverwriter.domElement)
 
-	function setupGUIForVue(gui, expressionPrefix, ifSuffix, overwriteMethod) {
+	function setupGUIForVue(gui, expressionPrefix, ifSuffix, overwriteMethod, dataModelDirective) {
 		var guiFolders = gui.getAllGUIs();
 		var gotIf = ifSuffix != null;
 		if (overwriteMethod == null) overwriteMethod = "addLocationDefOverwrite";
+		if ( !dataModelDirective) dataModelDirective = "node";
+		dataModelDirective = "v-"+dataModelDirective;
+
 	
 		for (p in guiFolders) {
 			g= guiFolders[p];
@@ -353,7 +360,7 @@
 			
 			if (g._guiGlue._dotPath != undefined) {
 				if (g._guiGlue._dotPath != "") {
-					$(g.domElement.firstChild).data("dat-gui", g).attr("v-dat-instance", expressionPrefix+ g._guiGlue._dotPath).attr("v-node", expressionPrefix+ g._guiGlue._dotPath);
+					$(g.domElement.firstChild).data("dat-gui", g).attr("v-dat-instance", expressionPrefix+ g._guiGlue._dotPath).attr(dataModelDirective, expressionPrefix+ g._guiGlue._dotPath);
 					
 					var overwriteTrigger = jQuery(jQuery(g.domElement).parents("li")[0]).find(".overwritetrigger").data("dat-gui", g);
 					overwriteTrigger.attr("v-on:click", overwriteMethod+"('"+g._guiGlue._dotPath+"', $event)");
@@ -409,7 +416,7 @@
 						}
 					}
 					
-					cn.domElement.firstChild.setAttribute("v-node", expressionPrefix+dotPath);
+					cn.domElement.firstChild.setAttribute(dataModelDirective, expressionPrefix+dotPath);
 					if (gotIf) $( $(cn.domElement).parents("li")[0]).attr("v-show", expressionPrefix + dotPath  +  ifSuffix);
 				}
 				
@@ -420,7 +427,7 @@
 						var parentLI = jQuery( jQuery(folder.domElement).parents("li")[0] );
 						if (parentLI.hasClass("bitmask")) {
 							var dotPath =( g._guiGlue._dotPath!= "" ?  g._guiGlue._dotPath + "." : "")+ f;
-							$(folder.domElement.firstChild).data("dat-gui", folder).attr("v-dat-bitmask", expressionPrefix+dotPath ).attr("v-node", expressionPrefix+dotPath);
+							$(folder.domElement.firstChild).data("dat-gui", folder).attr("v-dat-bitmask", expressionPrefix+dotPath ).attr(dataModelDirective, expressionPrefix+dotPath);
 							var folderLi =  $( $(folder.domElement).parents("li")[0]);
 							if (gotIf) folderLi.attr("v-show", expressionPrefix + dotPath  +  ifSuffix);
 							var overwriteTrigger = folderLi.children(".overwritetrigger").data("dat-gui", f);
@@ -448,6 +455,7 @@
 	
 	setupGUIForVue(guiOverwriter,  "selected.defOverwrites.", "!==undefined", "removeLocationDefOverwrite");
 	setupGUIForVue(guiPacketer,  "selected.");
+	setupGUIForVue(guiArc, "selectedArc.", null,null, "arc");
 	guiPacketer.domElement.setAttribute("v-show", "gotLocation");
 	//setupGUIForVue(guiStater,  "selected.state.");
 	gui.domElement.setAttribute("v-show", "selected.def");
@@ -465,9 +473,39 @@
 	
 	var inspectPropertyChainLookup = TextificianUtil.getPropertyChainObj({}, "");
 	var _inspectedNodeVal=null;
+	var _inspectedArc = null;
 	var _inspectedGoNodeData = null;
 	var _selectedGoNodeData = null;
+	var _selectedGoArcData = null;
 	var leafBindingHash = { size:"desiredSize", label:"text", type:"category" };
+	
+	
+	Vue.directive('arc', function(newValue, oldValue) {
+	
+		if (_inspectedArc == null) return;
+
+		var splitExp  = this.expression.split(".");
+		splitExp.shift();  // remove off selectedArc prefix in expression
+
+		if (newValue != null && typeof(newValue) === "object") {
+			newValue = TJSON.parse(TJSON.encode(newValue));
+		}
+	
+		inspectPropertyChainLookup.setupProperty( _inspectedArc,  splitExp.join(".") );
+	
+		var result = inspectPropertyChainLookup.setPropertyChainValue(newValue);
+		
+		//console.log( splitExp.join(".")+" = ", ""+result);
+	
+		/*  // todo: update arc appearance if required
+		var leafProp = splitExp[splitExp.length - 1];
+		
+		if ( vueModel.gotLocation && leafBindingHash[leafProp] ) {
+			updateRelatedNodesOfModel(myDiagram.model, _inspectedNodeVal.def, leafBindingHash[leafProp]);
+		}
+		*/
+	
+	});
 	
 	
 	Vue.directive('node', function(newValue, oldValue) {
@@ -500,6 +538,7 @@
 			gotLocation:false, 
 			isProto:false,
 			multiSelectedLocations:false,
+			selectedArc: null,
 			selected: { x:0, y:0, z:0, def: $.extend(true, {}, gui._guiGlueParams) }, 
 			locationDefIds:world.getLocationDefinitionIds(world.getDefaultLocationDefIdHash())	
 		});
@@ -544,7 +583,6 @@
 				}
 				else {
 					Vue.delete( overwrites, leafProp );
-					
 				}
 				
 				var p;
@@ -559,7 +597,23 @@
 		}
 	});
 	
+	function inspectGoArc(goArc) { 
+		var arc = goArc._arc;
+		_inspectedArc = arc;
 
+		var newVueModelData;
+		if (arc.val != null) {
+			var jsonStr = TJSON.encode(arc.val);
+			newVueModelData = TJSON.parse(jsonStr);  // consider todo: should this be a plain JSON parse?
+		}
+		else {
+			newVueModelData  = null;
+		}
+
+		//console.log("New vue model:"+ newVueModelData);
+		vueModel.selectedArc = { val:newVueModelData }; //, cost:arc.cost
+	}
+	
 
 	var lastInspectedLocDef = null;
 	function inspectGoNode(goNode) {
@@ -591,9 +645,9 @@
 		//console.log("Inspecting", locDef);
 	
 		// setup new location def
-		var jsonStr = TJSON.encode(nodeVal);
-		var newVueModelData = TJSON.parse(jsonStr);
-		
+		var jsonStr = TJSON.encode(nodeVal);  
+		var newVueModelData = TJSON.parse(jsonStr);  // consider todo: should this be a plain JSON parse?
+		//alert(newVueModelData instanceof LocationPacket);
 		vueModel.selected = newVueModelData;
 
 		// nodeVal.state
@@ -1051,6 +1105,7 @@
 		var fromNode = myDiagram.findNodeForKey(params.from).data._node;
 		fromNode.addArc(myDiagram.findNodeForKey(params.to).data._node);
 		params._arc = fromNode.arcList;
+		
 		return fromNode.arcList;
 	
 	}
@@ -1089,6 +1144,7 @@
 		
 			var methodToCalls = [];
 			var nodesToAdd = [];
+			var arcsToAdd = [];
 			tx.changes.each(function(c) {
 			
 			  if (c.model) {
@@ -1099,7 +1155,8 @@
 							nodesToAdd.push( c.newValue );
 						}
 						else if (c.propertyName == "linkDataArray") {  // create link
-							world.registerHashEditable( addDiagramLink(c.newValue), c.newValue);
+						
+							arcsToAdd.push(c.newValue);
 							//console.log("LINK CREATED:", c.newValue);
 							
 						}
@@ -1215,7 +1272,17 @@
 						e.model.updateTargetBindings(o, "text");
 					}
 			
-
+				}
+				
+				
+				// creation of arcs
+				i = 0;
+				for (i = 0; i < arcsToAdd.length; i++) {
+					o =arcsToAdd[i];
+					world.registerHashEditable( addDiagramLink(o), o);
+					if (_selectedGoArcData === o) {
+						inspectGoArc(o);
+					}
 				}
 	
 		  }
@@ -1320,6 +1387,7 @@
 		return arr.length > 1 ? arr : false;
 	}
 	
+	// handles either node or arc selection (<- bleh this method is badly  contructed)...
 	myDiagram.addDiagramListener("ChangedSelection", function(e) {
 		var selection = myDiagram.selection.first();
 		
@@ -1330,14 +1398,22 @@
 			_selectedGoNodeData = null;
 			vueModel.gotLocation = false;
 			vueModel.selected = null; 
-			
+			_selectedGoArcData = selection.data;
 			
 			selection.isHighlighted  = true;
 			
+			if (selection.data._arc == null) {
+				vueModel.selectedArc = null;
+				return;
+			}
+			inspectGoArc(selection.data);
+			
 			return;
 		}
-		
-		
+
+		_inspectedArc = null;
+		_selectedGoArcData = null;
+		vueModel.selectedArc = null;
 		
 		if (selection != null) {
 			vueModel.multiSelectedLocations = getMultiSelectedLocations(myDiagram.selection);

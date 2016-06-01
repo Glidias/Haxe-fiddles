@@ -178,7 +178,8 @@ class DatUtil
 					
 					Reflect.setField(fieldHash, f.name, nested=setup(tryInstance, Type.resolveClass(typeStr), f.type, (dotPath!= "" ? dotPath+"." : "")+f.name) );
 					Reflect.setField(nested, "_folded", instanceAvailable ? false : true );
-					Reflect.setField(nested, "_classes", ["instance"] );
+					
+					Reflect.setField(nested, "_classes", (Reflect.hasField(cur, "_classes") ? _concatDyn(["instance"], Reflect.field(cur, "_classes")) : ["instance"] ) );
 					
 					
 				}

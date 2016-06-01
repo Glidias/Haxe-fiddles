@@ -35,6 +35,9 @@ class ArcPacket
 	//@inspect public var pathBreakpoint:Float;
 	@inspect public var pathArcInfo:PathArcInfo;  // optional arc information, mainly for path arcs
 	
+	public function toString():String {
+		return "[ArcPacket]";
+	}
 
 	public function new() 
 	{

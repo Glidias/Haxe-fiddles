@@ -61,7 +61,10 @@ class TextificianWorld
 		locationDefs = new StringMap<LocationDefinition>();
 		//locationDefs.set("", 
 		
-		editableHash =new  IntMap<Dynamic>();//new IntHashTable<Dynamic>(1024);  // lazy instantatition here
+		editableHash = new  IntMap<Dynamic>();//new IntHashTable<Dynamic>(1024);  // lazy instantatition here
+		
+		// register any viewmodels
+		ArcNodeVM;
 	}
 	
 	// for bridging to other editors
