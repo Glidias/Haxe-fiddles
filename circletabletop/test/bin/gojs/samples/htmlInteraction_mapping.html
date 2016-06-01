@@ -1140,7 +1140,7 @@
       if (tx instanceof go.Transaction && console && e.model) {
        // console.log(tx.toString());
 		
-		if (true || tx.name != "Move") {
+		if ( tx.name != "Move") {
 		
 			var methodToCalls = [];
 			var nodesToAdd = [];
@@ -1287,20 +1287,33 @@
 	
 		  }
 		//  /*
-		  else  {   // DEPRECIATED atm due to recursion problem with toIncrementalJSON
+		  else  {   // handle move case via incremental json
 			//	/*
-				console.log( e.model.toIncrementalJson(e) );
+				
 				var moveJson = e.model.toIncrementalJson(e);
 				moveJson = JSON.parse(moveJson);
 				var modData = moveJson.modifiedNodeData;
+				var keyProp = moveJson.linkKeyProperty;
 				
 				var i =modData ?  modData.length : 0;
 				var o;
+				
 				while(--i > -1) { // readonly
 					o = modData[i];
 					//= o.loc.x;
 					//= o.loc.y;
+					var cObject = myDiagram.model.findNodeDataForKey(o[keyProp]);
 					
+					var n = cObject._node;
+					if (n != null) {
+						n.val.x = o.loc.x;
+						n.val.y =o.loc.y;
+						if (_selectedGoNodeData === cObject) {  // sync location with vue gui
+							vueModel.selected.x = o.loc.x;
+							vueModel.selected.y = o.loc.y;
+						}
+						
+					}
 				}
 				//*/
 	
