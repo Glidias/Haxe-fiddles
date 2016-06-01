@@ -20,7 +20,7 @@ class LocationPacket implements IXYZ
 	}
 	
 	public inline function setEmptyDefOverwrites():Void {
-		defOverwrites = Type.createEmptyInstance(LocationDefinition);
+		defOverwrites = { };// Type.createEmptyInstance(LocationDefinition);
 	}
 	
 	public function setupNewDefOverwrites(obj:Dynamic):Void {
@@ -30,6 +30,7 @@ class LocationPacket implements IXYZ
 		
 	}
 	
+	
 	public inline function applyDefOverwrites(obj:Dynamic):Void {
 		if (defOverwrites == null) setEmptyDefOverwrites();
 		var fields = 	Reflect.fields(obj);
@@ -38,6 +39,24 @@ class LocationPacket implements IXYZ
 			Reflect.setField(defOverwrites, p, Reflect.field(obj, p) );
 			//obj[p] = defOverwrites[p];
 		}
+	}
+	
+	public function convertOverwritesToLocationDef():Void { // may be a good option to use for saving space when dealing with hx Serialization 
+		if (defOverwrites == null) {
+				return;
+		}
+		if (Std.is(defOverwrites, LocationDefinition)) {
+			return;
+		}
+		
+		var obj:Dynamic =  Type.createEmptyInstance(LocationDefinition);
+		 // todo: proper clone for non-shallow cases
+		 var fields = 	Reflect.fields(defOverwrites);
+		for (p in fields) {
+			Reflect.setField(obj, p, Reflect.field(defOverwrites, p) );
+			//obj[p] = defOverwrites[p];
+		}
+		defOverwrites = obj;
 	}
 	
 	

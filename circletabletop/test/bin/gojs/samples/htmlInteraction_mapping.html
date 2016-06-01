@@ -47,7 +47,7 @@
 	function getCategoryStringFromType(newValue) {
 	
 		if (typeof(newValue) != 'number') {
-			alert("Wrong type assigned for:"+newValue + "::" +typeof(newValue));
+			alert("Wrong type assigned for:"+newValue + "::" +typeof(newValue) + ", "+(newValue===null));
 			return;
 		}
 		return newValue === LocationDefinition.TYPE_POINT ? "point" : newValue=== LocationDefinition.TYPE_PATH ? "path" : "region";
@@ -570,7 +570,7 @@
 		vueModel.gotLocation = true;
 		//guiOverwriter.domElement.removeAttribute("hidden");
 		
-		var node = goNode.node;
+		var node = goNode._node;
 		_inspectedGoNodeData = goNode;
 		
 		var nodeVal = node.val;
@@ -746,7 +746,7 @@
 			 //new go.Binding("fill", "fill"),
 			 // new go.Binding("stroke", "stroke"),
 			   
-			 new go.Binding("desiredSize", "", function(v) { return v.node ? getUniformSize(v.node.val.defOverwrites && v.node.val.defOverwrites.size ?v.node.val.defOverwrites.size : v.node.val.def.size) : v.size; } )
+			 new go.Binding("desiredSize", "", function(v) { return v._node ? getUniformSize(v._node.val.defOverwrites && v._node.val.defOverwrites.size ?v._node.val.defOverwrites.size : v._node.val.def.size) : v.size; } )
 			  ,
 				   new go.Binding("fromLinkable", "", function(data) {
 						return myDiagram.model.modelData.linkable;
@@ -759,7 +759,7 @@
 			 
 		var goParams = [go.Node, panelLayout,
         { locationSpot: go.Spot.Center },
-        new go.Binding("location", "loc").makeTwoWay(), new go.Binding("category", "", function(v) {  return v.node ? getCategoryStringFromType(v.node.val.defOverwrites && v.node.val.defOverwrites.type!=null ? v.node.val.defOverwrites.type : v.node.val.def.type) : v.category; }  ) ];
+        new go.Binding("location", "loc").makeTwoWay(), new go.Binding("category", "", function(v) {  return v._node ? getCategoryStringFromType(v._node.val.defOverwrites && v._node.val.defOverwrites.type!=null ? v._node.val.defOverwrites.type : v._node.val.def.type) : v.category; }  ) ];
 			
 		if (panelLayout == go.Panel.Spot)  {
 			goParams.push(shape, textBlock);
@@ -852,7 +852,7 @@
 		  
 	var textProxy = {
 	   get : function() {
-			return this.node && this.node.val.defOverwrites != null && this.node.val.defOverwrites.label  ? this.node.val.defOverwrites.label : this.node.val.def.label;
+			return this._node && this._node.val.defOverwrites != null && this._node.val.defOverwrites.label  ? this._node.val.defOverwrites.label : this._node.val.def.label;
 	   },
 	   set : function(val) {
 			var prefix = val.charAt(0);
@@ -860,8 +860,8 @@
 				val = val.slice(1);
 				var tryDef = world.getLocationDef( val );
 				if (tryDef != null) {
-					this.node.val.def = tryDef;
-					this.node.val.defOverwrites = null;
+					this._node.val.def = tryDef;
+					this._node.val.defOverwrites = null;
 					this.isProto =  val =="Point" || val ==="Path" || val === "Region";
 					inspectGoNode(this);
 				}
@@ -875,11 +875,11 @@
 					return;
 				}
 				val = val.slice(1);
-				if (val === "" ) val = this.node.val.def.label;
-				if (this.node.val.defOverwrites != null) {
-					delete this.node.val.defOverwrites["label"];
+				if (val === "" ) val = this._node.val.def.label;
+				if (this._node.val.defOverwrites != null) {
+					delete this._node.val.defOverwrites["label"];
 				}
-				this.node.val.def.label = val;
+				this._node.val.def.label = val;
 			}
 			else if (prefix === "*") { // save location definition
 				val = val.slice(1);
@@ -889,41 +889,46 @@
 				if (val.charAt(0) === "#") {
 					val = val.slice(1);
 					if (val === "") {
-						if (this.isProto || this.node.val.def.id =="Point" || this.node.val.def.id ==="Path" || this.node.val.def.id === "Region") {
+						if (this.isProto || this._node.val.def.id =="Point" || this._node.val.def.id ==="Path" || this._node.val.def.id === "Region") {
 							alert("Sorry, cannot write directly into prototype location definition! Save it first with * prefix!");
 							return;
 						}
-						else writePropertiesOver(this.node.val.def , this.node.val.defOverwrites);
-						this.node.val.defOverwrites = null;
+						else writePropertiesOver(this._node.val.def , this._node.val.defOverwrites);
+						this._node.val.defOverwrites = null;
 						return;
 					}
-					dupLoc = writePropertiesOver( world.getDuplicationLocationDef(this.node.val.def, val) , this.node.val.defOverwrites);
+					dupLoc = writePropertiesOver( world.getDuplicationLocationDef(this._node.val.def, val) , this._node.val.defOverwrites);
 				}
 				else {
 					if (val === "") {
-						if (this.isProto || this.node.val.def.id =="Point" || this.node.val.def.id ==="Path" || this.node.val.def.id === "Region") {
+						if (this.isProto || this._node.val.def.id =="Point" || this._node.val.def.id ==="Path" || this._node.val.def.id === "Region") {
 							alert("Sorry, cannot write directly into prototype location definition! Save it first with * prefix!");
 							return;
 						}
-						else writePropertiesOver(this.node.val.def , this.node.val.defOverwrites);
-						this.node.val.defOverwrites = null;
+						else writePropertiesOver(this._node.val.def , this._node.val.defOverwrites);
+						this._node.val.defOverwrites = null;
 						inspectGoNode(this);
+						
 						return;
 					}
-					if (this.node.val.defOverwrites == null) {
-						//this.node.val.defOverwrites = {};
-						this.node.val.setEmptyDefOverwrites();
+					
+					
+					if (this._node.val.defOverwrites == null) {
+						//this._node.val.defOverwrites = {};
+					
+						this._node.val.setEmptyDefOverwrites();
 
 					}
-					this.node.val.defOverwrites.label = val;
-					dupLoc = writePropertiesOver( world.getDuplicationLocationDef(this.node.val.def, val) , this.node.val.defOverwrites);
+					this._node.val.defOverwrites.label = val;
+					dupLoc = writePropertiesOver( world.getDuplicationLocationDef(this._node.val.def, val) , this._node.val.defOverwrites);
 				}
 			
 				try {
 					world.addLocationDef(dupLoc);
 					vueModel.locationDefIds.push(dupLoc.id);
-					this.node.val.defOverwrites = null;
-					this.node.val.def = dupLoc;
+					this._node.val.defOverwrites = null;
+					this._node.val.def = dupLoc;
+					
 					this.isProto = false;
 					inspectGoNode(this);
 				}
@@ -934,7 +939,7 @@
 			}
 			else if (prefix === "^") {
 			
-				if (this.isProto || this.node.val.def.id =="Point" || this.node.val.def.id ==="Path" || this.node.val.def.id === "Region") {
+				if (this.isProto || this._node.val.def.id =="Point" || this._node.val.def.id ==="Path" || this._node.val.def.id === "Region") {
 					alert("Sorry, cannot rename directly into prototype location definition! Save it first with * prefix!");
 					return;
 				}
@@ -944,7 +949,7 @@
 				
 				if (val.charAt(0) === "#") {  
 					val = val.slice(1);
-					if (val ===this.node.val.def.id) {
+					if (val ===this._node.val.def.id) {
 						return;
 					}
 					
@@ -955,10 +960,10 @@
 					else {
 					
 						if ( world.getLocationDef(val) == null ) {  // rename
-							world.removeLocationDef(this.node.val.def);
-							vueModel.locationDefIds.$set( vueModel.locationDefIds.indexOf(this.node.val.def.id), val);
-							this.node.val.def.id = val;
-							world.addLocationDef(this.node.val.def);
+							world.removeLocationDef(this._node.val.def);
+							vueModel.locationDefIds.$set( vueModel.locationDefIds.indexOf(this._node.val.def.id), val);
+							this._node.val.def.id = val;
+							world.addLocationDef(this._node.val.def);
 						}
 						else { // consider todo: check trashed definition
 							return;
@@ -977,22 +982,22 @@
 					return;
 				}
 				if (val === "") {
-					if (this.node.val.defOverwrites != null) {
-						delete this.node.val.defOverwrites["label"];
+					if (this._node.val.defOverwrites != null) {
+						delete this._node.val.defOverwrites["label"];
 						
 						
 					}
-					val = this.node.val.def.label;
+					val = this._node.val.def.label;
 					this.isProto =  val =="Point" || val ==="Path" || val === "Region";
 					return;
 				}
-				if (this.node.val.defOverwrites == null) {
-					//	this.node.val.defOverwrites = { label: val };
-					this.node.val.setEmptyDefOverwrites();
-					this.node.val.defOverwrites.label = val;
+				if (this._node.val.defOverwrites == null) {
+					//	this._node.val.defOverwrites = { label: val };
+					this._node.val.setEmptyDefOverwrites();
+					this._node.val.defOverwrites.label = val;
 				}
-				else this.node.val.defOverwrites.label = val;
-				//this.node.val.def.label = val;
+				else this._node.val.defOverwrites.label = val;
+				//this._node.val.def.label = val;
 			
 			}
 	   }
@@ -1006,7 +1011,7 @@
 		var o;
 		while(--i > -1) {
 			o = nodeDataArr[i];
-			if (o.node && o.node.val.def === def) model.updateTargetBindings(nodeDataArr[i], prop);
+			if (o._node && o._node.val.def === def) model.updateTargetBindings(nodeDataArr[i], prop);
 		}
 	}
 	
@@ -1043,8 +1048,8 @@
 	
 	
 	function addDiagramLink(params) {
-		var fromNode = myDiagram.findNodeForKey(params.from).data.node;
-		fromNode.addArc(myDiagram.findNodeForKey(params.to).data.node);
+		var fromNode = myDiagram.findNodeForKey(params.from).data._node;
+		fromNode.addArc(myDiagram.findNodeForKey(params.to).data._node);
 		params._arc = fromNode.arcList;
 		return fromNode.arcList;
 	
@@ -1057,7 +1062,7 @@
 			return;
 		}
 		
-		var resultTest =fromTest.data.node.removeArc( 	targTest.data.node  );
+		var resultTest =fromTest.data._node.removeArc( 	targTest.data._node  );
 		//alert(resultTest + ", <- removeDiagramLink");
 		if (!resultTest) alert("removeDiagramLink de.polygonal operation failed exception!");
 		return resultTest;
@@ -1103,8 +1108,8 @@
 						if (c.propertyName == "nodeDataArray") {  // remove node
 							//console.log("REMOVE NODE:", c.oldValue);
 							//myDiagram.findNodeForKey(c.
-							world.graph.removeNode( c.oldValue.node );
-							testResultAssert(  world.removeHashEditable(c.oldValue.node), "Remove node" );
+							world.graph.removeNode( c.oldValue._node );
+							testResultAssert(  world.removeHashEditable(c.oldValue._node), "Remove node" );
 						}
 						else if (c.propertyName == "linkDataArray") {  // remove link
 							removeDiagramLink(c.oldValue);
@@ -1117,7 +1122,7 @@
 				}
 				else {  // deemed modifying of data within model
 					if (c.propertyName === "loc") {   // moving 
-						var n = c.object.node;
+						var n = c.object._node;
 						if (n != null) {
 							n.val.x = c.newValue.x;
 							n.val.y = c.newValue.y;
@@ -1133,9 +1138,9 @@
 						// irreleavant. do nothing
 					}
 					else if (c.propertyName === "text") {
-						methodToCalls.push(updateRelatedNodesOfModel, [e.model, c.object.node.val.def, "text"]);
-						methodToCalls.push(updateRelatedNodesOfModel, [myPalette.model, c.object.node.val.def, "text"]);
-						var n = c.object.node;
+						methodToCalls.push(updateRelatedNodesOfModel, [e.model, c.object._node.val.def, "text"]);
+						methodToCalls.push(updateRelatedNodesOfModel, [myPalette.model, c.object._node.val.def, "text"]);
+						var n = c.object._node;
 						if (n != null && n.val=== _inspectedNodeVal  ) {
 							if(n.val.defOverwrites && n.val.defOverwrites.label!=null) {
 								vueModel.$set("selected.defOverwrites.label", n.val.defOverwrites.label);
@@ -1150,8 +1155,9 @@
 					else if (c.propertyName === "size") {
 
 					}
-					else if (c.propertyName === "node") {
+					else if (c.propertyName === "_node") {
 						// irrelavant
+						alert("_node :: UNderscored property should not detect");
 					}
 					else if (c.propertyName === "category") {
 						// irrelavant
@@ -1181,16 +1187,19 @@
 				var o;
 				for (i=0; i<nodesToAdd.length; i++) {
 					o =nodesToAdd[i];
-					if (o.node != null) {  // DUPLICATE NODE CASE
+					if (o._node != null) {  // DUPLICATE NODE CASE
 						//alert(flagDownKeys );
-						e.model.setDataProperty(o,"node",v= world.addLocationNode(world.getLocationDef(o.node.val.def.id), o.loc.x, o.loc.y, 0, null, ( false ? o.node.val.cloneOverwritesDynamic() : o.node.val.defOverwrites) ));
+						//e.model.setDataProperty(o,"_node",v= world.addLocationNode(world.getLocationDef(o._node.val.def.id), o.loc.x, o.loc.y, 0, null, ( false ? o._node.val.cloneOverwritesDynamic() : o._node.val.defOverwrites) ));
+						o._node = v = world.addLocationNode(world.getLocationDef(o._node.val.def.id), o.loc.x, o.loc.y, 0, null, ( false ? o._node.val.cloneOverwritesDynamic() : o._node.val.defOverwrites) );
+						
 						world.registerHashEditable(v, o);
 					}
 					else {  // NEW NODE CASE
 						
-						e.model.setDataProperty(o,"node",v= world.addLocationNode(world.getLocationDef(o.locid).setSize(o.size.width), o.loc.x, o.loc.y, 0, null, null ));
+						//e.model.setDataProperty(o,"_node",v= world.addLocationNode(world.getLocationDef(o.locid).setSize(o.size.width), o.loc.x, o.loc.y, 0, null, null ));
+						o._node = v = world.addLocationNode(world.getLocationDef(o.locid).setSize(o.size.width), o.loc.x, o.loc.y, 0, null, null );
 						if (o.defOverwrites != null) {
-							o.node.val.setupNewDefOverwrites(o.defOverwrites);
+							o._node.val.setupNewDefOverwrites(o.defOverwrites);
 						}
 						world.registerHashEditable(v, o);
 					}
@@ -1304,7 +1313,7 @@
 		 var selection;
 		  while (it.next()) {
 			selection = it.value;
-			if ( (selection instanceof go.Node) && selection.data && selection.data.node ) {
+			if ( (selection instanceof go.Node) && selection.data && selection.data._node ) {
 				arr.push(selection.data.key);
 			}
 		  }
@@ -1338,7 +1347,7 @@
 		}
 		
 		
-		  if (selection === null || !(selection instanceof go.Node) || !selection.data || !selection.data.node ) {  // hide UIs
+		  if (selection === null || !(selection instanceof go.Node) || !selection.data || !selection.data._node ) {  // hide UIs
 			_inspectedNodeVal = null;
 			if (selection && selection.data != null) _selectedGoNodeData = selection.data
 			vueModel.gotLocation = false;
@@ -1456,12 +1465,12 @@
 					var selFirst = myDiagram.selection.first();
 					
 					var clonedSelection = selFirst.copy();
-					var nodeToClone = clonedSelection.data.node;
+					var nodeToClone = clonedSelection.data._node;
 					
 					var copyData =$.extend(false, {text:texter}, clonedSelection.data);
 	
 						
-					copyData.node = null;
+					copyData._node = null;
 					copyData.category = catType.toLowerCase();
 					copyData.text = texter;
 					copyData.defOverwrites = nodeToClone.val.defOverwrites ?  $.extend(true, {}, nodeToClone.val.defOverwrites) : null; 
@@ -1565,11 +1574,11 @@
 								alert("applySelectedLocationDef():: _selectedGoNodeData data not found exception:: "+nodeId);
 								return;
 							}
-							if (nodeData.node == null) {
+							if (nodeData._node == null) {
 								alert("applySelectedLocationDef():: Node data's de.polygonal node not found exception:: "+nodeId);
 								return;
 							}
-							nodeData.node.val.def = locDef;
+							nodeData._node.val.def = locDef;
 							nodeData.isProto = false;
 							myDiagram.model.updateTargetBindings(nodeData, "text");
 							inspectGoNode(nodeData);
@@ -1588,11 +1597,11 @@
 									alert("applySelectedLocationDef():: Node data not found exception:: "+nodeId);
 									continue;
 								}
-								if (nodeData.node == null) {
+								if (nodeData._node == null) {
 									alert("applySelectedLocationDef():: Node data's de.polygonal node not found exception:: "+nodeId);
 									continue;
 								}
-								nodeData.node.val.def = locDef;
+								nodeData._node.val.def = locDef;
 								nodeData.isProto = false;
 								myDiagram.model.updateTargetBindings(nodeData, "text");
 							}
