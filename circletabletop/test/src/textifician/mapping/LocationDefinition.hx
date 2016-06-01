@@ -258,7 +258,7 @@ class LocationDefinition
 	public function new() 
 	{
 		description = "";
-		defaultLighting = LIGHTING_NORMAL;
+		defaultLighting = LIGHTING_NONE_OR_OUT;
 		//fixtureDensity = DENSITY_NONE;
 		speedcap = 0;
 	//	indoorLocationSpecs = new IndoorLocationSpecs();
