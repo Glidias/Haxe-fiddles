@@ -680,6 +680,13 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath) {
 						}
 						if(gotBits) {
 							fieldHash[f.name] = bitMaskFolder;
+							var _g3 = 0;
+							var _g11 = Reflect.fields(cur);
+							while(_g3 < _g11.length) {
+								var p = _g11[_g3];
+								++_g3;
+								Reflect.setField(bitMaskFolder,p,Reflect.field(cur,p));
+							}
 							bitMaskFolder._subProxy = "bitmask";
 							bitMaskFolder._value = curVal;
 						}
@@ -713,12 +720,12 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath) {
 				}
 				var nested;
 				Reflect.setField(fieldHash,f.name,nested = dat_gui_DatUtil.setup(tryInstance,Type.resolveClass(typeStr),f.type,(dotPath != ""?dotPath + ".":"") + f.name));
-				var _g3 = 0;
-				var _g11 = Reflect.fields(cur);
-				while(_g3 < _g11.length) {
-					var p = _g11[_g3];
-					++_g3;
-					Reflect.setField(nested,p,Reflect.field(cur,p));
+				var _g4 = 0;
+				var _g12 = Reflect.fields(cur);
+				while(_g4 < _g12.length) {
+					var p1 = _g12[_g4];
+					++_g4;
+					Reflect.setField(nested,p1,Reflect.field(cur,p1));
 				}
 				if(instanceAvailable) nested._folded = false; else nested._folded = true;
 				Reflect.setField(nested,"_classes",Object.prototype.hasOwnProperty.call(cur,"_classes")?dat_gui_DatUtil._concatDyn(["instance"],Reflect.field(cur,"_classes")):["instance"]);
@@ -732,14 +739,14 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath) {
 						var min = 1e20;
 						var max = -1e20;
 						frStatics = new _$List_ListIterator(rtti.statics.h);
-						var _g4 = frStatics;
-						while(_g4.head != null) {
+						var _g5 = frStatics;
+						while(_g5.head != null) {
 							var f2;
 							f2 = (function($this) {
 								var $r;
-								_g4.val = _g4.head[0];
-								_g4.head = _g4.head[1];
-								$r = _g4.val;
+								_g5.val = _g5.head[0];
+								_g5.head = _g5.head[1];
+								$r = _g5.val;
 								return $r;
 							}(this));
 							frI = f2.name.indexOf("_");
@@ -770,14 +777,14 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath) {
 					if(typeof(frValue) == "string") {
 						var frChoices = { };
 						frStatics = new _$List_ListIterator(rtti.statics.h);
-						var _g5 = frStatics;
-						while(_g5.head != null) {
+						var _g6 = frStatics;
+						while(_g6.head != null) {
 							var f3;
 							f3 = (function($this) {
 								var $r;
-								_g5.val = _g5.head[0];
-								_g5.head = _g5.head[1];
-								$r = _g5.val;
+								_g6.val = _g6.head[0];
+								_g6.head = _g6.head[1];
+								$r = _g6.val;
 								return $r;
 							}(this));
 							frI = f3.name.indexOf("_");

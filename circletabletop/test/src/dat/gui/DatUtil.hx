@@ -117,6 +117,9 @@ class DatUtil
 							
 							if (gotBits) {
 								Reflect.setField(fieldHash, f.name, bitMaskFolder);
+								for( p in Reflect.fields(cur) ) {
+									Reflect.setField(bitMaskFolder, p, Reflect.field(cur, p));
+								}
 								Reflect.setField(bitMaskFolder, "_subProxy", "bitmask");
 								Reflect.setField(bitMaskFolder, "_value", curVal);  // subproxy default value
 							}
