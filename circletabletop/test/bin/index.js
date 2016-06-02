@@ -113,6 +113,12 @@ List.prototype = {
 		this.q = x;
 		this.length++;
 	}
+	,push: function(item) {
+		var x = [item,this.h];
+		this.h = x;
+		if(this.q == null) this.q = x;
+		this.length++;
+	}
 	,last: function() {
 		if(this.q == null) return null; else return this.q[0];
 	}
@@ -606,16 +612,19 @@ dat_gui_DatUtil.__name__ = ["dat","gui","DatUtil"];
 dat_gui_DatUtil._concatDyn = function(a1,a2) {
 	return a1.concat(a2);
 };
-dat_gui_DatUtil.setup = function(instance,classe,options,dotPath) {
+dat_gui_DatUtil.setup = function(instance,classe,options,dotPath,funcToInspect) {
 	if(dotPath == null) dotPath = "";
 	var typeStr;
 	if(classe == null) classe = Type.getClass(instance);
 	if(options == null) options = { };
 	var ignoreInspectMeta = Reflect.field(options,"ignoreInspectMeta");
 	var rtti = haxe_rtti_Rtti.getRtti(classe);
-	var meta = haxe_rtti_Meta.getFields(classe);
+	var meta;
+	if(funcToInspect != null) meta = funcToInspect.meta; else meta = haxe_rtti_Meta.getFields(classe);
+	if(funcToInspect != null) instance = funcToInspect.instance;
 	var fieldHash = { };
-	var fields = rtti.fields;
+	var fields;
+	if(funcToInspect != null) fields = funcToInspect.fields; else fields = rtti.fields;
 	var fieldsI = new _$List_ListIterator(fields.h);
 	var funcFolder = null;
 	var cur;
@@ -798,14 +807,58 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath) {
 				}
 			}
 		} else if(!isVar && fieldMeta != null && Object.prototype.hasOwnProperty.call(fieldMeta,"inspect")) {
-			if(funcFolder == null) funcFolder = { };
+			cur = Reflect.field(fieldMeta,"inspect");
+			if(cur == null) cur = []; else cur = cur[0];
+			typeStr = haxe_rtti_CTypeTools.toString(f.type);
+			{
+				var _g7 = f.type;
+				switch(_g7[1]) {
+				case 4:
+					var ret = _g7[3];
+					var args = _g7[2];
+					if(funcFolder == null) funcFolder = { };
+					var funcDep = { meta : { }, instance : { }, fields : new List()};
+					var count = 0;
+					var _g1_head = args.h;
+					var _g1_val = null;
+					while(_g1_head != null) {
+						var funcArg;
+						funcArg = (function($this) {
+							var $r;
+							_g1_val = _g1_head[0];
+							_g1_head = _g1_head[1];
+							$r = _g1_val;
+							return $r;
+						}(this));
+						funcDep.fields.push({ name : funcArg.name, type : funcArg.t, isPublic : true, isOverride : false, doc : null, get : null, set : null, params : null, platforms : null, meta : null, line : null, overloads : null, expr : null});
+						var paramsObj;
+						if(count < cur.length) paramsObj = cur[count]; else paramsObj = { };
+						var newObj = { inspect : null};
+						var _g13 = 0;
+						var _g21 = Reflect.fields(paramsObj);
+						while(_g13 < _g21.length) {
+							var r = _g21[_g13];
+							++_g13;
+							Reflect.setField(newObj,r,[Reflect.field(paramsObj,r)]);
+						}
+						funcDep.meta[funcArg.name] = newObj;
+						if(funcArg.opt) funcDep.instance[funcArg.name] = funcArg.value; else funcDep.instance[funcArg.name] = null;
+						count++;
+					}
+					funcFolder[f.name] = funcDep;
+					break;
+				default:
+				}
+			}
 		}
 	}
-	if(funcFolder != null) {
-	}
+	if(funcFolder != null) fieldHash._functions = funcFolder;
 	fieldHash._dotPath = dotPath;
 	Reflect.setField(fieldHash,"_hxclass",Type.getClassName(classe));
 	return fieldHash;
+};
+dat_gui_DatUtil.getDummyClassFieldForFuncParam = function(name,type) {
+	return { name : name, type : type, isPublic : true, isOverride : false, doc : null, get : null, set : null, params : null, platforms : null, meta : null, line : null, overloads : null, expr : null};
 };
 var de_polygonal_Printf = function() { };
 $hxClasses["de.polygonal.Printf"] = de_polygonal_Printf;

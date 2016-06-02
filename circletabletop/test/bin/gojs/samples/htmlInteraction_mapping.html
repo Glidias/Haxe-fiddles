@@ -243,6 +243,9 @@
 	//alert( $(guiArc.getControllerByName("selectMutualArc").domElement).children().html() );
 	//$(guiArc.getControllerByName("selectMutualArc").domElement).find(".property-name").html("Select Mutual Arc");
 	
+	//instance:Dynamic, classe:Class<Dynamic>=null, options:Dynamic=null, dotPath:String="", funcToInspect:FuncDependencies=null
+//	var guiFuncTest = guiGlueRender( DatUtil.setup( new LocationDefinition(), null, null, "", gui._guiGlue._functions.testMethod ), null, {} );
+	
 	// some mods for filtering
 	var liNumberRows = $(gui.domElement).add($(guiOverwriter.domElement).add($(guiArc.domElement))).find("li.number");	
 	liNumberRows.find("input").each( function(index, item) {

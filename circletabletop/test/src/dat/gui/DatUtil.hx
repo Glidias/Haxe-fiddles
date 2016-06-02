@@ -3,6 +3,7 @@ import dat.gui.GUI;
 import haxe.rtti.CType;
 import haxe.rtti.Meta;
 import haxe.rtti.Rtti;
+import tjson.TJSON;
 
 /**
  * Utility to generate field definitions/UI fields for DATGUI from Haxe classes using metadata.
@@ -13,6 +14,14 @@ import haxe.rtti.Rtti;
  * 
  * @author Glenn Ko
  */
+
+typedef FuncDependencies = {
+	var fields:List<ClassField>;
+	var meta : Dynamic<Dynamic<Array<Dynamic>>>;
+	var instance :Dynamic;
+}
+
+ 
 @:expose
 class DatUtil
 {
@@ -23,13 +32,15 @@ class DatUtil
 	}
 	
 	/**
-	 * Sets up inspectable parameters for guiGlue (glidias' fork) utility for DATGUI with a Haxe classes/instances containing RTTI data.
-	 * @param	instance
-	 * @param	classe
-	 * @param	options
-	 * @return
+	 * Sets up inspectable parameters for guiGlue (glidias' fork) utility for DATGUI with a Haxe classes/instances/functions
+	 * @param	instance	The instance to use, 
+	 * @param	classe   The RTTI class to reference static functions and instance fields
+	 * @param	options  Any additional options.
+	 * @param   dotPath  Default empty string. Any dot path prefix to add
+	 * @param	funcToInspect	A modifier to inspect a function instead
+	 * @return	The guiGlue parameters
 	 */
-	public static function setup(instance:Dynamic, classe:Class<Dynamic>=null, options:Dynamic=null, dotPath:String=""):Dynamic 
+	public static function setup(instance:Dynamic, classe:Class<Dynamic>=null, options:Dynamic=null, dotPath:String="", funcToInspect:FuncDependencies=null):Dynamic 
 	{
 		var typeStr:String;
 		if (classe == null) classe = Type.getClass(instance);
@@ -37,10 +48,14 @@ class DatUtil
 		
 		var ignoreInspectMeta:Bool = Reflect.field( options, "ignoreInspectMeta");
 		var rtti = Rtti.getRtti(classe);
-		var meta = Meta.getFields(classe);
+		var meta = funcToInspect != null ? funcToInspect.meta : Meta.getFields(classe);
+		
+		if (funcToInspect != null) {  // overwrite instance reference in this case with the function dummy instance reference
+			instance = funcToInspect.instance;
+		}
 		
 		var fieldHash = { };
-		var fields = rtti.fields;
+		var fields = funcToInspect!=null ? funcToInspect.fields :  rtti.fields;
 		var fieldsI = fields.iterator();
 		// @bitmask folders 
 		// @choices combo list
@@ -267,31 +282,56 @@ class DatUtil
 					
 				}
 			}
-			else if (!isVar && fieldMeta!=null && Reflect.hasField( fieldMeta, "inspect") ) {
+			else if (!isVar && fieldMeta!=null && Reflect.hasField( fieldMeta, "inspect")  ) {
 				
+				cur = Reflect.field(fieldMeta, "inspect");
 				
-				if (funcFolder == null) {
-					funcFolder = { };
+				if (cur == null) {
+					cur = [];
+				}
+				else cur = cur[0];
+				//meta.sfs = [{}];
+				
+				typeStr = CTypeTools.toString(f.type);
+				switch( f.type ) {
+					case CType.CFunction(args, ret):
+						if (funcFolder == null) {
+							funcFolder = {}   // hash keyStrings of FuncDependencies
+							
+						}
+						var funcDep:FuncDependencies = {
+							meta: { },
+							instance: { },
+							fields: new List<ClassField>()
+						}
+						//
 					
+						// { name : String, opt : Bool, t : CType, ?value:String }
+						var count:Int = 0;
+						for ( funcArg in args.iterator()) {
+							funcDep.fields.push( getDummyClassFieldForFuncParam(funcArg.name, funcArg.t) );
+							var paramsObj:Dynamic = count < cur.length ? cur[count] : { };
+							var newObj:Dynamic = { inspect:null };
+							for (r in Reflect.fields(paramsObj)) {
+								Reflect.setField(newObj, r, [ Reflect.field(paramsObj, r) ]);
+							}
+							Reflect.setField(funcDep.meta, funcArg.name, newObj );
+							
+							Reflect.setField(funcDep.instance, funcArg.name, funcArg.opt ? funcArg.value : null);
+							count++;
+						}
+						Reflect.setField(funcFolder, f.name, funcDep);
+						//trace(f.name+" = " +typeStr, cur);
+					default:
 				}
 				
-				// reflect field parameters into object instance?
-				
-				
-				//	cur = { _isLeaf:true, _isFunc:true, _funcParams };
-				//	Reflect.setField(fieldHash, f.name, cur);
-				
-				//typeStr = CTypeTools.toString(f.type);
 				
 			}
 		}
 		
-		if (funcFolder != null) {  // TODO
-	//		Reflect.setField(fieldHash, "function() ", funcFolder);
+		if (funcFolder != null) { 
+			Reflect.setField(fieldHash, "_functions", funcFolder);
 		}
-		
-	
-		
 		
 		Reflect.setField(fieldHash, "_dotPath", dotPath);
 		Reflect.setField(fieldHash, "_hxclass", Type.getClassName(classe) );
@@ -299,5 +339,41 @@ class DatUtil
 		
 		return fieldHash;
 	}
+	
+	private static inline function getDummyClassFieldForFuncParam(name:String, type:CType):ClassField {
+		return {
+			name:name,
+			type:type,
+			isPublic:true,
+			isOverride:false,
+			doc:null,
+			get:null,
+			set:null,
+			params:null,
+			platforms:null,
+			meta:null,
+			line:null,
+			overloads:null,
+			expr:null
+		};
+		/*
+					 * typedef ClassField = {
+					var name : String;
+					var type : CType;
+					var isPublic : Bool;
+					var isOverride : Bool;
+					var doc : Null<String>;
+					var get : Rights;
+					var set : Rights;
+					var params : TypeParams;
+					var platforms : Platforms;
+					var meta : MetaData;
+					var line : Null<Int>;
+					var overloads : Null<List<ClassField>>;
+					var expr : Null<String>;
+				*/
+				
+	}
+	
 	
 }
