@@ -186,6 +186,7 @@ class PropertyChainHolder {
 					
 					return null;  
 				}
+			//	trace("SORRY need to create!");
 				Reflect.setProperty(obj, prop, (reflectProp={ }) );
 			}
 			val =  reflectProp;

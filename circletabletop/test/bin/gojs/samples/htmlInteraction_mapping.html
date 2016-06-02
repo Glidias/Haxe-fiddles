@@ -155,8 +155,10 @@
 			multiSelectedLocations:false,
 			selectedArc: null,
 			goSelectionCount: true,
+			ignoreAutoSync:false,
 			selectedArcOptions: {
-				autoSyncMutual:false
+				autoSyncMutual:false,
+				alwaysResetAutoSyncOnUnselect:false
 			},
 			selected: { x:0, y:0, z:0, def: $.extend(true, {}, gui._guiGlueParams) }, 
 			locationDefIds:world.getLocationDefinitionIds(world.getDefaultLocationDefIdHash())	
@@ -220,18 +222,29 @@
 	guiArc.add(guiArcMethods, "selectMutualArc");
 	
 	guiArc.add(vueModelData.selectedArcOptions, "autoSyncMutual");
-	getGuiControllerLi(guiArc, "autoSyncMutual").find(".property-name").html("Auto-sync~mutual");  //.attr("v-show", "selectedArc.mutualGoArc != null")
+	getGuiControllerLi(guiArc, "autoSyncMutual").find("input").attr("v-model", "selectedArcOptions.autoSyncMutual");  //.attr("v-show", "selectedArc.mutualGoArc != null")
+	getGuiControllerLi(guiArc, "autoSyncMutual").find(".property-name").html("Auto-sync~mutual");
 	 setupGUIGeneric( guiGlueRender( DatUtil.setup( new ArcNodeVM() ) , null, {}, guiArc  ) );
 	$(guiArc.getFolderByName("val").domElement.firstChild).children("li.title").html("Arc state{{selectedArc && selectedArc.val ? ':' : '?' }}");
 	 
 	 getGuiControllerLi(guiArc, "selectMutualArc").attr("v-show", "selectedArc.mutualGoArc != null").find(".property-name").html("Select Mutual Arc");
 	
+	 var guiArcFolder;
+	 
+	 guiArcFolder = guiArc;
+	 $(guiArcFolder.domElement).children("ul").children("li.instance").append('<span class="overwritetrigger">~</span>');
+	 guiArcFolder = guiArc.getFolderByName("val");
+	 $(guiArcFolder.domElement).children("ul").children("li").children().children(".property-name").append('<span class="overwritetrigger">~</span>');
+	$(guiArcFolder.domElement).children("ul").children("li.bitmask").append('<span class="overwritetrigger">~</span>');
+	guiArcFolder = guiArcFolder.getFolderByName("pathArcInfo");
+	$(guiArcFolder.domElement).children("ul").children("li").children().children(".property-name").append('<span class="overwritetrigger">~</span>');
+//	$(guiArc.getFolderByName("val").domElement).children("ul").children("li.bitmask").append('<span class="overwritetrigger">~</span>');
 	
 	//alert( $(guiArc.getControllerByName("selectMutualArc").domElement).children().html() );
 	//$(guiArc.getControllerByName("selectMutualArc").domElement).find(".property-name").html("Select Mutual Arc");
 	
 	// some mods for filtering
-	var liNumberRows = $(gui.domElement).add($(guiOverwriter.domElement)).find("li.number");	
+	var liNumberRows = $(gui.domElement).add($(guiOverwriter.domElement).add($(guiArc.domElement))).find("li.number");	
 	liNumberRows.find("input").each( function(index, item) {
 		item = $(item);
 		item.attr( "number", "");
@@ -242,6 +255,48 @@
 		item.attr( "number", "");
 	});
 	
+	
+	Vue.directive('arc-sync',  {   // syncs mutual arc
+		params:['arcSync'],
+		deep:true,
+		update:function(newValue, oldValue) {
+
+			if (_inspectedArc == null || vueModelData.ignoreAutoSync || !vueModelData.selectedArcOptions.autoSyncMutual || !vueModelData.selectedArc || vueModelData.selectedArc.mutualGoArc == null) return;
+			if (newValue === undefined) return;
+			if (newValue === oldValue) {
+				
+				return;
+			}
+			var flipValue;
+			
+			if (  newValue != null && typeof(newValue) === "object") {
+	
+				if (oldValue == null) {
+					//console.log("Creating:"+this.expression);
+					newValue = TJSON.parse(TJSON.encode(newValue));
+					flipValue = newValue;
+				}
+				else {
+					return;
+				}
+			}
+			else flipValue= ArcPacket[this.params.arcSync](newValue);
+			//*/
+			
+			
+			//alert(flipValue);
+			var goArcData = myDiagram.model.findLinkDataForKey(vueModelData.selectedArc.mutualGoArc);
+	
+			var splitExp  = this.expression.split(".");
+			splitExp.shift();  // remove off selectedArc prefix in expression
+
+			inspectPropertyChainLookup.setupProperty( goArcData._arc,  splitExp.join(".") );	
+			//	alert("before SYNC:"+flipValue + "::"+splitExp);
+			var result = inspectPropertyChainLookup.setPropertyChainValue(flipValue);
+			//	console.log(this.expression + "="+result, result);
+			//alert("after SYNC");
+		}
+	});
 
 	Vue.directive('dat-instance', {  // Binds to Dat.gui folders's domElement.firstChild => UL element
 		bind: function(val) {
@@ -287,11 +342,20 @@
 			var self = this;
 			this._datController = $(this.el).data("dat-controller");
 				this._datController.onChange( function(val) {
+				var precision = self._datController.__precision;
+				val =val.toFixed(precision);
+				//console.log("Setting val:"+val);
 				self.vm.$set( self.expression, val );
 			 });
 		},
-		update: function(val) {
+		update: function(val, oldVal) {
+			val = parseFloat(val);
+			//console.log("Getting val and updating:"+val);  
 			if ( isNaN(val)) return;
+
+			
+			if (val === oldVal) return;
+			
 			this._datController.setValue(val);
 		},
 		unbind: function() {
@@ -401,6 +465,8 @@
 	
 //	$(guiOverwriter.domElement)
 
+	var ARC_SYNCPROP_METHODS = {};
+	
 	function setupGUIForVue(gui, expressionPrefix, ifSuffix, overwriteMethod, dataModelDirective) {
 		var guiFolders = gui.getAllGUIs();
 		var gotIf = ifSuffix != null;
@@ -416,12 +482,20 @@
 			if (g._guiGlue._dotPath != undefined) {
 				if (g._guiGlue._dotPath != "") {
 					$(g.domElement.firstChild).data("dat-gui", g).attr("v-dat-instance", expressionPrefix+ g._guiGlue._dotPath).attr(dataModelDirective, expressionPrefix+ g._guiGlue._dotPath);
-					
+				
+					if (g._guiGlue._sync) {
+						g.domElement.firstChild.setAttribute("arc-sync", g._guiGlue._sync  );
+						g.domElement.firstChild.setAttribute("v-arc-sync", (expressionPrefix+ g._guiGlue._dotPath) );
+						
+					}
 					var overwriteTrigger = jQuery(jQuery(g.domElement).parents("li")[0]).find(".overwritetrigger").data("dat-gui", g);
 					overwriteTrigger.attr("v-on:click", overwriteMethod+"('"+g._guiGlue._dotPath+"', $event)");
 					//selected && selected.defOverwrites && 
 					if ( expressionPrefix === "selected.def.") overwriteTrigger.attr("v-show", "$get('selected.defOverwrites."+g._guiGlue._dotPath+ "') == null");
-					
+					else if (dataModelDirective === "v-arc" && g._guiGlue._sync) {
+						overwriteTrigger.attr("v-show", "isOffSyncedWithMutual('"+g._guiGlue._dotPath+"', selectedArc."+g._guiGlue._dotPath+")");
+						ARC_SYNCPROP_METHODS[g._guiGlue._dotPath] = ArcPacket[g._guiGlue._sync];
+					}
 					if (gotIf) {
 						$( $(g.domElement).parents("li")[0]).attr("v-show", expressionPrefix +g._guiGlue._dotPath +  ifSuffix);
 					}
@@ -429,8 +503,7 @@
 					
 				}
 				
-			
-					
+
 				
 				for (c in g.__controllers) {
 					var cn = g.__controllers[c];
@@ -466,6 +539,12 @@
 							overwriteTrigger.attr("v-on:click", overwriteMethod+"('"+dotPath+"', $event)");
 							//selected && selected.defOverwrites && 
 							if ( expressionPrefix === "selected.def.") overwriteTrigger.attr("v-show", "$get('selected.defOverwrites."+dotPath+ "') == null");
+							else if (dataModelDirective === "v-arc" && cn._guiGlue._sync) {
+								overwriteTrigger.attr("v-show", "isOffSyncedWithMutual('"+dotPath+"', selectedArc."+dotPath+")");
+								ARC_SYNCPROP_METHODS[dotPath] = ArcPacket[cn._guiGlue._sync];
+							
+								
+							}
 						}
 						else {
 							overwriteTrigger.css("display", 'none').css("visibility", "hidden");
@@ -473,6 +552,10 @@
 					}
 					
 					cn.domElement.firstChild.setAttribute(dataModelDirective, expressionPrefix+dotPath);
+					if (cn._guiGlue._sync) {
+						cn.domElement.firstChild.setAttribute("arc-sync", cn._guiGlue._sync );
+						cn.domElement.firstChild.setAttribute("v-arc-sync", (expressionPrefix+dotPath) );
+					}
 					if (gotIf) $( $(cn.domElement).parents("li")[0]).attr("v-show", expressionPrefix + dotPath  +  ifSuffix);
 				}
 				
@@ -484,6 +567,10 @@
 						if (parentLI.hasClass("bitmask")) {
 							var dotPath =( g._guiGlue._dotPath!= "" ?  g._guiGlue._dotPath + "." : "")+ f;
 							$(folder.domElement.firstChild).data("dat-gui", folder).attr("v-dat-bitmask", expressionPrefix+dotPath ).attr(dataModelDirective, expressionPrefix+dotPath);
+							if (folder._guiGlue._sync) {
+								folder.domElement.firstChild.setAttribute("arc-sync", folder._guiGlue._sync );
+								folder.domElement.firstChild.setAttribute("v-arc-sync", (expressionPrefix+dotPath) );
+							}
 							var folderLi =  $( $(folder.domElement).parents("li")[0]);
 							if (gotIf) folderLi.attr("v-show", expressionPrefix + dotPath  +  ifSuffix);
 							var overwriteTrigger = folderLi.children(".overwritetrigger").data("dat-gui", f);
@@ -491,6 +578,10 @@
 							overwriteTrigger.attr("v-on:click", overwriteMethod+"('"+dotPath+"', $event)");
 							//selected && selected.defOverwrites && 
 							if ( expressionPrefix === "selected.def.") overwriteTrigger.attr("v-show", "$get('selected.defOverwrites."+dotPath+ "') == null");
+							else if (dataModelDirective === "v-arc" && folder._guiGlue._sync) {
+								overwriteTrigger.attr("v-show", "isOffSyncedWithMutual('"+dotPath+"', selectedArc."+dotPath+")");
+								ARC_SYNCPROP_METHODS[dotPath] = ArcPacket[folder._guiGlue._sync];
+							}
 						}
 						else {
 							//alert("TODO: need to resolve folder directive for:"+f );<br/>
@@ -511,7 +602,7 @@
 	
 	setupGUIForVue(guiOverwriter,  "selected.defOverwrites.", "!==undefined", "removeLocationDefOverwrite");
 	setupGUIForVue(guiPacketer,  "selected.");
-	setupGUIForVue(guiArc, "selectedArc.", null,null, "arc");
+	setupGUIForVue(guiArc, "selectedArc.", null,"syncWithMutual", "arc");
 	guiPacketer.domElement.setAttribute("v-show", "gotLocation");
 	//setupGUIForVue(guiStater,  "selected.state.");
 	gui.domElement.setAttribute("v-show", "selected.def");
@@ -539,6 +630,8 @@
 	Vue.directive('arc', function(newValue, oldValue) {
 	
 		if (_inspectedArc == null) return;
+		
+		if (newValue === oldValue) return;  // newly added
 
 		var splitExp  = this.expression.split(".");
 		splitExp.shift();  // remove off selectedArc prefix in expression
@@ -567,6 +660,7 @@
 	Vue.directive('node', function(newValue, oldValue) {
 		if (_inspectedNodeVal == null) return;
 		
+		if (newValue === oldValue) return;  // newly added
 	//	if (newValue === undefined) return;  // if value is strictly undefined, can process be skipped?
 		
 		var splitExp  = this.expression.split(".");
@@ -650,12 +744,72 @@
 				var arc = from.getArc(to);
 				return arc != null;
 			}
+			,isOffSyncedWithMutual: function(prop, valueToSync) {
+				
+			
+				var predicate =  this.selectedArc && this.selectedArc.mutualGoArc;
+				
+				if (!predicate) return false;
+				
+				var goArcData = myDiagram.model.findLinkDataForKey(vueModelData.selectedArc.mutualGoArc);
+				var mutualArc = goArcData._arc;
+				
+				inspectPropertyChainLookup.setupProperty( mutualArc,  prop);
+				
+				var curVal = inspectPropertyChainLookup.getPropertyChainValue();
+				if (curVal == null && valueToSync == null) {
+					return false;
+				}
+				
+				if (valueToSync != null && typeof(valueToSync) === "object") {
+					if (curVal == null) {
+						return true;
+					}
+					else {
+						return false;
+					}
+				}
+				var lastValueToSync = valueToSync;
+				valueToSync = ARC_SYNCPROP_METHODS[prop](valueToSync, curVal);
+			//	console.log(prop, " COMPARE:", lastValueToSync, valueToSync, curVal);
+				return curVal != valueToSync;
+			}
+			,syncWithMutual: function(prop, e) {
+				var valueToSync = this.$get("selectedArc."+prop);
+				var refValue = valueToSync;
+				var goArcData = myDiagram.model.findLinkDataForKey(vueModelData.selectedArc.mutualGoArc);
+				var mutualArc = goArcData._arc;
+				
+				inspectPropertyChainLookup.setupProperty( mutualArc,  prop);
+				var curVal = inspectPropertyChainLookup.getPropertyChainValue();
+				/*
+				if (valueToSync != null && typeof valueToSync === "object") {
+					if (curVal == null) {
+					
+					}
+				}
+				*/
+				// TODO.. lookup functon
+				//valueToSync;
+				
+				//(okoko,curVal)
+				
+				valueToSync = ARC_SYNCPROP_METHODS[prop](valueToSync, curVal);
+				if (curVal !=valueToSync) {
+					inspectPropertyChainLookup.setPropertyChainValue(valueToSync);
+				}
+				inspectGoArc( _selectedGoArcData );
+				
+			}
 		}
 	});
 	
 	function inspectGoArc(goArc) { 
 		var arc = goArc._arc;
 		_inspectedArc = arc;
+		
+		vueModelData.ignoreAutoSync = true;  // timeout hack, bleh, temp disable directive for v-arc-sync
+		//vueModel.selectedArcOptions.autoSyncMutual = false;
 
 		var newVueModelData;
 		if (arc.val != null) {
@@ -685,6 +839,12 @@
 
 		//console.log("New vue model:"+ newVueModelData);
 		vueModel.selectedArc = { val:newVueModelData, mutualGoArc:mutualArc }; //, cost:arc.cost
+		
+		
+		 // timeout hack, bleh, re-enable autosync directive after temp disable directive for v-arc-sync
+		setTimeout( function() {
+			vueModelData.ignoreAutoSync = false;
+		}, 0);
 	}
 	
 
@@ -1487,6 +1647,8 @@
 		vueModel.goSelectionCount = myDiagram.selection.count;
 		
 		if (selection instanceof go.Link) {
+			
+			
 			_inspectedNodeVal = null;
 			_selectedGoNodeData = null;
 			vueModel.gotLocation = false;
@@ -1507,6 +1669,9 @@
 		_inspectedArc = null;
 		_selectedGoArcData = null;
 		vueModel.selectedArc = null;
+		if (vueModel.selectedArcOptions.alwaysResetAutoSyncOnUnselect) {
+			vueModel.selectedArcOptions.autoSyncMutual = false;
+		}
 		
 		if (selection != null) {
 			vueModel.multiSelectedLocations = getMultiSelectedLocations(myDiagram.selection);

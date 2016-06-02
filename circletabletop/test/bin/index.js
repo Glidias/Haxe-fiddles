@@ -713,6 +713,13 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath) {
 				}
 				var nested;
 				Reflect.setField(fieldHash,f.name,nested = dat_gui_DatUtil.setup(tryInstance,Type.resolveClass(typeStr),f.type,(dotPath != ""?dotPath + ".":"") + f.name));
+				var _g3 = 0;
+				var _g11 = Reflect.fields(cur);
+				while(_g3 < _g11.length) {
+					var p = _g11[_g3];
+					++_g3;
+					Reflect.setField(nested,p,Reflect.field(cur,p));
+				}
 				if(instanceAvailable) nested._folded = false; else nested._folded = true;
 				Reflect.setField(nested,"_classes",Object.prototype.hasOwnProperty.call(cur,"_classes")?dat_gui_DatUtil._concatDyn(["instance"],Reflect.field(cur,"_classes")):["instance"]);
 			}
@@ -725,14 +732,14 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath) {
 						var min = 1e20;
 						var max = -1e20;
 						frStatics = new _$List_ListIterator(rtti.statics.h);
-						var _g3 = frStatics;
-						while(_g3.head != null) {
+						var _g4 = frStatics;
+						while(_g4.head != null) {
 							var f2;
 							f2 = (function($this) {
 								var $r;
-								_g3.val = _g3.head[0];
-								_g3.head = _g3.head[1];
-								$r = _g3.val;
+								_g4.val = _g4.head[0];
+								_g4.head = _g4.head[1];
+								$r = _g4.val;
 								return $r;
 							}(this));
 							frI = f2.name.indexOf("_");
@@ -763,14 +770,14 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath) {
 					if(typeof(frValue) == "string") {
 						var frChoices = { };
 						frStatics = new _$List_ListIterator(rtti.statics.h);
-						var _g4 = frStatics;
-						while(_g4.head != null) {
+						var _g5 = frStatics;
+						while(_g5.head != null) {
 							var f3;
 							f3 = (function($this) {
 								var $r;
-								_g4.val = _g4.head[0];
-								_g4.head = _g4.head[1];
-								$r = _g4.val;
+								_g5.val = _g5.head[0];
+								_g5.head = _g5.head[1];
+								$r = _g5.val;
 								return $r;
 							}(this));
 							frI = f3.name.indexOf("_");
@@ -1307,6 +1314,455 @@ de_polygonal__$Printf_FloatType.FScientific.__enum__ = de_polygonal__$Printf_Flo
 de_polygonal__$Printf_FloatType.FNatural = ["FNatural",2];
 de_polygonal__$Printf_FloatType.FNatural.toString = $estr;
 de_polygonal__$Printf_FloatType.FNatural.__enum__ = de_polygonal__$Printf_FloatType;
+var de_polygonal_core_fmt_NumberFormat = function() { };
+$hxClasses["de.polygonal.core.fmt.NumberFormat"] = de_polygonal_core_fmt_NumberFormat;
+de_polygonal_core_fmt_NumberFormat.__name__ = ["de","polygonal","core","fmt","NumberFormat"];
+de_polygonal_core_fmt_NumberFormat.toBin = function(x,byteDelimiter,leadingZeros) {
+	if(leadingZeros == null) leadingZeros = false;
+	if(byteDelimiter == null) byteDelimiter = "";
+	var n = 32 - de_polygonal_ds_Bits.nlz(x);
+	var s;
+	if((x & 1) > 0) s = "1"; else s = "0";
+	x >>= 1;
+	var _g = 1;
+	while(_g < n) {
+		var i = _g++;
+		s = ((x & 1) > 0?"1":"0") + ((i & 7) == 0?byteDelimiter:"") + s;
+		x >>= 1;
+	}
+	if(leadingZeros) {
+		var _g1 = 0;
+		var _g2 = 32 - n;
+		while(_g1 < _g2) {
+			var i1 = _g1++;
+			s = "0" + s;
+		}
+	}
+	return s;
+};
+de_polygonal_core_fmt_NumberFormat.toHex = function(x) {
+	if(x == 0) return "0";
+	var s = "";
+	var a = de_polygonal_core_fmt_NumberFormat._hexLUT;
+	while(x != 0) {
+		s = a[x & 15] + s;
+		x >>>= 4;
+	}
+	return s;
+};
+de_polygonal_core_fmt_NumberFormat.toOct = function(x) {
+	var s = "";
+	var t = x;
+	do {
+		var r = t & 7;
+		s = r + s;
+		t >>>= 3;
+	} while(t > 0);
+	return s;
+};
+de_polygonal_core_fmt_NumberFormat.toRadix = function(x,radix) {
+	var s = "";
+	var t = x;
+	while(t > 0) {
+		var r = t % radix;
+		s = r + s;
+		t = t / radix;
+	}
+	return s;
+};
+de_polygonal_core_fmt_NumberFormat.toFixed = function(x,decimalPlaces) {
+	if(isNaN(x)) return "NaN"; else {
+		var t = de_polygonal_core_math_Mathematics.exp(10,decimalPlaces);
+		var s = Std.string((x * t | 0) / t);
+		var i = s.indexOf(".");
+		if(i != -1) {
+			var _g = HxOverrides.substr(s,i + 1,null).length;
+			while(_g < decimalPlaces) {
+				var i1 = _g++;
+				s += "0";
+			}
+		} else {
+			s += ".";
+			var _g1 = 0;
+			while(_g1 < decimalPlaces) {
+				var i2 = _g1++;
+				s += "0";
+			}
+		}
+		return s;
+	}
+};
+de_polygonal_core_fmt_NumberFormat.toMMSS = function(x) {
+	x = x * 1000 | 0;
+	var ms = x % 1000;
+	var r = (x - ms) / 1000;
+	var tmp = r % 60;
+	return HxOverrides.substr("0" + (r - tmp) / 60,-2,null) + ":" + HxOverrides.substr("0" + tmp,-2,null);
+};
+de_polygonal_core_fmt_NumberFormat.groupDigits = function(x,thousandsSeparator) {
+	if(thousandsSeparator == null) thousandsSeparator = ".";
+	var n = x;
+	var c = 0;
+	while(n > 1) {
+		n /= 10;
+		c++;
+	}
+	c = c / 3;
+	var source;
+	if(x == null) source = "null"; else source = "" + x;
+	if(c == 0) return source; else {
+		var target = "";
+		var i = 0;
+		var j = source.length - 1;
+		while(j >= 0) {
+			if(i == 3) {
+				target = source.charAt(j--) + thousandsSeparator + target;
+				i = 0;
+				c--;
+			} else target = source.charAt(j--) + target;
+			i++;
+		}
+		return target;
+	}
+};
+de_polygonal_core_fmt_NumberFormat.centToEuro = function(x,decimalSeparator,thousandsSeparator) {
+	if(thousandsSeparator == null) thousandsSeparator = ".";
+	if(decimalSeparator == null) decimalSeparator = ",";
+	var euro = x / 100 | 0;
+	if(euro == 0) {
+		if(x < 10) return "0" + decimalSeparator + "0" + x; else return "0" + decimalSeparator + x;
+	} else {
+		var str;
+		var cent = x - euro * 100;
+		if(cent < 10) str = decimalSeparator + "0" + cent; else str = decimalSeparator + cent;
+		if(euro >= 1000) {
+			var num = euro;
+			var add;
+			while(num >= 1000) {
+				num = euro / 1000 | 0;
+				add = euro - num * 1000;
+				if(add < 10) str = thousandsSeparator + "00" + add + str; else if(add < 100) str = thousandsSeparator + "0" + add + str; else str = thousandsSeparator + add + str;
+				euro = num;
+			}
+			return str = num + str;
+		} else str = euro + str;
+		return str;
+	}
+};
+var de_polygonal_core_math_Limits = function() { };
+$hxClasses["de.polygonal.core.math.Limits"] = de_polygonal_core_math_Limits;
+de_polygonal_core_math_Limits.__name__ = ["de","polygonal","core","math","Limits"];
+var de_polygonal_core_math_Mathematics = function() { };
+$hxClasses["de.polygonal.core.math.Mathematics"] = de_polygonal_core_math_Mathematics;
+de_polygonal_core_math_Mathematics.__name__ = ["de","polygonal","core","math","Mathematics"];
+de_polygonal_core_math_Mathematics.toRad = function(deg) {
+	return deg * 0.017453292519943295;
+};
+de_polygonal_core_math_Mathematics.toDeg = function(rad) {
+	return rad * 57.29577951308232;
+};
+de_polygonal_core_math_Mathematics.min = function(x,y) {
+	if(x < y) return x; else return y;
+};
+de_polygonal_core_math_Mathematics.max = function(x,y) {
+	if(x > y) return x; else return y;
+};
+de_polygonal_core_math_Mathematics.abs = function(x) {
+	if(x < 0) return -x; else return x;
+};
+de_polygonal_core_math_Mathematics.sgn = function(x) {
+	if(x > 0) return 1; else if(x < 0) return -1; else return 0;
+};
+de_polygonal_core_math_Mathematics.clamp = function(x,min,max) {
+	if(x < min) return min; else if(x > max) return max; else return x;
+};
+de_polygonal_core_math_Mathematics.clampSym = function(x,i) {
+	if(x < -i) return -i; else if(x > i) return i; else return x;
+};
+de_polygonal_core_math_Mathematics.wrap = function(x,min,max) {
+	if(x < min) return x - min + max + 1; else if(x > max) return x - max + min - 1; else return x;
+};
+de_polygonal_core_math_Mathematics.fmin = function(x,y) {
+	if(x < y) return x; else return y;
+};
+de_polygonal_core_math_Mathematics.fmax = function(x,y) {
+	if(x > y) return x; else return y;
+};
+de_polygonal_core_math_Mathematics.fabs = function(x) {
+	if(x < 0) return -x; else return x;
+};
+de_polygonal_core_math_Mathematics.fsgn = function(x) {
+	if(x > 0.) return 1; else if(x < 0.) return -1; else return 0;
+};
+de_polygonal_core_math_Mathematics.fclamp = function(x,min,max) {
+	if(x < min) return min; else if(x > max) return max; else return x;
+};
+de_polygonal_core_math_Mathematics.fclampSym = function(x,i) {
+	if(x < -i) return -i; else if(x > i) return i; else return x;
+};
+de_polygonal_core_math_Mathematics.fwrap = function(value,lower,upper) {
+	return value - ((value - lower) / (upper - lower) | 0) * (upper - lower);
+};
+de_polygonal_core_math_Mathematics.eqSgn = function(x,y) {
+	return (x ^ y) >= 0;
+};
+de_polygonal_core_math_Mathematics.isEven = function(x) {
+	return (x & 1) == 0;
+};
+de_polygonal_core_math_Mathematics.isPow2 = function(x) {
+	return x > 0 && (x & x - 1) == 0;
+};
+de_polygonal_core_math_Mathematics.lerp = function(a,b,t) {
+	return a + (b - a) * t;
+};
+de_polygonal_core_math_Mathematics.slerp = function(a,b,t) {
+	var m = Math;
+	var c1 = m.sin(a * .5);
+	var r1 = m.cos(a * .5);
+	var c2 = m.sin(b * .5);
+	var r2 = m.cos(b * .5);
+	var c = r1 * r2 + c1 * c2;
+	if(c < 0.) {
+		if(1. + c > 1e-6) {
+			var o = m.acos(-c);
+			var s = m.sin(o);
+			var s0 = m.sin((1 - t) * o) / s;
+			var s1 = m.sin(t * o) / s;
+			return m.atan2(s0 * c1 - s1 * c2,s0 * r1 - s1 * r2) * 2.;
+		} else {
+			var s01 = 1 - t;
+			var s11 = t;
+			return m.atan2(s01 * c1 - s11 * c2,s01 * r1 - s11 * r2) * 2;
+		}
+	} else if(1 - c > 1e-6) {
+		var o1 = m.acos(c);
+		var s2 = m.sin(o1);
+		var s02 = m.sin((1 - t) * o1) / s2;
+		var s12 = m.sin(t * o1) / s2;
+		return m.atan2(s02 * c1 + s12 * c2,s02 * r1 + s12 * r2) * 2.;
+	} else {
+		var s03 = 1 - t;
+		var s13 = t;
+		return m.atan2(s03 * c1 + s13 * c2,s03 * r1 + s13 * r2) * 2.;
+	}
+};
+de_polygonal_core_math_Mathematics.nextPow2 = function(x) {
+	var t = x - 1;
+	t |= t >> 1;
+	t |= t >> 2;
+	t |= t >> 4;
+	t |= t >> 8;
+	t |= t >> 16;
+	return t + 1;
+};
+de_polygonal_core_math_Mathematics.exp = function(a,n) {
+	var t = 1;
+	var r = 0;
+	while(true) {
+		if((n & 1) != 0) t = a * t;
+		n >>= 1;
+		if(n == 0) {
+			r = t;
+			break;
+		} else a *= a;
+	}
+	return r;
+};
+de_polygonal_core_math_Mathematics.log10 = function(x) {
+	return Math.log(x) * 0.4342944819032517;
+};
+de_polygonal_core_math_Mathematics.roundTo = function(x,y) {
+	return Math.round(x / y) * y;
+};
+de_polygonal_core_math_Mathematics.round = function(x) {
+	return (x + 16384.5 | 0) - 16384;
+};
+de_polygonal_core_math_Mathematics.ceil = function(x) {
+	var f = x | 0;
+	if(x == f) return f; else {
+		x += 1;
+		var f1 = x | 0;
+		if(x < 0 && f1 != x) f1--;
+		return f1;
+	}
+};
+de_polygonal_core_math_Mathematics.floor = function(x) {
+	var f = x | 0;
+	if(x < 0 && f != x) f--;
+	return f;
+};
+de_polygonal_core_math_Mathematics.sqrt = function(x) {
+	return Math.sqrt(x);
+};
+de_polygonal_core_math_Mathematics.invSqrt = function(x) {
+	return 1 / Math.sqrt(x);
+};
+de_polygonal_core_math_Mathematics.cmpAbs = function(x,y,eps) {
+	var d = x - y;
+	if(d > 0) return d < eps; else return -d < eps;
+};
+de_polygonal_core_math_Mathematics.cmpZero = function(x,eps) {
+	if(x > 0) return x < eps; else return -x < eps;
+};
+de_polygonal_core_math_Mathematics.snap = function(x,y) {
+	return de_polygonal_core_math_Mathematics.floor((x + y * .5) / y);
+};
+de_polygonal_core_math_Mathematics.inRange = function(x,min,max) {
+	return x >= min && x <= max;
+};
+de_polygonal_core_math_Mathematics.wrapToPI = function(x) {
+	x += 3.141592653589793;
+	return x - 6.283185307179586 * Math.floor(x / 6.283185307179586) - 3.141592653589793;
+};
+de_polygonal_core_math_Mathematics.wrapToPI2 = function(x) {
+	return x - 6.283185307179586 * Math.floor(x / 6.283185307179586);
+};
+de_polygonal_core_math_Mathematics.gcd = function(x,y) {
+	var d = 0;
+	var r = 0;
+	if(x < 0) x = -x; else x = x;
+	if(y < 0) y = -y; else y = y;
+	while(true) if(y == 0) {
+		d = x;
+		break;
+	} else {
+		r = x % y;
+		x = y;
+		y = r;
+	}
+	return d;
+};
+de_polygonal_core_math_Mathematics.maxPrecision = function(x,precision) {
+	return de_polygonal_core_math_Mathematics.roundTo(x,Math.pow(10,-precision));
+};
+de_polygonal_core_math_Mathematics.ofBool = function(x) {
+	if(x) return 1; else return 0;
+};
+var de_polygonal_ds_Bits = function() { };
+$hxClasses["de.polygonal.ds.Bits"] = de_polygonal_ds_Bits;
+de_polygonal_ds_Bits.__name__ = ["de","polygonal","ds","Bits"];
+de_polygonal_ds_Bits.getBits = function(x,mask) {
+	return x & mask;
+};
+de_polygonal_ds_Bits.hasBits = function(x,mask) {
+	return (x & mask) != 0;
+};
+de_polygonal_ds_Bits.incBits = function(x,mask) {
+	return (x & mask) == mask;
+};
+de_polygonal_ds_Bits.setBits = function(x,mask) {
+	return x | mask;
+};
+de_polygonal_ds_Bits.clrBits = function(x,mask) {
+	return x & ~mask;
+};
+de_polygonal_ds_Bits.invBits = function(x,mask) {
+	return x ^ mask;
+};
+de_polygonal_ds_Bits.setBitsIf = function(x,mask,expr) {
+	if(expr) return x | mask; else return x & ~mask;
+};
+de_polygonal_ds_Bits.hasBitAt = function(x,i) {
+	return (x & 1 << i) != 0;
+};
+de_polygonal_ds_Bits.setBitAt = function(x,i) {
+	return x | 1 << i;
+};
+de_polygonal_ds_Bits.clrBitAt = function(x,i) {
+	return x & ~(1 << i);
+};
+de_polygonal_ds_Bits.invBitAt = function(x,i) {
+	return x ^ 1 << i;
+};
+de_polygonal_ds_Bits.setBitsRange = function(x,min,max) {
+	var _g = min;
+	while(_g < max) {
+		var i = _g++;
+		x = x | 1 << i;
+	}
+	return x;
+};
+de_polygonal_ds_Bits.mask = function(n) {
+	return (1 << n) - 1;
+};
+de_polygonal_ds_Bits.ones = function(x) {
+	x -= x >> 1 & 1431655765;
+	x = (x >> 2 & 858993459) + (x & 858993459);
+	x = (x >> 4) + x & 252645135;
+	x += x >> 8;
+	x += x >> 16;
+	return x & 63;
+};
+de_polygonal_ds_Bits.ntz = function(x) {
+	var n = 0;
+	if(x != 0) {
+		x = (x ^ x - 1) >>> 1;
+		while(x != 0) {
+			x >>= 1;
+			n++;
+		}
+	}
+	return n;
+};
+de_polygonal_ds_Bits.nlz = function(x) {
+	if(x < 0) return 0; else {
+		x |= x >> 1;
+		x |= x >> 2;
+		x |= x >> 4;
+		x |= x >> 8;
+		x |= x >> 16;
+		return 32 - de_polygonal_ds_Bits.ones(x);
+	}
+};
+de_polygonal_ds_Bits.msb = function(x) {
+	x |= x >> 1;
+	x |= x >> 2;
+	x |= x >> 4;
+	x |= x >> 8;
+	x |= x >> 16;
+	return x & ~(x >>> 1);
+};
+de_polygonal_ds_Bits.rol = function(x,n) {
+	return x << n | x >>> 32 - n;
+};
+de_polygonal_ds_Bits.ror = function(x,n) {
+	return x >>> n | x << 32 - n;
+};
+de_polygonal_ds_Bits.reverse = function(x) {
+	var y = 1431655765;
+	x = x >> 1 & y | (x & y) << 1;
+	y = 858993459;
+	x = x >> 2 & y | (x & y) << 2;
+	y = 252645135;
+	x = x >> 4 & y | (x & y) << 4;
+	y = 16711935;
+	x = x >> 8 & y | (x & y) << 8;
+	return x >> 16 | x << 16;
+};
+de_polygonal_ds_Bits.flipWORD = function(x) {
+	return x << 8 | x >> 8;
+};
+de_polygonal_ds_Bits.flipDWORD = function(x) {
+	return x << 24 | x << 8 & 16711680 | x >> 8 & 65280 | x >> 24;
+};
+de_polygonal_ds_Bits.packI16 = function(lo,hi) {
+	return hi + 32768 << 16 | lo + 32768;
+};
+de_polygonal_ds_Bits.packUI16 = function(lo,hi) {
+	return hi << 16 | lo;
+};
+de_polygonal_ds_Bits.unpackI16Lo = function(x) {
+	return (x & 65535) - 32768;
+};
+de_polygonal_ds_Bits.unpackI16Hi = function(x) {
+	return (x >>> 16) - 32768;
+};
+de_polygonal_ds_Bits.unpackUI16Lo = function(x) {
+	return x & 65535;
+};
+de_polygonal_ds_Bits.unpackUI16Hi = function(x) {
+	return x >>> 16;
+};
 var de_polygonal_ds_Cloneable = function() { };
 $hxClasses["de.polygonal.ds.Cloneable"] = de_polygonal_ds_Cloneable;
 de_polygonal_ds_Cloneable.__name__ = ["de","polygonal","ds","Cloneable"];
@@ -7042,6 +7498,32 @@ var textifician_mapping_ArcPacket = $hx_exports.textifician.mapping.ArcPacket = 
 };
 $hxClasses["textifician.mapping.ArcPacket"] = textifician_mapping_ArcPacket;
 textifician_mapping_ArcPacket.__name__ = ["textifician","mapping","ArcPacket"];
+textifician_mapping_ArcPacket.getSync_equal = function(val,oldValue) {
+	return val;
+};
+textifician_mapping_ArcPacket.getSync_ratioComplement = function(val,oldValue) {
+	var str = Std.string(val);
+	var dotIndex = str.indexOf(".");
+	var numDecimalPlaces = HxOverrides.substr(str,dotIndex + 1,null).length;
+	val = 1 - val;
+	return de_polygonal_core_fmt_NumberFormat.toFixed(val,numDecimalPlaces);
+};
+textifician_mapping_ArcPacket.getSync_flipInt = function(val,oldValue) {
+	return -val;
+};
+textifician_mapping_ArcPacket.getSync_newInstance = function(val,oldValue) {
+	if(val != null) {
+		if(oldValue == null) {
+			if(Type.getClass(val) != null) return Type.createInstance(Type.getClass(val),[]); else return tjson_TJSON.parse(tjson_TJSON.encode(val));
+		} else return val;
+	} else return null;
+};
+textifician_mapping_ArcPacket.getSync_newEmptyInstance = function(val,oldValue) {
+	if(val != null) return null?Type.getClass(val) != null?oldValue = Type.createEmptyInstance(Type.getClass(val)):oldValue = tjson_TJSON.parse(tjson_TJSON.encode(val)):oldValue = val; else return null;
+};
+textifician_mapping_ArcPacket._tjsonParse = function(val) {
+	return tjson_TJSON.parse(tjson_TJSON.encode(val));
+};
 textifician_mapping_ArcPacket.prototype = {
 	flags: null
 	,label: null
@@ -7053,7 +7535,8 @@ textifician_mapping_ArcPacket.prototype = {
 	}
 	,__class__: textifician_mapping_ArcPacket
 };
-var textifician_mapping_PathArcInfo = $hx_exports.textifician.mapping.PathArcInfo = function() { };
+var textifician_mapping_PathArcInfo = $hx_exports.textifician.mapping.PathArcInfo = function() {
+};
 $hxClasses["textifician.mapping.PathArcInfo"] = textifician_mapping_PathArcInfo;
 textifician_mapping_PathArcInfo.__name__ = ["textifician","mapping","PathArcInfo"];
 textifician_mapping_PathArcInfo.prototype = {
@@ -8201,6 +8684,68 @@ Xml.DocType = 4;
 Xml.ProcessingInstruction = 5;
 Xml.Document = 6;
 de_polygonal_Printf._initialized = false;
+de_polygonal_core_fmt_NumberFormat._hexLUT = ["0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F"];
+de_polygonal_core_math_Limits.INT8_MIN = -128;
+de_polygonal_core_math_Limits.INT8_MAX = 127;
+de_polygonal_core_math_Limits.UINT8_MAX = 255;
+de_polygonal_core_math_Limits.INT16_MIN = -32768;
+de_polygonal_core_math_Limits.INT16_MAX = 32767;
+de_polygonal_core_math_Limits.UINT16_MAX = 65535;
+de_polygonal_core_math_Limits.INT32_MIN = -2147483648;
+de_polygonal_core_math_Limits.INT32_MAX = 2147483647;
+de_polygonal_core_math_Limits.UINT32_MAX = -1;
+de_polygonal_core_math_Limits.INT_BITS = 32;
+de_polygonal_core_math_Limits.FLOAT_MAX = 3.4028234663852886e+38;
+de_polygonal_core_math_Limits.FLOAT_MIN = -3.4028234663852886e+38;
+de_polygonal_core_math_Limits.DOUBLE_MAX = 1.7976931348623157e+308;
+de_polygonal_core_math_Limits.DOUBLE_MIN = -1.7976931348623157e+308;
+de_polygonal_core_math_Mathematics.NaN = NaN;
+de_polygonal_core_math_Mathematics.POSITIVE_INFINITY = Infinity;
+de_polygonal_core_math_Mathematics.NEGATIVE_INFINITY = -Infinity;
+de_polygonal_core_math_Mathematics.ZERO_TOLERANCE = 1e-08;
+de_polygonal_core_math_Mathematics.RAD_DEG = 57.29577951308232;
+de_polygonal_core_math_Mathematics.DEG_RAD = 0.017453292519943295;
+de_polygonal_core_math_Mathematics.LN2 = 0.6931471805599453;
+de_polygonal_core_math_Mathematics.LN10 = 2.302585092994046;
+de_polygonal_core_math_Mathematics.PI_OVER_2 = 1.5707963267948966;
+de_polygonal_core_math_Mathematics.PI_OVER_4 = 0.7853981633974483;
+de_polygonal_core_math_Mathematics.PI = 3.141592653589793;
+de_polygonal_core_math_Mathematics.PI2 = 6.283185307179586;
+de_polygonal_core_math_Mathematics.EPS = 1e-6;
+de_polygonal_core_math_Mathematics.SQRT2 = 1.414213562373095;
+de_polygonal_ds_Bits.BIT_01 = 1;
+de_polygonal_ds_Bits.BIT_02 = 2;
+de_polygonal_ds_Bits.BIT_03 = 4;
+de_polygonal_ds_Bits.BIT_04 = 8;
+de_polygonal_ds_Bits.BIT_05 = 16;
+de_polygonal_ds_Bits.BIT_06 = 32;
+de_polygonal_ds_Bits.BIT_07 = 64;
+de_polygonal_ds_Bits.BIT_08 = 128;
+de_polygonal_ds_Bits.BIT_09 = 256;
+de_polygonal_ds_Bits.BIT_10 = 512;
+de_polygonal_ds_Bits.BIT_11 = 1024;
+de_polygonal_ds_Bits.BIT_12 = 2048;
+de_polygonal_ds_Bits.BIT_13 = 4096;
+de_polygonal_ds_Bits.BIT_14 = 8192;
+de_polygonal_ds_Bits.BIT_15 = 16384;
+de_polygonal_ds_Bits.BIT_16 = 32768;
+de_polygonal_ds_Bits.BIT_17 = 65536;
+de_polygonal_ds_Bits.BIT_18 = 131072;
+de_polygonal_ds_Bits.BIT_19 = 262144;
+de_polygonal_ds_Bits.BIT_20 = 524288;
+de_polygonal_ds_Bits.BIT_21 = 1048576;
+de_polygonal_ds_Bits.BIT_22 = 2097152;
+de_polygonal_ds_Bits.BIT_23 = 4194304;
+de_polygonal_ds_Bits.BIT_24 = 8388608;
+de_polygonal_ds_Bits.BIT_25 = 16777216;
+de_polygonal_ds_Bits.BIT_26 = 33554432;
+de_polygonal_ds_Bits.BIT_27 = 67108864;
+de_polygonal_ds_Bits.BIT_28 = 134217728;
+de_polygonal_ds_Bits.BIT_29 = 268435456;
+de_polygonal_ds_Bits.BIT_30 = 536870912;
+de_polygonal_ds_Bits.BIT_31 = 1073741824;
+de_polygonal_ds_Bits.BIT_32 = -2147483648;
+de_polygonal_ds_Bits.ALL = -1;
 de_polygonal_ds_HashKey._counter = 0;
 de_polygonal_ds_IntHashSet.VAL_ABSENT = -2147483648;
 de_polygonal_ds_IntHashSet.EMPTY_SLOT = -1;
@@ -8238,12 +8783,11 @@ haxe_xml_Parser.escapes = (function($this) {
 }(this));
 js_Boot.__toStr = {}.toString;
 js_html_compat_Uint8Array.BYTES_PER_ELEMENT = 1;
-textifician_mapping_ArcNodeVM.__meta__ = { fields : { val : { inspect : [{ _classes : ["primaryArc"]}]}}};
-textifician_mapping_ArcNodeVM.__rtti = "<class path=\"textifician.mapping.ArcNodeVM\" params=\"\">\n\t<val public=\"1\">\n\t\t<c path=\"textifician.mapping.ArcPacket\"/>\n\t\t<meta><m n=\"inspect\"><e>{_classes:[\"primaryArc\"]}</e></m></meta>\n\t</val>\n\t<new public=\"1\" set=\"method\" line=\"14\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":directlyUsed\"/>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
-textifician_mapping_ArcPacket.__meta__ = { fields : { flags : { inspect : null, bitmask : ["FLAG"]}, label : { inspect : null}, description : { inspect : [{ display : "textarea"}]}, cardinal : { inspect : [{ display : "selector", complement : "sign"}], choices : ["CARDINAL"]}, pathArcInfo : { inspect : null}}};
-textifician_mapping_ArcPacket.__rtti = "<class path=\"textifician.mapping.ArcPacket\" params=\"\">\n\t<CARDINAL_AUTO public=\"1\" get=\"inline\" set=\"null\" expr=\"0\" line=\"12\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>0</e></m></meta>\n\t</CARDINAL_AUTO>\n\t<CARDINAL_LABEL public=\"1\" get=\"inline\" set=\"null\" expr=\"-999\" line=\"13\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>-999</e></m></meta>\n\t</CARDINAL_LABEL>\n\t<CARDINAL_EAST public=\"1\" get=\"inline\" set=\"null\" expr=\"1\" line=\"14\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</CARDINAL_EAST>\n\t<CARDINAL_SOUTH_EAST public=\"1\" get=\"inline\" set=\"null\" expr=\"2\" line=\"15\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>2</e></m></meta>\n\t</CARDINAL_SOUTH_EAST>\n\t<CARDINAL_SOUTH public=\"1\" get=\"inline\" set=\"null\" expr=\"3\" line=\"16\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>3</e></m></meta>\n\t</CARDINAL_SOUTH>\n\t<CARDINAL_SOUTH_WEST public=\"1\" get=\"inline\" set=\"null\" expr=\"4\" line=\"17\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>4</e></m></meta>\n\t</CARDINAL_SOUTH_WEST>\n\t<CARDINAL_UP public=\"1\" get=\"inline\" set=\"null\" expr=\"5\" line=\"18\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>5</e></m></meta>\n\t</CARDINAL_UP>\n\t<CARDINAL_WEST public=\"1\" get=\"inline\" set=\"null\" expr=\"-1\" line=\"19\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>-1</e></m></meta>\n\t</CARDINAL_WEST>\n\t<CARDINAL_NORTH_WEST public=\"1\" get=\"inline\" set=\"null\" expr=\"-2\" line=\"20\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>-2</e></m></meta>\n\t</CARDINAL_NORTH_WEST>\n\t<CARDINAL_NORTH public=\"1\" get=\"inline\" set=\"null\" expr=\"-3\" line=\"21\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>-3</e></m></meta>\n\t</CARDINAL_NORTH>\n\t<CARDINAL_NORTH_EAST public=\"1\" get=\"inline\" set=\"null\" expr=\"-4\" line=\"22\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>-4</e></m></meta>\n\t</CARDINAL_NORTH_EAST>\n\t<CARDINAL_DOWN public=\"1\" get=\"inline\" set=\"null\" expr=\"-5\" line=\"23\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>-5</e></m></meta>\n\t</CARDINAL_DOWN>\n\t<FLAG_VISIBILITY_ONLY public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;0)\" line=\"27\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<0)]]></e></m></meta>\n\t</FLAG_VISIBILITY_ONLY>\n\t<FLAG_TELEPORT public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;1)\" line=\"28\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<1)]]></e></m></meta>\n\t</FLAG_TELEPORT>\n\t<flags public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"/>\n\t\t\t<m n=\"bitmask\"><e>\"FLAG\"</e></m>\n\t\t</meta>\n\t</flags>\n\t<label public=\"1\">\n\t\t<c path=\"String\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</label>\n\t<description public=\"1\">\n\t\t<c path=\"String\"/>\n\t\t<meta><m n=\"inspect\"><e>{display:\"textarea\"}</e></m></meta>\n\t</description>\n\t<cardinal public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"><e>{display:\"selector\",complement:\"sign\"}</e></m>\n\t\t\t<m n=\"choices\"><e>\"CARDINAL\"</e></m>\n\t\t</meta>\n\t</cardinal>\n\t<pathArcInfo public=\"1\">\n\t\t<c path=\"textifician.mapping.PathArcInfo\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</pathArcInfo>\n\t<toString public=\"1\" set=\"method\" line=\"38\"><f a=\"\"><c path=\"String\"/></f></toString>\n\t<new public=\"1\" set=\"method\" line=\"42\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
+textifician_mapping_ArcNodeVM.__meta__ = { fields : { val : { inspect : [{ _sync : "getSync_newInstance", _classes : ["primaryArc"]}]}}};
+textifician_mapping_ArcNodeVM.__rtti = "<class path=\"textifician.mapping.ArcNodeVM\" params=\"\">\n\t<val public=\"1\">\n\t\t<c path=\"textifician.mapping.ArcPacket\"/>\n\t\t<meta><m n=\"inspect\"><e>{_sync:\"getSync_newInstance\",_classes:[\"primaryArc\"]}</e></m></meta>\n\t</val>\n\t<new public=\"1\" set=\"method\" line=\"14\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":directlyUsed\"/>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
+textifician_mapping_ArcPacket.__meta__ = { fields : { flags : { inspect : [{ _sync : "getSync_equal"}], bitmask : ["FLAG"]}, label : { inspect : [{ _sync : "getSync_equal"}]}, description : { inspect : [{ display : "textarea", _sync : "getSync_equal"}]}, cardinal : { inspect : [{ display : "selector", _sync : "getSync_flipInt"}], choices : ["CARDINAL"]}, pathArcInfo : { inspect : [{ _sync : "getSync_newInstance"}]}}};
+textifician_mapping_ArcPacket.__rtti = "<class path=\"textifician.mapping.ArcPacket\" params=\"\">\n\t<CARDINAL_AUTO public=\"1\" get=\"inline\" set=\"null\" expr=\"0\" line=\"14\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>0</e></m></meta>\n\t</CARDINAL_AUTO>\n\t<CARDINAL_EAST public=\"1\" get=\"inline\" set=\"null\" expr=\"1\" line=\"15\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</CARDINAL_EAST>\n\t<CARDINAL_SOUTH_EAST public=\"1\" get=\"inline\" set=\"null\" expr=\"2\" line=\"16\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>2</e></m></meta>\n\t</CARDINAL_SOUTH_EAST>\n\t<CARDINAL_SOUTH public=\"1\" get=\"inline\" set=\"null\" expr=\"3\" line=\"17\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>3</e></m></meta>\n\t</CARDINAL_SOUTH>\n\t<CARDINAL_SOUTH_WEST public=\"1\" get=\"inline\" set=\"null\" expr=\"4\" line=\"18\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>4</e></m></meta>\n\t</CARDINAL_SOUTH_WEST>\n\t<CARDINAL_UP public=\"1\" get=\"inline\" set=\"null\" expr=\"5\" line=\"19\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>5</e></m></meta>\n\t</CARDINAL_UP>\n\t<CARDINAL_WEST public=\"1\" get=\"inline\" set=\"null\" expr=\"-1\" line=\"20\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>-1</e></m></meta>\n\t</CARDINAL_WEST>\n\t<CARDINAL_NORTH_WEST public=\"1\" get=\"inline\" set=\"null\" expr=\"-2\" line=\"21\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>-2</e></m></meta>\n\t</CARDINAL_NORTH_WEST>\n\t<CARDINAL_NORTH public=\"1\" get=\"inline\" set=\"null\" expr=\"-3\" line=\"22\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>-3</e></m></meta>\n\t</CARDINAL_NORTH>\n\t<CARDINAL_NORTH_EAST public=\"1\" get=\"inline\" set=\"null\" expr=\"-4\" line=\"23\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>-4</e></m></meta>\n\t</CARDINAL_NORTH_EAST>\n\t<CARDINAL_DOWN public=\"1\" get=\"inline\" set=\"null\" expr=\"-5\" line=\"24\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e>-5</e></m></meta>\n\t</CARDINAL_DOWN>\n\t<FLAG_VISIBILITY_ONLY public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;0)\" line=\"28\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<0)]]></e></m></meta>\n\t</FLAG_VISIBILITY_ONLY>\n\t<FLAG_TELEPORT public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;1)\" line=\"29\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<1)]]></e></m></meta>\n\t</FLAG_TELEPORT>\n\t<getSync_equal public=\"1\" get=\"inline\" set=\"null\" line=\"50\" static=\"1\"><f a=\"val:oldValue\">\n\t<d/>\n\t<d/>\n\t<d/>\n</f></getSync_equal>\n\t<getSync_ratioComplement public=\"1\" get=\"inline\" set=\"null\" line=\"53\" static=\"1\"><f a=\"val:oldValue\">\n\t<d/>\n\t<d/>\n\t<d/>\n</f></getSync_ratioComplement>\n\t<getSync_flipInt public=\"1\" get=\"inline\" set=\"null\" line=\"61\" static=\"1\"><f a=\"val:oldValue\">\n\t<d/>\n\t<d/>\n\t<d/>\n</f></getSync_flipInt>\n\t<getSync_newInstance public=\"1\" get=\"inline\" set=\"null\" line=\"64\" static=\"1\"><f a=\"val:oldValue\">\n\t<d/>\n\t<d/>\n\t<d/>\n</f></getSync_newInstance>\n\t<getSync_newEmptyInstance public=\"1\" get=\"inline\" set=\"null\" line=\"67\" static=\"1\"><f a=\"val:oldValue\">\n\t<d/>\n\t<d/>\n\t<d/>\n</f></getSync_newEmptyInstance>\n\t<_tjsonParse get=\"inline\" set=\"null\" line=\"71\" static=\"1\"><f a=\"val\">\n\t<d/>\n\t<d/>\n</f></_tjsonParse>\n\t<flags public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"><e>{_sync:\"getSync_equal\"}</e></m>\n\t\t\t<m n=\"bitmask\"><e>\"FLAG\"</e></m>\n\t\t</meta>\n\t</flags>\n\t<label public=\"1\">\n\t\t<c path=\"String\"/>\n\t\t<meta><m n=\"inspect\"><e>{_sync:\"getSync_equal\"}</e></m></meta>\n\t</label>\n\t<description public=\"1\">\n\t\t<c path=\"String\"/>\n\t\t<meta><m n=\"inspect\"><e>{display:\"textarea\",_sync:\"getSync_equal\"}</e></m></meta>\n\t</description>\n\t<cardinal public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"><e>{display:\"selector\",_sync:\"getSync_flipInt\"}</e></m>\n\t\t\t<m n=\"choices\"><e>\"CARDINAL\"</e></m>\n\t\t</meta>\n\t</cardinal>\n\t<pathArcInfo public=\"1\">\n\t\t<c path=\"textifician.mapping.PathArcInfo\"/>\n\t\t<meta><m n=\"inspect\"><e>{_sync:\"getSync_newInstance\"}</e></m></meta>\n\t</pathArcInfo>\n\t<toString public=\"1\" set=\"method\" line=\"39\"><f a=\"\"><c path=\"String\"/></f></toString>\n\t<new public=\"1\" set=\"method\" line=\"43\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
 textifician_mapping_ArcPacket.CARDINAL_AUTO = 0;
-textifician_mapping_ArcPacket.CARDINAL_LABEL = -999;
 textifician_mapping_ArcPacket.CARDINAL_EAST = 1;
 textifician_mapping_ArcPacket.CARDINAL_SOUTH_EAST = 2;
 textifician_mapping_ArcPacket.CARDINAL_SOUTH = 3;
@@ -8256,8 +8800,8 @@ textifician_mapping_ArcPacket.CARDINAL_NORTH_EAST = -4;
 textifician_mapping_ArcPacket.CARDINAL_DOWN = -5;
 textifician_mapping_ArcPacket.FLAG_VISIBILITY_ONLY = 1;
 textifician_mapping_ArcPacket.FLAG_TELEPORT = 2;
-textifician_mapping_PathArcInfo.__meta__ = { fields : { breakpoint : { inspect : [{ step : 0.0001, value : 0.5, display : "range", min : 0, max : 1}]}, customDistance : { inspect : null}}};
-textifician_mapping_PathArcInfo.__rtti = "<class path=\"textifician.mapping.PathArcInfo\" params=\"\" module=\"textifician.mapping.ArcPacket\">\n\t<breakpoint public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"><e>{step:0.0001,value:0.5,display:\"range\",min:0,max:1}</e></m></meta>\n\t</breakpoint>\n\t<customDistance public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</customDistance>\n\t<meta>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
+textifician_mapping_PathArcInfo.__meta__ = { fields : { breakpoint : { inspect : [{ _sync : "getSync_ratioComplement", step : 0.01, value : 0.5, display : "range", min : 0, max : 1}]}, customDistance : { inspect : [{ _sync : "getSync_equal"}]}}};
+textifician_mapping_PathArcInfo.__rtti = "<class path=\"textifician.mapping.PathArcInfo\" params=\"\" module=\"textifician.mapping.ArcPacket\">\n\t<breakpoint public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"><e>{_sync:\"getSync_ratioComplement\",step:0.01,value:0.5,display:\"range\",min:0,max:1}</e></m></meta>\n\t</breakpoint>\n\t<customDistance public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"><e>{_sync:\"getSync_equal\"}</e></m></meta>\n\t</customDistance>\n\t<new public=\"1\" set=\"method\" line=\"84\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
 textifician_mapping_IndoorLocationSpecs.__meta__ = { fields : { wallHeight : { inspect : null}, wallThickness : { inspect : null}, wallStrength : { inspect : null}, ceilingThickness : { inspect : null}, ceilingStrength : { inspect : null}}};
 textifician_mapping_IndoorLocationSpecs.__rtti = "<class path=\"textifician.mapping.IndoorLocationSpecs\" params=\"\">\n\t<DEFAULT_WALL_HEIGHT public=\"1\" expr=\"1\" line=\"17\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_WALL_HEIGHT>\n\t<DEFAULT_WALL_THICKNESS public=\"1\" expr=\"1\" line=\"18\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_WALL_THICKNESS>\n\t<DEFAULT_WALL_STRENGTH public=\"1\" expr=\"1\" line=\"19\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_WALL_STRENGTH>\n\t<DEFAULT_CEILING_THICKNESS public=\"1\" expr=\"1\" line=\"20\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_CEILING_THICKNESS>\n\t<DEFAULT_CEILING_STRENGTH public=\"1\" expr=\"1\" line=\"21\" static=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\":value\"><e>1</e></m></meta>\n\t</DEFAULT_CEILING_STRENGTH>\n\t<create public=\"1\" set=\"method\" line=\"44\" static=\"1\">\n\t\t<f a=\"?wallHeight:?wallThickness:?wallStrength:?ceilingThickness:?ceilingStrength\" v=\"-1:-1:-1:-1:-1\">\n\t\t\t<x path=\"Float\"/>\n\t\t\t<x path=\"Float\"/>\n\t\t\t<x path=\"Float\"/>\n\t\t\t<x path=\"Float\"/>\n\t\t\t<x path=\"Float\"/>\n\t\t\t<c path=\"textifician.mapping.IndoorLocationSpecs\"/>\n\t\t</f>\n\t\t<meta><m n=\":value\"><e>{ceilingStrength:-1,ceilingThickness:-1,wallStrength:-1,wallThickness:-1,wallHeight:-1}</e></m></meta>\n\t</create>\n\t<wallHeight public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</wallHeight>\n\t<wallThickness public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</wallThickness>\n\t<wallStrength public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</wallStrength>\n\t<ceilingThickness public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</ceilingThickness>\n\t<ceilingStrength public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</ceilingStrength>\n\t<toString public=\"1\" set=\"method\" line=\"55\"><f a=\"\"><c path=\"String\"/></f></toString>\n\t<new public=\"1\" set=\"method\" line=\"24\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":directlyUsed\"/>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
 textifician_mapping_IndoorLocationSpecs.DEFAULT_WALL_HEIGHT = 1;
