@@ -72,7 +72,8 @@ class DatUtil
 		
 		var fieldHash = { };
 		var fields = funcToInspect!=null ? funcToInspect.fields :  rtti.fields;
-		var fieldsI = fields.iterator();
+
+		
 		// @bitmask folders 
 		// @choices combo list
 		// @textarea  display:textarea
@@ -93,7 +94,7 @@ class DatUtil
 		//	cur = {display:"none", "_isLeaf":true, "value":0 };
 		//	Reflect.setField(fieldHash, "DATUTIL", cur);
 				
-		for (f in fieldsI) {
+		for (f in fields.iterator() ) {
 			var fieldMeta = Reflect.field(meta, f.name);
 			var isVar = TypeApi.isVar(f.type);
 			if (isVar && (!ignoreInspectMeta ?  fieldMeta!=null && Reflect.hasField( fieldMeta, "inspect") : true ) ) {
@@ -333,7 +334,7 @@ class DatUtil
 						// { name : String, opt : Bool, t : CType, ?value:String }
 						var count:Int = 0;
 						for ( funcArg in args.iterator()) {
-							funcDep.fields.push( getDummyClassFieldForFuncParam(funcArg.name, funcArg.t) );
+							funcDep.fields.add( getDummyClassFieldForFuncParam(funcArg.name, funcArg.t) );
 							var paramsObj:Dynamic = count < cur.length ? cur[count] : { };
 							var newObj:Dynamic = { inspect:null };
 							for (r in Reflect.fields(paramsObj)) {
@@ -433,7 +434,8 @@ class DatUtil
 	
 	public static inline function setupGUIForFunctionCall(folder:GUI, p:String, handler:Function, func:FuncDependencies, instance:Dynamic,  classe:Class<Dynamic> = null, options:Dynamic = null, ?guiOptions:GUIOptions):FuncCallPacket {
 		var guiGlueMethod = untyped window.guiGlueRender;  // requires guiGlue.js
-		var untypedGUI = guiGlueMethod(DatUtil.setup(instance, classe, options, "", func), null, null, folder);
+		var guiSetup = DatUtil.setup(instance, classe, options, "", func);
+		var untypedGUI = guiGlueMethod(guiSetup, null, null, folder);
 
 		var str = "";
 		var i = func.fields.length;

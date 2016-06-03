@@ -113,12 +113,6 @@ List.prototype = {
 		this.q = x;
 		this.length++;
 	}
-	,push: function(item) {
-		var x = [item,this.h];
-		this.h = x;
-		if(this.q == null) this.q = x;
-		this.length++;
-	}
 	,last: function() {
 		if(this.q == null) return null; else return this.q[0];
 	}
@@ -625,7 +619,6 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath,funcToInspect) 
 	var fieldHash = { };
 	var fields;
 	if(funcToInspect != null) fields = funcToInspect.fields; else fields = rtti.fields;
-	var fieldsI = new _$List_ListIterator(fields.h);
 	var funcFolder = null;
 	var cur;
 	var curVal;
@@ -634,14 +627,15 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath,funcToInspect) 
 	var frValue;
 	var frPrefix = null;
 	var frI;
-	var _g = fieldsI;
-	while(_g.head != null) {
+	var _g_head = fields.h;
+	var _g_val = null;
+	while(_g_head != null) {
 		var f;
 		f = (function($this) {
 			var $r;
-			_g.val = _g.head[0];
-			_g.head = _g.head[1];
-			$r = _g.val;
+			_g_val = _g_head[0];
+			_g_head = _g_head[1];
+			$r = _g_val;
 			return $r;
 		}(this));
 		var fieldMeta = Reflect.field(meta,f.name);
@@ -662,14 +656,14 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath,funcToInspect) 
 						if(typeof(bitFieldMeta) == "string") {
 							frValue = bitFieldMeta;
 							frStatics = new _$List_ListIterator(rtti.statics.h);
-							var _g1 = frStatics;
-							while(_g1.head != null) {
+							var _g = frStatics;
+							while(_g.head != null) {
 								var f1;
 								f1 = (function($this) {
 									var $r;
-									_g1.val = _g1.head[0];
-									_g1.head = _g1.head[1];
-									$r = _g1.val;
+									_g.val = _g.head[0];
+									_g.head = _g.head[1];
+									$r = _g.val;
 									return $r;
 								}(this));
 								frI = f1.name.indexOf("_");
@@ -680,20 +674,20 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath,funcToInspect) 
 								}
 							}
 						} else {
-							var _g2 = 0;
-							while(_g2 < 32) {
-								var i = _g2++;
+							var _g1 = 0;
+							while(_g1 < 32) {
+								var i = _g1++;
 								bitMaskFolder["b" + (i == null?"null":"" + i)] = { _bit : 1 << i, value : (curVal & 1 << i) != 0};
 							}
 							gotBits = true;
 						}
 						if(gotBits) {
 							fieldHash[f.name] = bitMaskFolder;
-							var _g3 = 0;
+							var _g2 = 0;
 							var _g11 = Reflect.fields(cur);
-							while(_g3 < _g11.length) {
-								var p = _g11[_g3];
-								++_g3;
+							while(_g2 < _g11.length) {
+								var p = _g11[_g2];
+								++_g2;
 								Reflect.setField(bitMaskFolder,p,Reflect.field(cur,p));
 							}
 							bitMaskFolder._subProxy = "bitmask";
@@ -729,11 +723,11 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath,funcToInspect) 
 				}
 				var nested;
 				Reflect.setField(fieldHash,f.name,nested = dat_gui_DatUtil.setup(tryInstance,Type.resolveClass(typeStr),f.type,(dotPath != ""?dotPath + ".":"") + f.name));
-				var _g4 = 0;
+				var _g3 = 0;
 				var _g12 = Reflect.fields(cur);
-				while(_g4 < _g12.length) {
-					var p1 = _g12[_g4];
-					++_g4;
+				while(_g3 < _g12.length) {
+					var p1 = _g12[_g3];
+					++_g3;
 					Reflect.setField(nested,p1,Reflect.field(cur,p1));
 				}
 				if(instanceAvailable) nested._folded = false; else nested._folded = true;
@@ -748,14 +742,14 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath,funcToInspect) 
 						var min = 1e20;
 						var max = -1e20;
 						frStatics = new _$List_ListIterator(rtti.statics.h);
-						var _g5 = frStatics;
-						while(_g5.head != null) {
+						var _g4 = frStatics;
+						while(_g4.head != null) {
 							var f2;
 							f2 = (function($this) {
 								var $r;
-								_g5.val = _g5.head[0];
-								_g5.head = _g5.head[1];
-								$r = _g5.val;
+								_g4.val = _g4.head[0];
+								_g4.head = _g4.head[1];
+								$r = _g4.val;
 								return $r;
 							}(this));
 							frI = f2.name.indexOf("_");
@@ -786,14 +780,14 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath,funcToInspect) 
 					if(typeof(frValue) == "string") {
 						var frChoices = { };
 						frStatics = new _$List_ListIterator(rtti.statics.h);
-						var _g6 = frStatics;
-						while(_g6.head != null) {
+						var _g5 = frStatics;
+						while(_g5.head != null) {
 							var f3;
 							f3 = (function($this) {
 								var $r;
-								_g6.val = _g6.head[0];
-								_g6.head = _g6.head[1];
-								$r = _g6.val;
+								_g5.val = _g5.head[0];
+								_g5.head = _g5.head[1];
+								$r = _g5.val;
 								return $r;
 							}(this));
 							frI = f3.name.indexOf("_");
@@ -813,11 +807,11 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath,funcToInspect) 
 				if(!((cur instanceof Array) && cur.__enum__ == null)) cur = [cur];
 			}
 			{
-				var _g7 = f.type;
-				switch(_g7[1]) {
+				var _g6 = f.type;
+				switch(_g6[1]) {
 				case 4:
-					var ret = _g7[3];
-					var args = _g7[2];
+					var ret = _g6[3];
+					var args = _g6[2];
 					if(funcFolder == null) funcFolder = { };
 					var funcDep = { meta : { }, instance : { }, fields : new List()};
 					var count = 0;
@@ -832,7 +826,7 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath,funcToInspect) 
 							$r = _g1_val;
 							return $r;
 						}(this));
-						funcDep.fields.push({ name : funcArg.name, type : funcArg.t, isPublic : true, isOverride : false, doc : null, get : null, set : null, params : null, platforms : null, meta : null, line : null, overloads : null, expr : null});
+						funcDep.fields.add({ name : funcArg.name, type : funcArg.t, isPublic : true, isOverride : false, doc : null, get : null, set : null, params : null, platforms : null, meta : null, line : null, overloads : null, expr : null});
 						var paramsObj;
 						if(count < cur.length) paramsObj = cur[count]; else paramsObj = { };
 						var newObj = { inspect : null};
@@ -920,7 +914,8 @@ dat_gui_DatUtil.callInstanceMethodWithPacket = function(instance,funcCallPacket)
 };
 dat_gui_DatUtil.setupGUIForFunctionCall = function(folder,p,handler,func,instance,classe,options,guiOptions) {
 	var guiGlueMethod = window.guiGlueRender;
-	var untypedGUI = guiGlueMethod(dat_gui_DatUtil.setup(instance,classe,options,"",func),null,null,folder);
+	var guiSetup = dat_gui_DatUtil.setup(instance,classe,options,"",func);
+	var untypedGUI = guiGlueMethod(guiSetup,null,null,folder);
 	var str = "";
 	var i = func.fields.length;
 	while(--i > -1) str += ".";
