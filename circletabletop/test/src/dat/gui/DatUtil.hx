@@ -1,5 +1,7 @@
 package dat.gui ;
+import dat.gui.DatUtil.FuncCallPacket;
 import dat.gui.GUI;
+import haxe.Constraints.Function;
 import haxe.rtti.CType;
 import haxe.rtti.Meta;
 import haxe.rtti.Rtti;
@@ -19,6 +21,20 @@ typedef FuncDependencies = {
 	var fields:List<ClassField>;
 	var meta : Dynamic<Dynamic<Array<Dynamic>>>;
 	var instance :Dynamic;
+}
+
+typedef FuncCallPacket = {
+	var name:String;
+	var params:Dynamic;
+	var func:FuncDependencies;
+	var handler:Function;
+	var guiGlue:Dynamic;
+}
+
+typedef FuncCallTrigger = {
+	var name:String;
+	var func:FuncDependencies;
+	var handler:Function;
 }
 
  
@@ -289,12 +305,20 @@ class DatUtil
 				if (cur == null) {
 					cur = [];
 				}
-				else cur = cur[0];
+				else {
+					cur = cur[0];
+					if (!Std.is(cur, Array)) {
+						cur = [cur];
+					}
+				}
+				
+				
 				//meta.sfs = [{}];
 				
-				typeStr = CTypeTools.toString(f.type);
+				
 				switch( f.type ) {
 					case CType.CFunction(args, ret):
+						
 						if (funcFolder == null) {
 							funcFolder = {}   // hash keyStrings of FuncDependencies
 							
@@ -317,15 +341,14 @@ class DatUtil
 							}
 							Reflect.setField(funcDep.meta, funcArg.name, newObj );
 							
-							Reflect.setField(funcDep.instance, funcArg.name, funcArg.opt ? funcArg.value : null);
+							Reflect.setField(funcDep.instance, funcArg.name, funcArg.opt ? parseStringParam(funcArg.value, CTypeTools.toString(funcArg.t), classe) : null);
 							count++;
 						}
 						Reflect.setField(funcFolder, f.name, funcDep);
 						//trace(f.name+" = " +typeStr, cur);
 					default:
+						
 				}
-				
-				
 			}
 		}
 		
@@ -338,6 +361,24 @@ class DatUtil
 		
 		
 		return fieldHash;
+	}
+	
+	private static function parseStringParam(str:String, type:String, classe:Dynamic):Dynamic {
+		switch (type) {
+			case "Int":
+				return !Math.isNaN( Std.parseFloat(str) ) ?  Std.int(Std.parseFloat(str)) : Reflect.field(classe,str);
+			case "UInt":
+				return !Math.isNaN( Std.parseInt(str) ) ?  Std.parseInt(str) : Reflect.field(classe,str);
+			case "Float":
+				return !Math.isNaN( Std.parseFloat(str) ) ?  Std.parseFloat(str) : Reflect.field(classe,str);
+			case "String":
+				return (str.charAt(0) == '"' || str.charAt(0) == "'") ?  str.substring(1, str.length - 1) : Reflect.field(classe, str);
+			case "Bool":
+				return str == "true" ? true : str ==  "false" ? false : Reflect.field(classe, str);
+			default:
+				//trace("Could not resolve type: " + type);
+				return type;
+		}
 	}
 	
 	private static inline function getDummyClassFieldForFuncParam(name:String, type:CType):ClassField {
@@ -374,6 +415,84 @@ class DatUtil
 				*/
 				
 	}
+	
+	
+	public static function callMethod(scope:Dynamic, func:Function, params:Dynamic, funcDep:FuncDependencies):Dynamic {
+		var arr = [];
+		for (f in funcDep.fields) {
+			arr.push( Reflect.field(params, f.name) );
+		}
+		return Reflect.callMethod(scope, func, arr);
+	}
+	
+	public static inline function callInstanceMethodWithPacket(instance:Dynamic, funcCallPacket:FuncCallPacket):Dynamic {
+		return callMethod(instance, Reflect.field(instance, funcCallPacket.name), funcCallPacket.params, funcCallPacket.func);
+	}
+	
+	#if (js)
+	
+	public static inline function setupGUIForFunctionCall(folder:GUI, p:String, handler:Function, func:FuncDependencies, instance:Dynamic,  classe:Class<Dynamic> = null, options:Dynamic = null, ?guiOptions:GUIOptions):FuncCallPacket {
+		var guiGlueMethod = untyped window.guiGlueRender;  // requires guiGlue.js
+		var untypedGUI = guiGlueMethod(DatUtil.setup(instance, classe, options, "", func), null, null, folder);
+
+		var str = "";
+		var i = func.fields.length;
+		while (--i  > -1) {
+			str += ".";
+		}
+			
+		var packet:FuncCallPacket =  {handler:handler, params:untypedGUI._guiGlueParams, func:func, guiGlue:untypedGUI._guiGlue, name:p};
+		folder.add(packet, "handler").name("Execute("+(str)+")");
+		
+		return packet;
+	}
+	
+	
+	public static function createFunctionLibraryForGUI(gui:GUI, funcGuiMap:Dynamic<FuncDependencies>, instance:Dynamic, classe:Class<Dynamic>=null, options:Dynamic=null, ?guiOptions:GUIOptions):Dynamic {
+		
+		//function guiGlueRender(paramsGUI, optionsGUI, params, existingGUI)
+		
+		var funcMap = {};
+		var handler = options != null &&  Reflect.hasField(options, "handler") ? Reflect.field(options, "handler") : emptyFunction;
+		
+		for (p in Reflect.fields(funcGuiMap)) {
+			var func:FuncDependencies = Reflect.field(funcGuiMap, p);
+			var folder:GUI = gui.addFolder(p);
+			folder.close();
+			var packet:FuncCallPacket = setupGUIForFunctionCall(folder, p, handler, func, instance, classe, options, guiOptions);
+			Reflect.setField(funcMap, p, packet);
+		}
+		
+		return funcMap;
+	}
+	
+	
+	public static function createFunctionButtonsForGUI(gui:GUI, funcGuiMap:Dynamic<FuncDependencies>, instance:Dynamic, classe:Class<Dynamic>=null, options:Dynamic=null, ?guiOptions:GUIOptions):Dynamic {
+		var guiGlueMethod = untyped window.guiGlueRender;  // requires guiGlue.js
+		//function guiGlueRender(paramsGUI, optionsGUI, params, existingGUI)
+		
+		var funcMap = {};
+		var handler = options != null &&  Reflect.hasField(options, "handler") ? Reflect.field(options, "handler") : emptyFunction;
+		
+		for (p in Reflect.fields(funcGuiMap)) {
+			var func:FuncDependencies = Reflect.field(funcGuiMap, p);
+			var trigger:FuncCallTrigger= {handler:handler, func:func, name:p};
+			Reflect.setField(funcMap, p, trigger);
+			gui.add(trigger, "handler").name(p+"("+(func.fields.length > 0 ? "..." : "" )+")");
+		}
+		
+		return funcMap;
+	}
+	
+	private static function emptyFunction() {
+		
+	}
+	
+	
+	
+	
+	
+	#end 
 	
 	
 }

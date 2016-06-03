@@ -1,8 +1,6 @@
 package textifician.mapping;
-
-
 /**
- * Reu	sable generic location data definition for a Location node's LocationPacket.
+ * Reusable generic location data definition for a Location node's LocationPacket.
  * @author Glenn Ko
  */
 @:rtti
@@ -71,8 +69,6 @@ class LocationDefinition
 	@inspect public var priorityIndex:Int;
 	
 	@inspect public var indoorLocationSpecs:IndoorLocationSpecs;
-	
-
 	
 
 	public static function create(type:Int, label:String, id:String=null):LocationDefinition {
@@ -156,8 +152,8 @@ class LocationDefinition
 	 * @param	implyEntrance  Defaulted to true. If "val" state setting of door is true, will imply to be an entrance as well.
 	 * @return
 	 */
-	@inspect public function makeDoor(val:Bool = true, implyEntrance:Bool=true):LocationDefinition {
-		if (val) {
+	@inspect public function makeDoor(isDoor:Bool = true, implyEntrance:Bool=true):LocationDefinition {
+		if (isDoor) {
 			flags |= implyEntrance ? FLAG_ENTRANCE : 0;
 			flags |= FLAG_DOOR;
 		}

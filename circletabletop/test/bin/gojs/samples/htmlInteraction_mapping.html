@@ -243,8 +243,78 @@
 	//alert( $(guiArc.getControllerByName("selectMutualArc").domElement).children().html() );
 	//$(guiArc.getControllerByName("selectMutualArc").domElement).find(".property-name").html("Select Mutual Arc");
 	
-	//instance:Dynamic, classe:Class<Dynamic>=null, options:Dynamic=null, dotPath:String="", funcToInspect:FuncDependencies=null
-//	var guiFuncTest = guiGlueRender( DatUtil.setup( new LocationDefinition(), null, null, "", gui._guiGlue._functions.testMethod ), null, {} );
+	function executeLocDefMethodHandler() {
+		if (_inspectedNodeVal == null || _inspectedNodeVal.def==null) return;
+		
+		
+		DatUtil.callInstanceMethodWithPacket(_inspectedNodeVal.def, this);
+		var jsonStr = TJSON.encode(_inspectedNodeVal.def);  
+	
+		vueModel.selected.def = TJSON.parse(jsonStr);
+	}
+	
+	dat.GUI.prototype.removeFolder = function(name) {  // consier todo: add this to main branch
+	  var folder = this.__folders[name];
+	  if (!folder) {
+		return;
+	  }
+	 // folder.close();
+	  this.__ul.removeChild(folder.domElement.parentNode);
+	  delete this.__folders[name];
+	  this.onResize();
+	}
+
+	var guiModal;
+	function createGUIMethodModalHandler() {
+		if (_inspectedNodeVal == null || _inspectedNodeVal.def==null) return;
+	
+		if (guiModal != null) {
+			$(guiModal.domElement).remove();
+			guiModal = null;
+		}
+		
+		guiModal = new dat.GUI();  
+		$(gui.domElement).after(guiModal.domElement);
+		var existingFolder = guiModal.getFolderByName(this.name);
+		if (existingFolder != null) {
+			guiModal.removeFolder(this.name);
+		}
+		
+		var folder = guiModal.addFolder(this.name);
+		
+		DatUtil.setupGUIForFunctionCall(folder, this.name, executeLocDefMethodHandler, this.func, new LocationDefinition() );
+		folder.open();
+		
+		///*
+		guiModal.onClosedChange( function(val) {
+			
+			if (val) {
+				$(guiModal.domElement).remove();
+				guiModal = null;
+			}
+		});
+		//*/
+
+	}
+	function closeGuiModal() {
+		if (guiModal != null) {
+			$(guiModal.domElement).remove();
+			guiModal = null;
+		}
+	}
+
+	
+	//var guiLocationDefMethods = new dat.GUI();
+	/*
+	DatUtil.createFunctionLibraryForGUI(gui.addFolder("functions()"), gui._guiGlue._functions, new LocationDefinition(), null, {
+		handler: executeLocDefMethodHandler
+	});
+	*/
+	///*
+	DatUtil.createFunctionButtonsForGUI(gui.addFolder("functions()"), gui._guiGlue._functions, new LocationDefinition(), null, {
+		handler: createGUIMethodModalHandler
+	});
+//*/
 	
 	// some mods for filtering
 	var liNumberRows = $(gui.domElement).add($(guiOverwriter.domElement).add($(guiArc.domElement))).find("li.number");	
@@ -808,6 +878,10 @@
 		}
 	});
 	
+	vueModel.$watch("selected.def", function(val) {
+		if (!val) closeGuiModal();
+	});
+	
 	function inspectGoArc(goArc) { 
 		var arc = goArc._arc;
 		_inspectedArc = arc;
@@ -931,6 +1005,18 @@
 		  
 
 	}
+	
+	myDiagram.copyParts = function(coll, diagram, check) {
+	  var toRemove = [];
+	  coll.each(function(p) {
+		if (p instanceof go.Link && (p.fromNode === null || p.toNode === null)) toRemove.push(p);
+	  });
+	  for (var i = 0; i < toRemove.length; i++) {
+		alert("TODO REMOVING");
+		coll.remove(toRemove[i])
+	  }
+	  return go.Diagram.prototype.copyParts.call(this, coll, diagram, check);
+	};
 	
 	//myDiagram.linkTemplate.curve = go.Link.Bezier;
 	 myDiagram.linkTemplate = GO(go.Link,
@@ -1392,8 +1478,14 @@
 							nodesToAdd.push( c.newValue );
 						}
 						else if (c.propertyName == "linkDataArray") {  // create link
-						
-							arcsToAdd.push(c.newValue);
+							if (c.newValue.from != null) {
+								arcsToAdd.push(c.newValue);
+								
+							}
+							else {
+								alert("Isolated arc copy Exception found. This should be prevented.");
+							}
+							
 							//console.log("LINK CREATED:", c.newValue);
 							
 						}
@@ -1447,11 +1539,11 @@
 						}
 					}
 					else if (c.propertyName === "from") {
-						alert("TODO: arc 'from' change case");
+						//alert("TODO: arc 'from' change case");
 						//console.log("from", c.newValue, c.oldValue);
 					}
 					else if (c.propertyName === "to") {
-						alert("TODO: arc 'to' change case");
+						//alert("TODO: arc 'to' change case");
 						//console.log("to", c.newValue, c.oldValue);
 					}
 					else if (c.propertyName === "size") {
@@ -2179,6 +2271,15 @@ with allowances for the title (top) and the resize handle (bottom)
 	max-width:100px;
 	background-color:black;
 	padding:2px;
+	
+}
+
+.dg.main.disabled li.cr.function  {
+	pointer-events:none;
+	
+}
+.dg.main.disabled li.cr.function >div {
+	opacity:.4;
 	
 }
 

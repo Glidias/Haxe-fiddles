@@ -49,6 +49,12 @@ extern class Controller
 	
 	/**
 	 * 
+	 * @param str  The name of the parameter
+	 */	
+	function name(str:String) : Controller;
+	
+	/**
+	 * 
 	 * @param value increment amount
 	 * @return the Controller instance
 	 */
