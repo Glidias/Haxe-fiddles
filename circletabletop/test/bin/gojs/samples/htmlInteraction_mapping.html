@@ -251,6 +251,8 @@
 		var jsonStr = TJSON.encode(_inspectedNodeVal.def);  
 	
 		vueModel.selected.def = TJSON.parse(jsonStr);
+		
+		closeGuiModal();
 	}
 	
 	dat.GUI.prototype.removeFolder = function(name) {  // consier todo: add this to main branch
