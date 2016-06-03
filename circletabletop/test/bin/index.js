@@ -729,6 +729,7 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath,funcToInspect) 
 				while(_g3 < _g12.length) {
 					var p1 = _g12[_g3];
 					++_g3;
+					if(p1.charAt(0) != "_") continue;
 					Reflect.setField(nested,p1,Reflect.field(cur,p1));
 				}
 				if(instanceAvailable) nested._folded = false; else nested._folded = true;
