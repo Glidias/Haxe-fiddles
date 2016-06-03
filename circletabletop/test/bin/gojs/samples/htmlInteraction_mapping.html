@@ -1008,18 +1008,23 @@
 
 	}
 	
-	myDiagram.copyParts = function(coll, diagram, check) {
-	  var toRemove = [];
-	  coll.each(function(p) {
-		if (p instanceof go.Link && (p.fromNode === null || p.toNode === null)) toRemove.push(p);
-	  });
-	  for (var i = 0; i < toRemove.length; i++) {
-		alert("TODO REMOVING");
-		coll.remove(toRemove[i])
-	  }
-	  return go.Diagram.prototype.copyParts.call(this, coll, diagram, check);
-	};
 	
+	myDiagram.commandHandler.copyToClipboard = function(coll) {
+		var toRemove = [];
+		
+		  coll.each(function(p) {
+		
+			if (p instanceof go.Link && (p.fromNode === null || !p.fromNode.isSelected || p.toNode === null || !p.toNode.isSelected )) toRemove.push(p);
+		  });
+		  for (var i = 0; i < toRemove.length; i++) {
+			toRemove[i].isSelected = false;
+			coll.remove(toRemove[i]);
+		  }
+		
+		go.CommandHandler.prototype.copyToClipboard.call(this, coll);
+	}
+	
+
 	//myDiagram.linkTemplate.curve = go.Link.Bezier;
 	 myDiagram.linkTemplate = GO(go.Link,
       { routing: go.Link.Normal, toShortLength: 4, selectable: true },
