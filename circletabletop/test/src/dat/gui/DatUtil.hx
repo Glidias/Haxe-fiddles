@@ -149,7 +149,8 @@ class DatUtil
 							
 							if (gotBits) {
 								Reflect.setField(fieldHash, f.name, bitMaskFolder);
-								for( p in Reflect.fields(cur) ) {
+								for ( p in Reflect.fields(cur) ) {
+									if (p.charAt(0) != "_") continue;
 									Reflect.setField(bitMaskFolder, p, Reflect.field(cur, p));
 								}
 								Reflect.setField(bitMaskFolder, "_subProxy", "bitmask");
@@ -212,7 +213,8 @@ class DatUtil
 					var nested;
 					
 					Reflect.setField(fieldHash, f.name, nested = setup(tryInstance, Type.resolveClass(typeStr), f.type, (dotPath != "" ? dotPath + "." : "") + f.name) );
-					for( p in Reflect.fields(cur) ) {
+					for ( p in Reflect.fields(cur) ) {
+						if (p.charAt(0) != "_") continue;
 						Reflect.setField(nested, p, Reflect.field(cur, p));
 					}
 					

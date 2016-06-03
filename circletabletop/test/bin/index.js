@@ -688,6 +688,7 @@ dat_gui_DatUtil.setup = function(instance,classe,options,dotPath,funcToInspect) 
 							while(_g2 < _g11.length) {
 								var p = _g11[_g2];
 								++_g2;
+								if(p.charAt(0) != "_") continue;
 								Reflect.setField(bitMaskFolder,p,Reflect.field(cur,p));
 							}
 							bitMaskFolder._subProxy = "bitmask";
