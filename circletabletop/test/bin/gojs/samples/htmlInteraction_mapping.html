@@ -114,6 +114,8 @@
 	var DatUtil = dat.gui.DatUtil;
 	//DatUtil.DEFAULT_FLOAT_STEP = .001;
 	
+	 var DEFAULT_PICTURE_OPACITY = .75;
+	 
 	var world = new TextificianWorld();
 	world.setupDefaultNew();
 	var worldProtoLocIds = world.getDefaultLocationDefIdHash();
@@ -145,6 +147,8 @@
 	var gui = setupGUIGeneric( guiGlueRender(specsLocationDefinition, null, {}) );
 	gui.domElement.setAttribute("id", "locationDefGUI");
 	gui.getControllerByName("size").__input.setAttribute("step", "any");
+	
+	
 	
 	// Vuemodel for minimal selected LocationPacket containing LocationDefinition only
 	var vueModelData;
@@ -201,6 +205,20 @@
 	//var guiStater = setupGUIGeneric( guiGlueRender( DatUtil.setup( new LocationState() ), null, {}) );
 	//guiStater.domElement.setAttribute("id", "locationStateGUI");
 	
+	
+	var guiZoner = new dat.GUI();
+	guiZoner  = setupGUIGeneric( guiGlueRender( DatUtil.setup(new Zone()),  null, {}, guiZoner) );
+	guiZoner.domElement.setAttribute("id", "guiZoner");
+	guiZoner.domElement.setAttribute("v-show", "selected.reflectType === 'Zone'");
+	guiZoner.add({"Load Image URL": function() { vueModel.loadZoneImageURL(); } }, "Load Image URL");
+	guiZoner.add({pictureOpacity:DEFAULT_PICTURE_OPACITY}, "pictureOpacity", 0, 1, 0.01).onChange( function(val) {
+		myDiagram.model.updateTargetBindings(_selectedGoNodeData, "pictureOpacity");
+		pictureOpacityNumberObj.pictureOpacity = val;
+	});
+
+	var pictureOpacityController = guiZoner.getControllerByName("pictureOpacity");
+	var pictureOpacityNumberObj = pictureOpacityController.object;
+		
 	var guiPacketer = new dat.GUI();
 	
 	guiPacketer.addFolder( "position");
@@ -675,9 +693,9 @@
 	$(guiOverwriter.domElement).children("ul").children("li.instance, li.bitmask").append('<span class="overwritetrigger">-</span>');
 	
 	setupGUIForVue(gui,  "selected.def.");
-	
 	setupGUIForVue(guiOverwriter,  "selected.defOverwrites.", "!==undefined", "removeLocationDefOverwrite");
 	setupGUIForVue(guiPacketer,  "selected.");
+	setupGUIForVue(guiZoner,  "selected.");
 	setupGUIForVue(guiArc, "selectedArc.", null,"syncWithMutual", "arc");
 	guiPacketer.domElement.setAttribute("v-show", "gotLocation");
 	//setupGUIForVue(guiStater,  "selected.state.");
@@ -751,8 +769,11 @@
 		
 		var leafProp = splitExp[splitExp.length - 1];
 		
-		if ( vueModel.gotLocation && leafBindingHash[leafProp] ) {
-			updateRelatedNodesOfModel(myDiagram.model, _inspectedNodeVal.def, leafBindingHash[leafProp]);
+		if ( leafBindingHash[leafProp] ) {
+			if (vueModel.gotLocation) updateRelatedNodesOfModel(myDiagram.model, _inspectedNodeVal.def, leafBindingHash[leafProp])
+			else {
+				myDiagram.model.updateTargetBindings(_inspectedGoNodeData, leafBindingHash[leafProp]);
+			}
 		}
 	});
 	
@@ -877,12 +898,29 @@
 				inspectGoArc( _selectedGoArcData );
 				
 			}
+			,loadZoneImageURL: function() {
+			
+				if (!vueModel.selected || !_selectedGoNodeData) {
+					alert("nothing selected");
+					return;
+				}
+				//_selectedGoNodeData._selectedGoNodeData
+				myDiagram.model.setDataProperty(_selectedGoNodeData, "pictureSrc",vueModel.selected.imageURL );
+				
+			}
 		}
 	});
 	
 	vueModel.$watch("selected.def", function(val) {
 		if (!val) closeGuiModal();
 	});
+	
+	/*
+	function inspectGoZoneNode(goZoneNode) { 
+		var zone = goZoneNode._node.val;
+	
+	}
+	*/
 	
 	function inspectGoArc(goArc) { 
 		var arc = goArc._arc;
@@ -934,7 +972,7 @@
 		//allLocationGUIDom.removeAttr("hidden");
 		vueModel.isProto = goNode.isProto;
 	
-		vueModel.gotLocation = true;
+		vueModel.gotLocation = goNode._node.val.reflectType === "LocationPacket";
 		//guiOverwriter.domElement.removeAttribute("hidden");
 		
 		var node = goNode._node;
@@ -943,10 +981,23 @@
 		var nodeVal = node.val;
 		_inspectedNodeVal = nodeVal;
 		
+		if (goNode.pictureOpacity != null) {
+			pictureOpacityController.object = goNode;
+			pictureOpacityNumberObj.pictureOpacity = goNode.pictureOpacity;
+			pictureOpacityController.updateDisplay();
+		
+			
+			
+			//console.log("INSPECT:", pictureOpacityController.__gui);
+			//	pictureOpacityController.__label.value = 20;
+			//console.log(pictureOpacityController.__label.value);
+		}
+		
 
 		
 		// consider todo: check if locDef is changed, if not changed no need to update
 		var locDef = nodeVal.def;
+		
 		
 		if (lastInspectedLocDef != locDef) {
 			// reset temporary view-cache UI state values when location definition inspection-target changes
@@ -964,6 +1015,7 @@
 		vueModel.selected = newVueModelData;
 
 		// nodeVal.state
+	
 	}
 
 	function setupGUIGeneric(gui) {
@@ -1067,7 +1119,7 @@
 	var MAX_SHAPE_SIZE = 512;
 	var POINT_SIZE = 5;
 	
-	function getNodeTemplate(figure, fill, stroke, maxSize, layout, layerName) {
+	function getNodeTemplate(figure, fill, stroke, maxSize, layout, layerName, addedParams, imgSrc) {
 	
 		var panelLayout = layout ? layout :  go.Panel.Vertical;
 		if (!layerName) layerName = "";
@@ -1140,11 +1192,20 @@
 				  })
 			  
 			  );
+			  
+		if (imgSrc != null) {
+			var img = GO(go.Picture, imgSrc, { pickable: false }, new go.Binding("opacity", "pictureOpacity"), new go.Binding("source", "pictureSrc"));
+		
+		}
 			 
 		var goParams = [go.Node, panelLayout,
         { locationSpot: go.Spot.Center },
         new go.Binding("location", "loc").makeTwoWay(), new go.Binding("category", "", function(v) {  return v._node ? getCategoryStringFromType(v._node.val.defOverwrites && v._node.val.defOverwrites.type!=null ? v._node.val.defOverwrites.type : v._node.val.def.type) : v.category; }  ) ];
-			
+		if (imgSrc != null) {
+			goParams.push(img );
+		}
+		
+		
 		if (panelLayout == go.Panel.Spot)  {
 			goParams.push(shape, textBlock);
 		}
@@ -1154,6 +1215,7 @@
 		
 		goParams.push({layerName:layerName});
 		
+		if (addedParams) goParams.push(addedParams);
 		
 		return GO.apply(null, goParams);
 	}
@@ -1163,6 +1225,7 @@
 	 myDiagram.nodeTemplateMap.add("point", getNodeTemplate("Square",fill1,brush1, POINT_SIZE, null, "Points"));
 	  myDiagram.nodeTemplateMap.add("path", getNodeTemplate("Diamond",fill2,brush2, MAX_SHAPE_SIZE, null, ""));
 	  myDiagram.nodeTemplateMap.add("region",getNodeTemplate("Circle",fill3,brush3, MAX_SHAPE_SIZE, go.Panel.Spot, "Regions"));
+	  myDiagram.nodeTemplateMap.add("zone",getNodeTemplate("Circle",fill1,brush1, POINT_SIZE, go.Panel.Spot, "Background", {copyable:false}, ""));
 
 	  function scaleLink(link, newscale) {
 		link.curviness = 1 * origscale/newscale;
@@ -1232,6 +1295,16 @@
 			obj[p] = src[p];
 		}
 		return obj;
+	}
+	
+	var zoneTextProxy = {
+		 get : function() {
+			return this._node.val.label;
+	   },
+	   set: function(val) {
+			this._node.val.label = val;
+			inspectGoNode(this);
+	   }
 	}
 		  
 	var textProxy = {
@@ -1475,6 +1548,7 @@
 			var methodToCalls = [];
 			var nodesToAdd = [];
 			var arcsToAdd = [];
+			var zonesToAdd = [];
 			tx.changes.each(function(c) {
 			
 			  if (c.model) {
@@ -1482,7 +1556,8 @@
 					if (c.newValue != null && c.oldValue == null) {  // insertion infered
 					
 						if (c.propertyName == "nodeDataArray") {  // insert node
-							nodesToAdd.push( c.newValue );
+							if (c.newValue.locid) nodesToAdd.push( c.newValue );
+							else if (c.newValue.zoneid!=null) zonesToAdd.push(c.newValue);
 						}
 						else if (c.propertyName == "linkDataArray") {  // create link
 							if (c.newValue.from != null) {
@@ -1531,9 +1606,12 @@
 						// irreleavant. do nothing
 					}
 					else if (c.propertyName === "text") {
-						methodToCalls.push(updateRelatedNodesOfModel, [e.model, c.object._node.val.def, "text"]);
-						methodToCalls.push(updateRelatedNodesOfModel, [myPalette.model, c.object._node.val.def, "text"]);
 						var n = c.object._node;
+						if (n!=null && n.val.def) {
+							methodToCalls.push(updateRelatedNodesOfModel, [e.model, c.object._node.val.def, "text"]);
+							methodToCalls.push(updateRelatedNodesOfModel, [myPalette.model, c.object._node.val.def, "text"]);
+						}
+						
 						if (n != null && n.val=== _inspectedNodeVal  ) {
 							if(n.val.defOverwrites && n.val.defOverwrites.label!=null) {
 								vueModel.$set("selected.defOverwrites.label", n.val.defOverwrites.label);
@@ -1562,6 +1640,13 @@
 					}
 					else if (c.propertyName === "category") {
 						// irrelavant
+					}
+					else if (c.propertyName ==="pictureSrc") {
+					
+						if (vueModel.selected && vueModel.selected.pictureSrc !== undefined) {
+						
+							vueModel.selected.imageURL = "pictureSrc";
+						}
 					}
 					else { //
 					  alert("could not resolve:"+c.propertyName);
@@ -1616,6 +1701,58 @@
 						e.model.updateTargetBindings(o, "text");
 					}
 			
+				}
+				
+				for (i=0; i<zonesToAdd.length; i++) {
+					o =zonesToAdd[i];
+					if (o._node != null) { 
+						alert("Exception! Zones aren't duplicable or copyable!");
+					}
+					else {  // NEW ZONE CASE
+						var zone;
+						var zoneNewKey;
+						if (o.zoneid === false) {
+							zoneNewKey = world.getUniqueHashKey();
+							o.zoneid = "~zone"+zoneNewKey;
+							zone = Zone.create("~Zone"+zoneNewKey, o.zoneid);
+							zone.x = o.loc.x;
+							zone.y = o.loc.y;
+						}
+						else {
+							zone = world.getZone(o.zoneid);
+							if (zone == null) {
+								alert("Error!! Could not find zone by id!: "+o.zoneid);
+								continue;
+							}
+							
+							zone.x = o.loc.x;
+							zone.y = o.loc.y;
+						}
+						
+						if (zone.imageURL) {
+							o.pictureSrc = zone.imageURL;
+							
+						}
+						else if (o.pictureSrc) {
+							zone.imageURL = o.pictureSrc;
+							
+						}
+						
+					
+						
+						e.model.setDataProperty(o,"_node",v= world.addZoneNode(zone));
+						world.registerHashEditable(v, o);
+						
+						if (o.text != zoneTextProxy) {
+							Object.defineProperty(o,"text",zoneTextProxy);
+							e.model.updateTargetBindings(o, "text");
+							e.model.updateTargetBindings(o, "pictureSrc");
+						}
+						
+						if (_selectedGoNodeData === o) {
+							inspectGoNode(o);
+						}
+					}
 				}
 				
 				
@@ -1684,13 +1821,15 @@
 	myPalette.nodeTemplateMap.add("point", getNodeTemplate("Square",fill1,brush1,20));
 	 myPalette.nodeTemplateMap.add("path", getNodeTemplate("Diamond",fill2,brush2,20));
 	 myPalette.nodeTemplateMap.add("region",getNodeTemplate("Circle",fill3,brush3,20));
-	  
+	myPalette.nodeTemplateMap.add("zone",getNodeTemplate("Circle",fill1,brush1, POINT_SIZE));
   	
-	  
+	
+	 
     myPalette.model = new go.GraphLinksModel([
       { locid:"Point", isProto:true, text:"Point", category:"point",  size:new go.Size(POINT_SIZE,POINT_SIZE)   },
       { locid:"Path", isProto:true, text:"Path",  category:"path",  size:new go.Size(12,12) },
-      { locid:"Region", isProto:true,  text:"Region",  category:"region", size:new go.Size(30,30) }
+      { locid:"Region", isProto:true,  text:"Region",  category:"region", size:new go.Size(30,30) },
+	  { locid:"", zoneid:false, isProto:true,  text:"Zone",  pictureOpacity:DEFAULT_PICTURE_OPACITY, pictureSrc:"http://ingridwu.dmmdmcfatter.com/wp-content/uploads/2015/01/placeholder.png", category:"zone", size:new go.Size(POINT_SIZE,POINT_SIZE) }
     ]);
 	
 	var FLAG_SHIFT_DOWN = 1;
@@ -2207,6 +2346,12 @@ with allowances for the title (top) and the resize handle (bottom)
   left: 0px;
   right: 0px;
   top: 14px;
+}
+#guiZoner > ul:before {
+	content: 'zone definition';
+	display:block;
+	padding-left:10px;
+	background-color:#666666;	
 }
 #locationDefGUI > ul:before {
 	content: 'location definition';

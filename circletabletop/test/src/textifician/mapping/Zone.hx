@@ -15,11 +15,13 @@ class Zone implements IXYZ
 	
 	public static var DEFAULT_SCALE:Float = 1;
 	
-	@inspect private var label:String;
+	@inspect public var label:String;
 	private var childNodes:Array<GraphNode<Dynamic>>; // starting locations are Std.is( GraphNode.data, LocationPacket) instead of Zone. 
 	
 	@inspect public var size:Float;  // radial size if any, zero if Point-based., if sizs ie negative, deemed infinity
 	@inspect public var scale:Float; // pixel scale to actual unit measure you are using upon entering this Zone 
+	
+	@inspect({_lazy:true}) public var imageURL:String = "https://s-media-cache-ak0.pinimg.com/736x/e4/89/8c/e4898c58d4713c8b4328fccf38287120.jpg";
 	
 	@inspect({_classes:['position'], _readonly:true}) public var x:Float;
 	@inspect({_classes:['position'], _readonly:true}) public var y:Float;
@@ -27,6 +29,8 @@ class Zone implements IXYZ
 	
 	@readonly private var parentZone:Zone; // does this zone exist as a child under another zone? If so, the entrance leading into the zone will also lead back out to the parentZOne. This determines the parent coordinate space for this zone.
 	
+		private var reflectType:String = "Zone";
+		
 	// CONVENTION: Priority when entering a node with Zone..which starting point to choose?
 	// LocationDefinition is FLAG_ENTRANCE into given zone, FInd nearest entrance....wont't entered Zone yet until gone through entrance
 	// LocationDefinition is FLAG_KEY and NOT flag_entrance, will fast-forward enter into that Zone based off mapped distance to it from current position.

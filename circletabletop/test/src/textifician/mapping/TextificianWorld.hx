@@ -188,6 +188,10 @@ class TextificianWorld
 		return graph.addNode(graph.createNode(zone));
 	}
 	
+	public function getUniqueHashKey():UInt {
+		return HashKey.next();
+	}
+	
 	public function getLocationDef(id:String):LocationDefinition {
 		return locationDefs.get(id);
 	}

@@ -15,6 +15,8 @@ class LocationPacket implements IXYZ
 	@inspect({_classes:['position']}) public var z:Float;
 	@inspect public var state:LocationState;
 	
+	private var reflectType:String = "LocationPacket";
+	
 	public function getLabel():String {
 		return defOverwrites != null && defOverwrites.label != null ? defOverwrites.label : def.label;
 	}
