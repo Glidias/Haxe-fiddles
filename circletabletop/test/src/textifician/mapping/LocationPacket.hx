@@ -31,6 +31,25 @@ class LocationPacket implements IXYZ
 		applyDefOverwrites(obj);
 		
 	}
+	public static inline function getTypeOfPacket(locPacket:LocationPacket):Int {
+		return  (locPacket.defOverwrites != null && locPacket.defOverwrites.type != null ? locPacket.defOverwrites.type : locPacket.def.type);
+	}
+	public static function getCategoryOfPacket(locPacket:LocationPacket):String {
+		var type:Int = getTypeOfPacket(locPacket);
+		
+		switch(type) {
+			case LocationDefinition.TYPE_REGION:
+				return "region";
+			case LocationDefinition.TYPE_PATH:
+				return "path";
+			case LocationDefinition.TYPE_POINT:
+				return "point";
+			default:
+				return "point";
+		}
+		
+		return "point";
+	}
 	
 	
 	public inline function applyDefOverwrites(obj:Dynamic):Void {

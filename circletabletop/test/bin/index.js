@@ -2681,6 +2681,51 @@ de_polygonal_ds_Graph.prototype = {
 		this.mQue = t;
 		this.mQueSize = newSize;
 	}
+	,serialize: function(getVal) {
+		var vals = [];
+		var arcs = [];
+		var node = this.mNodeList;
+		var arc;
+		var i;
+		var j;
+		var indexLut = new haxe_ds_IntMap();
+		var i1 = 0;
+		while(node != null) {
+			indexLut.set(node.key,i1++);
+			node = node.next;
+		}
+		i1 = 0;
+		node = this.mNodeList;
+		while(node != null) {
+			vals[i1] = getVal(node.val);
+			arc = node.arcList;
+			while(arc != null) {
+				arcs.push(i1);
+				arcs.push(indexLut.h[arc.node.key]);
+				arc = arc.next;
+			}
+			node = node.next;
+			i1++;
+		}
+		return { arcs : arcs, vals : vals};
+	}
+	,unserialize: function(data,setVal) {
+		this.clear(true);
+		var nodes = [];
+		var vals = data.vals;
+		var i = 0;
+		var k = vals.length;
+		while(i < k) nodes.push(this.createNode(setVal(vals[i++])));
+		i = k;
+		while(i > 0) this.addNode(nodes[--i]);
+		var arcs = data.arcs;
+		i = arcs.length;
+		while(i > 0) {
+			var target = arcs[--i];
+			var source = arcs[--i];
+			this.addSingleArc(nodes[source],nodes[target]);
+		}
+	}
 	,__class__: de_polygonal_ds_Graph
 	,__properties__: {get_size:"get_size"}
 };
@@ -7886,6 +7931,24 @@ var textifician_mapping_LocationPacket = $hx_exports.textifician.mapping.Locatio
 $hxClasses["textifician.mapping.LocationPacket"] = textifician_mapping_LocationPacket;
 textifician_mapping_LocationPacket.__name__ = ["textifician","mapping","LocationPacket"];
 textifician_mapping_LocationPacket.__interfaces__ = [textifician_mapping_IXYZ];
+textifician_mapping_LocationPacket.getTypeOfPacket = function(locPacket) {
+	if(locPacket.defOverwrites != null && locPacket.defOverwrites.type != null) return locPacket.defOverwrites.type; else return locPacket.def.type;
+};
+textifician_mapping_LocationPacket.getCategoryOfPacket = function(locPacket) {
+	var type;
+	if(locPacket.defOverwrites != null && locPacket.defOverwrites.type != null) type = locPacket.defOverwrites.type; else type = locPacket.def.type;
+	switch(type) {
+	case 2:
+		return "region";
+	case 1:
+		return "path";
+	case 0:
+		return "point";
+	default:
+		return "point";
+	}
+	return "point";
+};
 textifician_mapping_LocationPacket.prototype = {
 	def: null
 	,defOverwrites: null
@@ -8147,9 +8210,6 @@ textifician_mapping_TextificianWorld.prototype = {
 		this.addLocationDef(textifician_mapping_LocationDefinition.createWithMatchingId(0,"Point"));
 		this.addLocationDef(textifician_mapping_LocationDefinition.createWithMatchingId(1,"Path"));
 		this.addLocationDef(textifician_mapping_LocationDefinition.createWithMatchingId(2,"Region"));
-		var a = this.graph.addNode(this.graph.createNode(null));
-		var b = this.graph.addNode(this.graph.createNode(null));
-		this.graph.addGetSingleArc(a,b).val = 331;
 	}
 	,getLocationDefinitionIds: function(ignoreHash) {
 		var arr = [];
@@ -8182,6 +8242,58 @@ textifician_mapping_TextificianWorld.prototype = {
 		var locDef = unserializer.unserialize();
 		if(newId != null) if(newId != "") locDef.id = newId; else locDef.id = null; else locDef.id = "instance" + de_polygonal_ds_HashKey._counter++;
 		return locDef;
+	}
+	,getGOGraphData: function(goTypeSizes,defaultPictureOpacity) {
+		if(defaultPictureOpacity == null) defaultPictureOpacity = .5;
+		var dataGraph = this.graph.serialize($bind(this,this.returnSelf));
+		var goGraphData = { nodes : [], links : []};
+		var node = this.graph.mNodeList;
+		var count = 0;
+		while(node != null) {
+			if(js_Boot.__instanceof(node.val,textifician_mapping_LocationPacket)) {
+				var locPacket = node.val;
+				goGraphData.nodes.push({ loc : new go.Point(locPacket.x,locPacket.y), key : count, locid : locPacket.def.id, isProto : false, text : locPacket.getLabel(), category : textifician_mapping_LocationPacket.getCategoryOfPacket(locPacket), size : goTypeSizes[locPacket.defOverwrites != null && locPacket.defOverwrites.type != null?locPacket.defOverwrites.type:locPacket.def.type]});
+			} else if(js_Boot.__instanceof(node.val,textifician_mapping_Zone)) {
+				var zone = node.val;
+				goGraphData.nodes.push({ loc : new go.Point(zone.x,zone.y), key : count, locid : "", zoneid : false, isProto : false, text : zone.label, pictureOpacity : defaultPictureOpacity, pictureSrc : zone.imageURL, category : "zone", size : goTypeSizes[0]});
+			} else {
+				throw new js__$Boot_HaxeError("Could not resolve data type of node val:" + Std.string(node.val));
+				goGraphData.nodes.push(node.val);
+			}
+			count++;
+			node = node.next;
+		}
+		var arcList = dataGraph.arcs;
+		var len = arcList.length;
+		var i = 0;
+		while(i < len) {
+			goGraphData.links.push({ from : arcList[i], to : arcList[i + 1]});
+			i += 2;
+		}
+		return goGraphData;
+	}
+	,saveWorld: function() {
+		var serializer = new haxe_Serializer();
+		serializer.useCache = true;
+		serializer.serialize(this.locationDefs);
+		serializer.serialize(this.zones);
+		var graphData = this.graph.serialize($bind(this,this.returnSelf));
+		serializer.serialize(graphData);
+		return serializer.toString();
+	}
+	,loadWorld: function(worldStr) {
+		var unserializer = new haxe_Unserializer(worldStr);
+		this.locationDefs = unserializer.unserialize();
+		this.zones = unserializer.unserialize();
+		var graphData = unserializer.unserialize();
+		this.graph = new de_polygonal_ds_Graph();
+		this.graph.unserialize(graphData,$bind(this,this.returnSelf));
+		this.editableHash = new haxe_ds_IntMap();
+	}
+	,returnSelf: function(self) {
+		if(js_Boot.__instanceof(self,textifician_mapping_LocationPacket) || js_Boot.__instanceof(self,textifician_mapping_Zone)) {
+		} else throw new js__$Boot_HaxeError("Should be valid instance type:" + Std.string(self));
+		return self;
 	}
 	,addLocationNode: function(def,x,y,z,state,defOverwrites) {
 		if(z == null) z = 0;
@@ -9013,7 +9125,7 @@ textifician_mapping_LocationDefinition.SPEEDCAP_CAUTIOUS = 2;
 textifician_mapping_LocationDefinition.SPEEDCAP_NORMAL = 3;
 textifician_mapping_LocationDefinition.SPEEDCAP_HURRIED = 4;
 textifician_mapping_LocationPacket.__meta__ = { fields : { x : { inspect : [{ _classes : ["position"], _readonly : true}]}, y : { inspect : [{ _classes : ["position"], _readonly : true}]}, z : { inspect : [{ _classes : ["position"]}]}, state : { inspect : null}}};
-textifician_mapping_LocationPacket.__rtti = "<class path=\"textifician.mapping.LocationPacket\" params=\"\">\n\t<implements path=\"textifician.mapping.IXYZ\"/>\n\t<def public=\"1\"><c path=\"textifician.mapping.LocationDefinition\"/></def>\n\t<defOverwrites public=\"1\"><d/></defOverwrites>\n\t<x public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"><e>{_classes:[\"position\"],_readonly:true}</e></m></meta>\n\t</x>\n\t<y public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"><e>{_classes:[\"position\"],_readonly:true}</e></m></meta>\n\t</y>\n\t<z public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"><e>{_classes:[\"position\"]}</e></m></meta>\n\t</z>\n\t<state public=\"1\">\n\t\t<c path=\"textifician.mapping.LocationState\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</state>\n\t<reflectType expr=\"&quot;LocationPacket&quot;\" line=\"18\">\n\t\t<c path=\"String\"/>\n\t\t<meta><m n=\":value\"><e>\"LocationPacket\"</e></m></meta>\n\t</reflectType>\n\t<getLabel public=\"1\" set=\"method\" line=\"20\"><f a=\"\"><c path=\"String\"/></f></getLabel>\n\t<setEmptyDefOverwrites public=\"1\" get=\"inline\" set=\"null\" line=\"24\"><f a=\"\"><x path=\"Void\"/></f></setEmptyDefOverwrites>\n\t<setupNewDefOverwrites public=\"1\" set=\"method\" line=\"28\"><f a=\"obj\">\n\t<d/>\n\t<x path=\"Void\"/>\n</f></setupNewDefOverwrites>\n\t<applyDefOverwrites public=\"1\" get=\"inline\" set=\"null\" line=\"36\"><f a=\"obj\">\n\t<d/>\n\t<x path=\"Void\"/>\n</f></applyDefOverwrites>\n\t<convertOverwritesToLocationDef public=\"1\" set=\"method\" line=\"46\"><f a=\"\"><x path=\"Void\"/></f></convertOverwritesToLocationDef>\n\t<cloneOverwritesDynamic public=\"1\" set=\"method\" line=\"65\"><f a=\"\"><d/></f></cloneOverwritesDynamic>\n\t<new public=\"1\" set=\"method\" line=\"80\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":directlyUsed\"/>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
+textifician_mapping_LocationPacket.__rtti = "<class path=\"textifician.mapping.LocationPacket\" params=\"\">\n\t<implements path=\"textifician.mapping.IXYZ\"/>\n\t<getTypeOfPacket public=\"1\" get=\"inline\" set=\"null\" line=\"34\" static=\"1\"><f a=\"locPacket\">\n\t<c path=\"textifician.mapping.LocationPacket\"/>\n\t<x path=\"Int\"/>\n</f></getTypeOfPacket>\n\t<getCategoryOfPacket public=\"1\" set=\"method\" line=\"37\" static=\"1\"><f a=\"locPacket\">\n\t<c path=\"textifician.mapping.LocationPacket\"/>\n\t<c path=\"String\"/>\n</f></getCategoryOfPacket>\n\t<def public=\"1\"><c path=\"textifician.mapping.LocationDefinition\"/></def>\n\t<defOverwrites public=\"1\"><d/></defOverwrites>\n\t<x public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"><e>{_classes:[\"position\"],_readonly:true}</e></m></meta>\n\t</x>\n\t<y public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"><e>{_classes:[\"position\"],_readonly:true}</e></m></meta>\n\t</y>\n\t<z public=\"1\">\n\t\t<x path=\"Float\"/>\n\t\t<meta><m n=\"inspect\"><e>{_classes:[\"position\"]}</e></m></meta>\n\t</z>\n\t<state public=\"1\">\n\t\t<c path=\"textifician.mapping.LocationState\"/>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</state>\n\t<reflectType expr=\"&quot;LocationPacket&quot;\" line=\"18\">\n\t\t<c path=\"String\"/>\n\t\t<meta><m n=\":value\"><e>\"LocationPacket\"</e></m></meta>\n\t</reflectType>\n\t<getLabel public=\"1\" set=\"method\" line=\"20\"><f a=\"\"><c path=\"String\"/></f></getLabel>\n\t<setEmptyDefOverwrites public=\"1\" get=\"inline\" set=\"null\" line=\"24\"><f a=\"\"><x path=\"Void\"/></f></setEmptyDefOverwrites>\n\t<setupNewDefOverwrites public=\"1\" set=\"method\" line=\"28\"><f a=\"obj\">\n\t<d/>\n\t<x path=\"Void\"/>\n</f></setupNewDefOverwrites>\n\t<applyDefOverwrites public=\"1\" get=\"inline\" set=\"null\" line=\"55\"><f a=\"obj\">\n\t<d/>\n\t<x path=\"Void\"/>\n</f></applyDefOverwrites>\n\t<convertOverwritesToLocationDef public=\"1\" set=\"method\" line=\"65\"><f a=\"\"><x path=\"Void\"/></f></convertOverwritesToLocationDef>\n\t<cloneOverwritesDynamic public=\"1\" set=\"method\" line=\"84\"><f a=\"\"><d/></f></cloneOverwritesDynamic>\n\t<new public=\"1\" set=\"method\" line=\"99\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":directlyUsed\"/>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
 textifician_mapping_LocationState.__meta__ = { fields : { notes : { inspect : [{ display : "textarea"}]}, flags : { inspect : null, bitmask : ["FLAG"]}, openDoorFully : { inspect : null}, openDoorPartially : { inspect : null}, closeDoor : { inspect : null}, closeAndLockDoor : { inspect : null}}};
 textifician_mapping_LocationState.__rtti = "<class path=\"textifician.mapping.LocationState\" params=\"\">\n\t<FLAG_DOOR_LOCKED public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;0)\" line=\"12\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<0)]]></e></m></meta>\n\t</FLAG_DOOR_LOCKED>\n\t<FLAG_DOOR_OPEN_1 public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;1)\" line=\"14\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<1)]]></e></m></meta>\n\t</FLAG_DOOR_OPEN_1>\n\t<FLAG_DOOR_OPEN_2 public=\"1\" get=\"inline\" set=\"null\" expr=\"(1&lt;&lt;2)\" line=\"15\" static=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta><m n=\":value\"><e><![CDATA[(1<<2)]]></e></m></meta>\n\t</FLAG_DOOR_OPEN_2>\n\t<thingsHere public=\"1\"><c path=\"Array\"><d/></c></thingsHere>\n\t<notes public=\"1\">\n\t\t<c path=\"String\"/>\n\t\t<meta><m n=\"inspect\"><e>{display:\"textarea\"}</e></m></meta>\n\t</notes>\n\t<flags public=\"1\">\n\t\t<x path=\"Int\"/>\n\t\t<meta>\n\t\t\t<m n=\"inspect\"/>\n\t\t\t<m n=\"bitmask\"><e>\"FLAG\"</e></m>\n\t\t</meta>\n\t</flags>\n\t<customData public=\"1\"><d/></customData>\n\t<openDoorFully public=\"1\" set=\"method\" line=\"31\">\n\t\t<f a=\"\"><c path=\"textifician.mapping.LocationState\"/></f>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</openDoorFully>\n\t<openDoorPartially public=\"1\" set=\"method\" line=\"36\">\n\t\t<f a=\"?ajarOnly\" v=\"false\">\n\t\t\t<x path=\"Bool\"/>\n\t\t\t<c path=\"textifician.mapping.LocationState\"/>\n\t\t</f>\n\t\t<meta>\n\t\t\t<m n=\":value\"><e>{ajarOnly:false}</e></m>\n\t\t\t<m n=\"inspect\"/>\n\t\t</meta>\n\t</openDoorPartially>\n\t<closeDoor public=\"1\" set=\"method\" line=\"42\">\n\t\t<f a=\"\"><c path=\"textifician.mapping.LocationState\"/></f>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</closeDoor>\n\t<closeAndLockDoor public=\"1\" set=\"method\" line=\"46\">\n\t\t<f a=\"\"><c path=\"textifician.mapping.LocationState\"/></f>\n\t\t<meta><m n=\"inspect\"/></meta>\n\t</closeAndLockDoor>\n\t<lockDoor public=\"1\" set=\"method\" line=\"51\"><f a=\"\"><c path=\"textifician.mapping.LocationState\"/></f></lockDoor>\n\t<unlockDoor public=\"1\" set=\"method\" line=\"55\"><f a=\"\"><c path=\"textifician.mapping.LocationState\"/></f></unlockDoor>\n\t<toString public=\"1\" set=\"method\" line=\"60\"><f a=\"\"><c path=\"String\"/></f></toString>\n\t<new public=\"1\" set=\"method\" line=\"66\"><f a=\"\"><x path=\"Void\"/></f></new>\n\t<meta>\n\t\t<m n=\":rtti\"/>\n\t\t<m n=\":expose\"/>\n\t</meta>\n</class>";
 textifician_mapping_LocationState.FLAG_DOOR_LOCKED = 1;

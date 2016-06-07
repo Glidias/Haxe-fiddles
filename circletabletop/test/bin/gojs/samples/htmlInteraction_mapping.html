@@ -261,6 +261,32 @@
 	//alert( $(guiArc.getControllerByName("selectMutualArc").domElement).children().html() );
 	//$(guiArc.getControllerByName("selectMutualArc").domElement).find(".property-name").html("Select Mutual Arc");
 	
+	
+	var guiMainMenu = new dat.GUI();
+	guiMainMenu.domElement.setAttribute("id", "guiMainMenu");
+	var guiMainMenuData  = {
+		copyToClipboard: "",
+		loadMap: function() {
+			world.loadWorld(this.copyToClipboard);
+			var goData = world.getGOGraphData(GO_SIZES, DEFAULT_PICTURE_OPACITY);
+			var newModel = new go.GraphLinksModel(goData.nodes, goData.links);
+			myDiagram.model = newModel;
+
+			this.copyToClipboard = "";
+			guiMainMenu.getControllerByName("copyToClipboard").updateDisplay();
+			alert("New map loaded successfully.");
+			
+		},
+		saveMap: function() {
+			this.copyToClipboard = world.saveWorld();
+			guiMainMenu.getControllerByName("copyToClipboard").updateDisplay();
+		}
+	}
+	guiMainMenu.addTextArea(guiMainMenuData, "copyToClipboard");
+	guiMainMenu.add(guiMainMenuData, "saveMap");
+	guiMainMenu.add(guiMainMenuData, "loadMap");
+	guiMainMenu.closed = true;
+	
 	function executeLocDefMethodHandler() {
 		if (_inspectedNodeVal == null || _inspectedNodeVal.def==null) return;
 		
@@ -1011,7 +1037,6 @@
 		// setup new location def
 		var jsonStr = TJSON.encode(nodeVal);  
 		var newVueModelData = TJSON.parse(jsonStr);  // consider todo: should this be a plain JSON parse?
-		//alert(newVueModelData instanceof LocationPacket);
 		vueModel.selected = newVueModelData;
 
 		// nodeVal.state
@@ -1823,12 +1848,12 @@
 	 myPalette.nodeTemplateMap.add("region",getNodeTemplate("Circle",fill3,brush3,20));
 	myPalette.nodeTemplateMap.add("zone",getNodeTemplate("Circle",fill1,brush1, POINT_SIZE));
   	
-	
+	var GO_SIZES = [new go.Size(POINT_SIZE,POINT_SIZE), new go.Size(12,12), new go.Size(30,30) ];
 	 
     myPalette.model = new go.GraphLinksModel([
-      { locid:"Point", isProto:true, text:"Point", category:"point",  size:new go.Size(POINT_SIZE,POINT_SIZE)   },
-      { locid:"Path", isProto:true, text:"Path",  category:"path",  size:new go.Size(12,12) },
-      { locid:"Region", isProto:true,  text:"Region",  category:"region", size:new go.Size(30,30) },
+      { locid:"Point", isProto:true, text:"Point", category:"point",  size:GO_SIZES[0]   },
+      { locid:"Path", isProto:true, text:"Path",  category:"path",  size:GO_SIZES[1] },
+      { locid:"Region", isProto:true,  text:"Region",  category:"region", size:GO_SIZES[2] },
 	  { locid:"", zoneid:false, isProto:true,  text:"Zone",  pictureOpacity:DEFAULT_PICTURE_OPACITY, pictureSrc:"http://ingridwu.dmmdmcfatter.com/wp-content/uploads/2015/01/placeholder.png", category:"zone", size:new go.Size(POINT_SIZE,POINT_SIZE) }
     ]);
 	
@@ -2349,6 +2374,12 @@ with allowances for the title (top) and the resize handle (bottom)
 }
 #guiZoner > ul:before {
 	content: 'zone definition';
+	display:block;
+	padding-left:10px;
+	background-color:#666666;	
+}
+#guiMainMenu > ul:before {
+	content: 'Main Menu';
 	display:block;
 	padding-left:10px;
 	background-color:#666666;	

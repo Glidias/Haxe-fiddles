@@ -8,6 +8,7 @@ import de.polygonal.ds.HashKey;
 import de.polygonal.ds.IntHashTable;
 import haxe.ds.IntMap;
 import haxe.ds.StringMap;
+import haxe.io.Error;
 import haxe.rtti.Meta;
 import haxe.Serializer;
 import haxe.Unserializer;
@@ -96,9 +97,7 @@ class TextificianWorld
 		addLocationDef( LocationDefinition.createWithMatchingId(LocationDefinition.TYPE_PATH,"Path") ); 
 		addLocationDef( LocationDefinition.createWithMatchingId(LocationDefinition.TYPE_REGION, "Region") );
 		
-		var a:GraphNode<Dynamic> = graph.addNode( graph.createNode(null) );
-		var b:GraphNode<Dynamic> = graph.addNode( graph.createNode(null) );
-		graph.addGetSingleArc(a, b).val = 331;
+	
 	}
 	
 	public function getLocationDefinitionIds(ignoreHash:Dynamic=null):Array<String> {
@@ -171,6 +170,83 @@ class TextificianWorld
 		}
 		return locDef;
 	}
+	
+	
+	public function getGOGraphData(goTypeSizes:Array<Dynamic>, defaultPictureOpacity:Float=.5):GoGraphData {
+		var dataGraph:Dynamic = graph.serialize(returnSelf);
+		var goGraphData:GoGraphData = { nodes:[], links:[] };
+		
+		var node = graph.getNodeList();
+		var count:Int = 0;
+		while (node != null) {
+			if (Std.is(node.val, LocationPacket)) {
+				var locPacket:LocationPacket = node.val;
+				goGraphData.nodes.push( { loc:new GoPoint(locPacket.x, locPacket.y),  key:count, locid:locPacket.def.id, isProto:false, text: locPacket.getLabel(), category:LocationPacket.getCategoryOfPacket(locPacket),  size:goTypeSizes[LocationPacket.getTypeOfPacket(locPacket)] } );
+			}
+			else if (Std.is(node.val, Zone)) {  
+				var zone:Zone  = node.val;
+				goGraphData.nodes.push( { loc:new GoPoint(zone.x, zone.y), key:count, locid:"", zoneid:false, isProto:false,  text:zone.label,  pictureOpacity:defaultPictureOpacity, pictureSrc:zone.imageURL, category:"zone", size:goTypeSizes[LocationDefinition.TYPE_POINT]} );
+			}
+			else {
+				throw ("Could not resolve data type of node val:"+node.val);
+				goGraphData.nodes.push(node.val);
+			}
+			count++;
+			node = node.next;
+		}
+		
+		var arcList:Array<Int> = dataGraph.arcs;
+		var len:Int = arcList.length;
+		var i:Int = 0;
+		
+		while(i < len) {
+			goGraphData.links.push( {from:arcList[i], to:arcList[i + 1]} );
+			i += 2;
+		}
+
+		
+		return goGraphData;
+	}
+	
+	public function saveWorld():String {
+		var serializer = new Serializer();
+		serializer.useCache = true;
+		//serializer.useEnumIndex = true;
+		serializer.serialize(locationDefs);
+		serializer.serialize(zones);
+		
+		var graphData = graph.serialize(returnSelf);
+		
+	//	trace("Serialzing..",graphData);
+		serializer.serialize(graphData);
+		
+		
+		return serializer.toString();
+	}
+	
+	public function loadWorld(worldStr:String):Void {
+		var unserializer:Unserializer = new Unserializer(worldStr);
+		locationDefs = unserializer.unserialize();
+		zones = unserializer.unserialize();
+		
+		var graphData = unserializer.unserialize();
+		graph = new Graph();
+		graph.unserialize(graphData, returnSelf);
+		editableHash = new  IntMap<Dynamic>();
+	}
+	
+	
+	
+	private function returnSelf(self:Dynamic):Dynamic {
+		if ( Std.is(self, LocationPacket) || Std.is(self, Zone)) {
+		
+		}
+		else throw "Should be valid instance type:"+self;
+		return self;
+	}
+	
+	
+	
 	
 	public function addLocationNode(def:LocationDefinition, x:Float=0, y:Float=0, z:Float=0, state:LocationState = null, defOverwrites:Dynamic = null):GraphNode<Dynamic> {
 		
@@ -245,5 +321,19 @@ class TextificianWorld
 		return zones.get(id);
 	}
 
+	
+}
+
+typedef GoGraphData = {
+	 var nodes:Array<Dynamic>;
+	 var links:Array<Dynamic>;
+}
+
+@:native("go.Point")
+extern class GoPoint {
+	
+	public function new(x:Float, y:Float) {
+		
+	}
 	
 }
