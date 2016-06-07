@@ -8139,6 +8139,21 @@ textifician_mapping_PropertyChainHolder.prototype = {
 		}
 		return cur;
 	}
+	,deletePropertyChainValue: function(val) {
+		if(this._src == null) return null;
+		var cur = this._src;
+		var len = this.propertyChain.length;
+		var propStack = [];
+		var _g = 0;
+		while(_g < len) {
+			var i = _g++;
+			var propToSet = this.propertyChain[i];
+			propStack.push(propToSet);
+			cur = this.deletePropertyOf(cur,propToSet,val,i >= len - 1,propStack);
+			if(cur == null) return null;
+		}
+		return cur;
+	}
 	,setPropertyOf: function(obj,prop,val,leaf,propStack) {
 		if(!leaf) {
 			var reflectProp = val = Reflect.getProperty(obj,prop);
@@ -8149,6 +8164,16 @@ textifician_mapping_PropertyChainHolder.prototype = {
 			val = reflectProp;
 		}
 		Reflect.setProperty(obj,prop,val);
+		return val;
+	}
+	,deletePropertyOf: function(obj,prop,val,leaf,propStack) {
+		if(!leaf) {
+			var reflectProp = val = Reflect.getProperty(obj,prop);
+			if(reflectProp == null) return null;
+			Reflect.setProperty(obj,prop,val);
+			return val;
+		}
+		Reflect.deleteField(obj,prop);
 		return val;
 	}
 	,getPropertyOf: function(obj,prop) {

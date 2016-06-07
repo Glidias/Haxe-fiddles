@@ -178,6 +178,28 @@ class PropertyChainHolder {
 		return cur;
 	}
 	
+	private  function deletePropertyChainValue(val:Dynamic):Dynamic {
+		
+		if (_src == null) {
+			return null;
+		}
+		var cur = _src;
+		var len:Int = propertyChain.length;
+		
+
+		var propStack:Array<String> = [];
+		for (i in 0...len) {
+			var propToSet = propertyChain[i];
+			propStack.push(propToSet);
+			cur = deletePropertyOf(cur, propToSet, val, i >= len -1, propStack);
+			if (cur == null) {
+			//	trace("EXITING null: " + val);
+				return null;
+			}
+		}
+		return cur;
+	}
+	
 	private function setPropertyOf(obj:Dynamic, prop:String, val:Dynamic,leaf:Bool, propStack:Array<String>):Dynamic {
 		if (!leaf) {
 			var reflectProp = val = Reflect.getProperty(obj, prop);
@@ -193,6 +215,22 @@ class PropertyChainHolder {
 		}
 		Reflect.setProperty(obj, prop, val);
 		return val;
+	}
+	
+	
+	private function deletePropertyOf(obj:Dynamic, prop:String, val:Dynamic,leaf:Bool, propStack:Array<String>):Dynamic {
+		if (!leaf) {
+			var reflectProp = val = Reflect.getProperty(obj, prop);
+			if (reflectProp == null) {
+				
+				return null;
+			}
+			Reflect.setProperty(obj, prop, val);
+			return val;
+		}
+
+		 Reflect.deleteField(obj, prop);
+		 return val;
 	}
 	
 	private  inline function getPropertyOf(obj:Dynamic, prop:String):Dynamic {

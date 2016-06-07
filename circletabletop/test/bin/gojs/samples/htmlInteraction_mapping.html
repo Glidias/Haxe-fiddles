@@ -268,6 +268,7 @@
 		copyToClipboard: "",
 		loadMap: function() {
 			world.loadWorld(this.copyToClipboard);
+			vueModelData.locationDefIds = world.getLocationDefinitionIds(world.getDefaultLocationDefIdHash())
 			var goData = world.getGOGraphData(GO_SIZES, DEFAULT_PICTURE_OPACITY);
 			//var newModel = new go.GraphLinksModel(goData.nodes, goData.links);
 			myDiagram.model.nodeDataArray = goData.nodes;
@@ -783,15 +784,21 @@
 		if (newValue === oldValue) return;  // newly added
 	//	if (newValue === undefined) return;  // if value is strictly undefined, can process be skipped?
 		
+		
 		var splitExp  = this.expression.split(".");
 		splitExp.shift();  // remove off selected prefix in expression
-
+		/*
+		if (newValue === undefined) {
+			splitExp[0] === defO
+		}
+		*/
 		if (newValue != null && typeof(newValue) === "object") {
 			newValue = TJSON.parse(TJSON.encode(newValue));
 		}
 		
 		inspectPropertyChainLookup.setupProperty( _inspectedNodeVal,  splitExp.join(".") );
-		var result = inspectPropertyChainLookup.setPropertyChainValue(newValue);
+		 
+		var result = newValue !== undefined ? inspectPropertyChainLookup.setPropertyChainValue(newValue) : inspectPropertyChainLookup.deletePropertyChainValue(newValue);  // result purely for checking, may not reflect newVal
 		
 		var leafProp = splitExp[splitExp.length - 1];
 		
@@ -841,6 +848,7 @@
 				
 				if (propArr.length) {
 					alert("THis should not happen under this our case!");
+					
 					Vue.delete( this.$get("selected.defOverwrites."+propArr.join(".")), leafProp);
 				}
 				else {
