@@ -269,9 +269,9 @@
 		loadMap: function() {
 			world.loadWorld(this.copyToClipboard);
 			var goData = world.getGOGraphData(GO_SIZES, DEFAULT_PICTURE_OPACITY);
-			var newModel = new go.GraphLinksModel(goData.nodes, goData.links);
-			myDiagram.model = newModel;
-
+			//var newModel = new go.GraphLinksModel(goData.nodes, goData.links);
+			myDiagram.model.nodeDataArray = goData.nodes;
+			myDiagram.model.linkDataArray = goData.links;
 			this.copyToClipboard = "";
 			guiMainMenu.getControllerByName("copyToClipboard").updateDisplay();
 			alert("New map loaded successfully.");
@@ -979,7 +979,9 @@
 				return;
 			}
 			mutualArc = mutualArc.key;
+			
 		}
+	
 
 		//console.log("New vue model:"+ newVueModelData);
 		vueModel.selectedArc = { val:newVueModelData, mutualGoArc:mutualArc }; //, cost:arc.cost

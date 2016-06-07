@@ -2684,6 +2684,7 @@ de_polygonal_ds_Graph.prototype = {
 	,serialize: function(getVal) {
 		var vals = [];
 		var arcs = [];
+		var arcValues = [];
 		var node = this.mNodeList;
 		var arc;
 		var i;
@@ -2702,12 +2703,13 @@ de_polygonal_ds_Graph.prototype = {
 			while(arc != null) {
 				arcs.push(i1);
 				arcs.push(indexLut.h[arc.node.key]);
+				arcValues.push(arc.val);
 				arc = arc.next;
 			}
 			node = node.next;
 			i1++;
 		}
-		return { arcs : arcs, vals : vals};
+		return { arcs : arcs, vals : vals, arcVals : arcValues};
 	}
 	,unserialize: function(data,setVal) {
 		this.clear(true);
@@ -2715,15 +2717,19 @@ de_polygonal_ds_Graph.prototype = {
 		var vals = data.vals;
 		var i = 0;
 		var k = vals.length;
+		var arcVals = data.arcVals;
 		while(i < k) nodes.push(this.createNode(setVal(vals[i++])));
 		i = k;
 		while(i > 0) this.addNode(nodes[--i]);
 		var arcs = data.arcs;
 		i = arcs.length;
+		var count = arcVals.length;
 		while(i > 0) {
 			var target = arcs[--i];
 			var source = arcs[--i];
+			var val = arcVals[--count];
 			this.addSingleArc(nodes[source],nodes[target]);
+			if(val != null) nodes[source].arcList.val = val;
 		}
 	}
 	,__class__: de_polygonal_ds_Graph
@@ -8245,29 +8251,37 @@ textifician_mapping_TextificianWorld.prototype = {
 	}
 	,getGOGraphData: function(goTypeSizes,defaultPictureOpacity) {
 		if(defaultPictureOpacity == null) defaultPictureOpacity = .5;
+		var obj;
 		var dataGraph = this.graph.serialize($bind(this,this.returnSelf));
 		var goGraphData = { nodes : [], links : []};
 		var node = this.graph.mNodeList;
 		var count = 0;
+		var nodeArr = [];
 		while(node != null) {
 			if(js_Boot.__instanceof(node.val,textifician_mapping_LocationPacket)) {
 				var locPacket = node.val;
-				goGraphData.nodes.push({ loc : new go.Point(locPacket.x,locPacket.y), key : count, locid : locPacket.def.id, isProto : false, text : locPacket.getLabel(), category : textifician_mapping_LocationPacket.getCategoryOfPacket(locPacket), size : goTypeSizes[locPacket.defOverwrites != null && locPacket.defOverwrites.type != null?locPacket.defOverwrites.type:locPacket.def.type]});
+				goGraphData.nodes.push(obj = { loc : new go.Point(locPacket.x,locPacket.y), key : count, locid : locPacket.def.id, isProto : false, text : locPacket.getLabel(), category : textifician_mapping_LocationPacket.getCategoryOfPacket(locPacket), size : goTypeSizes[locPacket.defOverwrites != null && locPacket.defOverwrites.type != null?locPacket.defOverwrites.type:locPacket.def.type], _node : node});
 			} else if(js_Boot.__instanceof(node.val,textifician_mapping_Zone)) {
 				var zone = node.val;
-				goGraphData.nodes.push({ loc : new go.Point(zone.x,zone.y), key : count, locid : "", zoneid : false, isProto : false, text : zone.label, pictureOpacity : defaultPictureOpacity, pictureSrc : zone.imageURL, category : "zone", size : goTypeSizes[0]});
+				goGraphData.nodes.push(obj = { loc : new go.Point(zone.x,zone.y), key : count, locid : "", zoneid : false, isProto : false, text : zone.label, pictureOpacity : defaultPictureOpacity, pictureSrc : zone.imageURL, category : "zone", size : goTypeSizes[0], _node : node});
 			} else {
 				throw new js__$Boot_HaxeError("Could not resolve data type of node val:" + Std.string(node.val));
 				goGraphData.nodes.push(node.val);
 			}
+			this.editableHash.set(node.key,obj);
 			count++;
+			nodeArr.push(node);
 			node = node.next;
 		}
 		var arcList = dataGraph.arcs;
 		var len = arcList.length;
 		var i = 0;
 		while(i < len) {
-			goGraphData.links.push({ from : arcList[i], to : arcList[i + 1]});
+			var fromInt = arcList[i];
+			var toInt = arcList[i + 1];
+			var theArc = nodeArr[fromInt].getArc(nodeArr[toInt]);
+			goGraphData.links.push(obj = { key : this.getUniqueHashKey(), _arc : theArc, from : fromInt, to : toInt});
+			this.editableHash.set(theArc.key,obj);
 			i += 2;
 		}
 		return goGraphData;

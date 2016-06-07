@@ -1427,10 +1427,11 @@ class Graph<T> implements Collection<T>
 			
 
 	
-	public function serialize(getVal:T->Dynamic):{arcs:Array<Int>, vals:Array<Dynamic>}
+	public function serialize(getVal:T->Dynamic):{arcs:Array<Int>, vals:Array<Dynamic>, arcVals:Array<Dynamic>}
 	{
 		var vals = [];
 		var arcs = [];
+		var arcValues = [];
 		var node = getNodeList(), arc, i, j;
 		
 		var indexLut = new haxe.ds.IntMap<Int>();
@@ -1452,18 +1453,20 @@ class Graph<T> implements Collection<T>
 			{
 				arcs.push(i);
 				arcs.push(indexLut.get(arc.node.key));
+				arcValues.push(arc.val);
 				arc = arc.next;
+				
 			}
 			node = node.next;
 			i++;
 		}
-		return {arcs: arcs, vals: vals};
+		return {arcs: arcs, vals: vals, arcVals:arcValues};
 	}
 	
 	/**
 		See `this.serialize`.
 	**/
-	public function unserialize(data:{arcs:Array<Int>, vals:Array<Dynamic>}, setVal:Dynamic->T)
+	public function unserialize(data:{arcs:Array<Int>, vals:Array<Dynamic>, arcVals:Array<Dynamic>}, setVal:Dynamic->T)
 	{
 		clear(true);
 		
@@ -1471,6 +1474,7 @@ class Graph<T> implements Collection<T>
 		var vals = data.vals;
 		var i = 0;
 		var k = vals.length;
+		var arcVals = data.arcVals;
 		while (i < k) nodes.push(createNode(setVal(vals[i++])));
 		
 		i = k;
@@ -1478,11 +1482,14 @@ class Graph<T> implements Collection<T>
 		
 		var arcs = data.arcs;
 		i = arcs.length;
+		var count:Int = arcVals.length;
 		while (i > 0)
 		{
 			var target = arcs[--i];
 			var source = arcs[--i];
+			var val = arcVals[--count];
 			addSingleArc(nodes[source], nodes[target]);
+			if (val != null) nodes[source].arcList.val = val;
 		}
 	}
 	

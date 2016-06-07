@@ -1,6 +1,7 @@
 package textifician.mapping ;
 import de.polygonal.ds.Graph;
 import de.polygonal.ds.GraphArc;
+import de.polygonal.ds.GraphArc;
 import de.polygonal.ds.GraphNode;
 import de.polygonal.ds.Hashable;
 import de.polygonal.ds.HashableItem;
@@ -173,25 +174,30 @@ class TextificianWorld
 	
 	
 	public function getGOGraphData(goTypeSizes:Array<Dynamic>, defaultPictureOpacity:Float=.5):GoGraphData {
+		var obj:Dynamic;
 		var dataGraph:Dynamic = graph.serialize(returnSelf);
 		var goGraphData:GoGraphData = { nodes:[], links:[] };
 		
 		var node = graph.getNodeList();
 		var count:Int = 0;
+		var nodeArr:Array<GraphNode<Dynamic>> = [];
 		while (node != null) {
 			if (Std.is(node.val, LocationPacket)) {
 				var locPacket:LocationPacket = node.val;
-				goGraphData.nodes.push( { loc:new GoPoint(locPacket.x, locPacket.y),  key:count, locid:locPacket.def.id, isProto:false, text: locPacket.getLabel(), category:LocationPacket.getCategoryOfPacket(locPacket),  size:goTypeSizes[LocationPacket.getTypeOfPacket(locPacket)] } );
+				goGraphData.nodes.push( obj = { loc:new GoPoint(locPacket.x, locPacket.y),  key:count, locid:locPacket.def.id, isProto:false, text: locPacket.getLabel(), category:LocationPacket.getCategoryOfPacket(locPacket),  size:goTypeSizes[LocationPacket.getTypeOfPacket(locPacket)], _node:node } );
 			}
 			else if (Std.is(node.val, Zone)) {  
 				var zone:Zone  = node.val;
-				goGraphData.nodes.push( { loc:new GoPoint(zone.x, zone.y), key:count, locid:"", zoneid:false, isProto:false,  text:zone.label,  pictureOpacity:defaultPictureOpacity, pictureSrc:zone.imageURL, category:"zone", size:goTypeSizes[LocationDefinition.TYPE_POINT]} );
+				goGraphData.nodes.push( obj = { loc:new GoPoint(zone.x, zone.y), key:count, locid:"", zoneid:false, isProto:false,  text:zone.label,  pictureOpacity:defaultPictureOpacity, pictureSrc:zone.imageURL, category:"zone", size:goTypeSizes[LocationDefinition.TYPE_POINT], _node:node } );
+				
 			}
 			else {
 				throw ("Could not resolve data type of node val:"+node.val);
 				goGraphData.nodes.push(node.val);
 			}
+			registerHashEditable( node, obj);
 			count++;
+			nodeArr.push(node);
 			node = node.next;
 		}
 		
@@ -199,10 +205,16 @@ class TextificianWorld
 		var len:Int = arcList.length;
 		var i:Int = 0;
 		
-		while(i < len) {
-			goGraphData.links.push( {from:arcList[i], to:arcList[i + 1]} );
+		while (i < len) {
+			var fromInt:Int = arcList[i];
+			var toInt:Int = arcList[i + 1];
+			var theArc:GraphArc<Dynamic> = nodeArr[fromInt].getArc(nodeArr[toInt]);
+			
+			goGraphData.links.push( obj={ key:getUniqueHashKey(), _arc:theArc, from:fromInt, to:toInt } );
+			registerHashEditable(theArc, obj);
 			i += 2;
 		}
+		
 
 		
 		return goGraphData;
