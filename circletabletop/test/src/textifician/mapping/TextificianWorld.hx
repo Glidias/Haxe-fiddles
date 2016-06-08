@@ -38,15 +38,10 @@ import tjson.TJSON;
  * @author Glenn Ko
  */
 @:expose
-class TextificianWorld
+class TextificianWorld extends TextificianWorldBase
 {
 	
-	// usually eacn node contains either Zone or LocationPacket
-	private var graph:Graph<Dynamic>;  
-	
-	// Any location vincities can be shown here, that makes for good starting locations for the given gameworld.
-	private var zones:StringMap<Zone>;
-	
+
 	// A library hash of location definitions that you can use under this world
 	private var locationDefs:StringMap<LocationDefinition>;
 	
@@ -56,6 +51,7 @@ class TextificianWorld
 
 	public function new() 
 	{
+		super();
 		ICharacter; IParty; IFixture; IItem; 
 		
 		zones = new StringMap<Zone>();

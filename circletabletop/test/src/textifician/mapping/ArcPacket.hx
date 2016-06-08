@@ -65,7 +65,7 @@ class ArcPacket
 		return val != null ?  oldValue==null ? Type.getClass(val)!= null ? Type.createInstance( Type.getClass(val), [] ) : _tjsonParse(val) : val : null;
 	}
 	public static inline function getSync_newEmptyInstance(val:Dynamic, oldValue:Dynamic):Dynamic {
-		return val != null ?  oldValue=null ? Type.getClass(val)!= null ?  Type.createEmptyInstance( Type.getClass(val) ) : _tjsonParse(val) : val : null;
+		return val != null ?  oldValue==null ? Type.getClass(val)!= null ?  Type.createEmptyInstance( Type.getClass(val) ) : _tjsonParse(val) : val : null;
 	}
 	
 	private static inline function _tjsonParse(val:Dynamic):Dynamic {

@@ -7731,7 +7731,11 @@ textifician_mapping_ArcPacket.getSync_newInstance = function(val,oldValue) {
 	} else return null;
 };
 textifician_mapping_ArcPacket.getSync_newEmptyInstance = function(val,oldValue) {
-	if(val != null) return null?Type.getClass(val) != null?oldValue = Type.createEmptyInstance(Type.getClass(val)):oldValue = tjson_TJSON.parse(tjson_TJSON.encode(val)):oldValue = val; else return null;
+	if(val != null) {
+		if(oldValue == null) {
+			if(Type.getClass(val) != null) return Type.createEmptyInstance(Type.getClass(val)); else return tjson_TJSON.parse(tjson_TJSON.encode(val));
+		} else return val;
+	} else return null;
 };
 textifician_mapping_ArcPacket._tjsonParse = function(val) {
 	return tjson_TJSON.parse(tjson_TJSON.encode(val));
@@ -8188,7 +8192,17 @@ textifician_mapping_PropertyChainHolder.prototype = {
 	,__class__: textifician_mapping_PropertyChainHolder
 	,__properties__: {set_value:"set_value",get_value:"get_value"}
 };
+var textifician_mapping_TextificianWorldBase = function() {
+};
+$hxClasses["textifician.mapping.TextificianWorldBase"] = textifician_mapping_TextificianWorldBase;
+textifician_mapping_TextificianWorldBase.__name__ = ["textifician","mapping","TextificianWorldBase"];
+textifician_mapping_TextificianWorldBase.prototype = {
+	graph: null
+	,zones: null
+	,__class__: textifician_mapping_TextificianWorldBase
+};
 var textifician_mapping_TextificianWorld = $hx_exports.textifician.mapping.TextificianWorld = function() {
+	textifician_mapping_TextificianWorldBase.call(this);
 	textifician_rpg_ICharacter;
 	textifician_rpg_IParty;
 	textifician_rpg_IFixture;
@@ -8221,10 +8235,9 @@ textifician_mapping_TextificianWorld.configureGlobalMapScale = function(defaultM
 textifician_mapping_TextificianWorld.configureGlobalSmallestMovementDist = function(smallestMovementUnit) {
 	textifician_mapping_TextificianUtil.EPSILON = smallestMovementUnit;
 };
-textifician_mapping_TextificianWorld.prototype = {
-	graph: null
-	,zones: null
-	,locationDefs: null
+textifician_mapping_TextificianWorld.__super__ = textifician_mapping_TextificianWorldBase;
+textifician_mapping_TextificianWorld.prototype = $extend(textifician_mapping_TextificianWorldBase.prototype,{
+	locationDefs: null
 	,editableHash: null
 	,registerHashEditable: function(hashable,editableContent) {
 		this.editableHash.set(hashable.key,editableContent);
@@ -8390,7 +8403,7 @@ textifician_mapping_TextificianWorld.prototype = {
 		return this.zones.get(id);
 	}
 	,__class__: textifician_mapping_TextificianWorld
-};
+});
 var textifician_mapping_Zone = $hx_exports.textifician.mapping.Zone = function() {
 	this.reflectType = "Zone";
 	this.imageURL = "https://s-media-cache-ak0.pinimg.com/736x/e4/89/8c/e4898c58d4713c8b4328fccf38287120.jpg";
