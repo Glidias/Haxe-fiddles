@@ -232,6 +232,19 @@ Reflect.isFunction = function(f) {
 		return false;
 	}
 };
+Reflect.compareMethods = function(f1,f2) {
+	if(f1 == f2) {
+		return true;
+	}
+	if(!Reflect.isFunction(f1) || !Reflect.isFunction(f2)) {
+		return false;
+	}
+	if(f1.scope == f2.scope && f1.method == f2.method) {
+		return f1.method != null;
+	} else {
+		return false;
+	}
+};
 Reflect.isObject = function(v) {
 	if(v == null) {
 		return false;
@@ -9801,6 +9814,411 @@ js_html_compat_Uint8Array._subarray = function(start,end) {
 	a.byteOffset = start;
 	return a;
 };
+var msignal_Signal = function(valueClasses) {
+	if(valueClasses == null) {
+		valueClasses = [];
+	}
+	this.valueClasses = valueClasses;
+	this.slots = msignal_SlotList.NIL;
+	this.priorityBased = false;
+};
+$hxClasses["msignal.Signal"] = msignal_Signal;
+msignal_Signal.__name__ = ["msignal","Signal"];
+msignal_Signal.prototype = {
+	valueClasses: null
+	,numListeners: null
+	,slots: null
+	,priorityBased: null
+	,add: function(listener) {
+		return this.registerListener(listener);
+	}
+	,addOnce: function(listener) {
+		return this.registerListener(listener,true);
+	}
+	,addWithPriority: function(listener,priority) {
+		if(priority == null) {
+			priority = 0;
+		}
+		return this.registerListener(listener,false,priority);
+	}
+	,addOnceWithPriority: function(listener,priority) {
+		if(priority == null) {
+			priority = 0;
+		}
+		return this.registerListener(listener,true,priority);
+	}
+	,remove: function(listener) {
+		var slot = this.slots.find(listener);
+		if(slot == null) {
+			return null;
+		}
+		this.slots = this.slots.filterNot(listener);
+		return slot;
+	}
+	,removeAll: function() {
+		this.slots = msignal_SlotList.NIL;
+	}
+	,registerListener: function(listener,once,priority) {
+		if(priority == null) {
+			priority = 0;
+		}
+		if(once == null) {
+			once = false;
+		}
+		if(this.registrationPossible(listener,once)) {
+			var newSlot = this.createSlot(listener,once,priority);
+			if(!this.priorityBased && priority != 0) {
+				this.priorityBased = true;
+			}
+			if(!this.priorityBased && priority == 0) {
+				this.slots = this.slots.prepend(newSlot);
+			} else {
+				this.slots = this.slots.insertWithPriority(newSlot);
+			}
+			return newSlot;
+		}
+		return this.slots.find(listener);
+	}
+	,registrationPossible: function(listener,once) {
+		if(!this.slots.nonEmpty) {
+			return true;
+		}
+		var existingSlot = this.slots.find(listener);
+		if(existingSlot == null) {
+			return true;
+		}
+		return false;
+	}
+	,createSlot: function(listener,once,priority) {
+		if(priority == null) {
+			priority = 0;
+		}
+		if(once == null) {
+			once = false;
+		}
+		return null;
+	}
+	,get_numListeners: function() {
+		return this.slots.get_length();
+	}
+	,__class__: msignal_Signal
+	,__properties__: {get_numListeners:"get_numListeners"}
+};
+var msignal_Signal0 = function() {
+	msignal_Signal.call(this);
+};
+$hxClasses["msignal.Signal0"] = msignal_Signal0;
+msignal_Signal0.__name__ = ["msignal","Signal0"];
+msignal_Signal0.__super__ = msignal_Signal;
+msignal_Signal0.prototype = $extend(msignal_Signal.prototype,{
+	dispatch: function() {
+		var slotsToProcess = this.slots;
+		while(slotsToProcess.nonEmpty) {
+			slotsToProcess.head.execute();
+			slotsToProcess = slotsToProcess.tail;
+		}
+	}
+	,createSlot: function(listener,once,priority) {
+		if(priority == null) {
+			priority = 0;
+		}
+		if(once == null) {
+			once = false;
+		}
+		return new msignal_Slot0(this,listener,once,priority);
+	}
+	,__class__: msignal_Signal0
+});
+var msignal_Signal1 = function(type) {
+	msignal_Signal.call(this,[type]);
+};
+$hxClasses["msignal.Signal1"] = msignal_Signal1;
+msignal_Signal1.__name__ = ["msignal","Signal1"];
+msignal_Signal1.__super__ = msignal_Signal;
+msignal_Signal1.prototype = $extend(msignal_Signal.prototype,{
+	dispatch: function(value) {
+		var slotsToProcess = this.slots;
+		while(slotsToProcess.nonEmpty) {
+			slotsToProcess.head.execute(value);
+			slotsToProcess = slotsToProcess.tail;
+		}
+	}
+	,createSlot: function(listener,once,priority) {
+		if(priority == null) {
+			priority = 0;
+		}
+		if(once == null) {
+			once = false;
+		}
+		return new msignal_Slot1(this,listener,once,priority);
+	}
+	,__class__: msignal_Signal1
+});
+var msignal_Signal2 = function(type1,type2) {
+	msignal_Signal.call(this,[type1,type2]);
+};
+$hxClasses["msignal.Signal2"] = msignal_Signal2;
+msignal_Signal2.__name__ = ["msignal","Signal2"];
+msignal_Signal2.__super__ = msignal_Signal;
+msignal_Signal2.prototype = $extend(msignal_Signal.prototype,{
+	dispatch: function(value1,value2) {
+		var slotsToProcess = this.slots;
+		while(slotsToProcess.nonEmpty) {
+			slotsToProcess.head.execute(value1,value2);
+			slotsToProcess = slotsToProcess.tail;
+		}
+	}
+	,createSlot: function(listener,once,priority) {
+		if(priority == null) {
+			priority = 0;
+		}
+		if(once == null) {
+			once = false;
+		}
+		return new msignal_Slot2(this,listener,once,priority);
+	}
+	,__class__: msignal_Signal2
+});
+var msignal_Slot = function(signal,listener,once,priority) {
+	if(priority == null) {
+		priority = 0;
+	}
+	if(once == null) {
+		once = false;
+	}
+	this.signal = signal;
+	this.set_listener(listener);
+	this.once = once;
+	this.priority = priority;
+	this.enabled = true;
+};
+$hxClasses["msignal.Slot"] = msignal_Slot;
+msignal_Slot.__name__ = ["msignal","Slot"];
+msignal_Slot.prototype = {
+	listener: null
+	,once: null
+	,priority: null
+	,enabled: null
+	,signal: null
+	,remove: function() {
+		this.signal.remove(this.listener);
+	}
+	,set_listener: function(value) {
+		return this.listener = value;
+	}
+	,__class__: msignal_Slot
+	,__properties__: {set_listener:"set_listener"}
+};
+var msignal_Slot0 = function(signal,listener,once,priority) {
+	if(priority == null) {
+		priority = 0;
+	}
+	if(once == null) {
+		once = false;
+	}
+	msignal_Slot.call(this,signal,listener,once,priority);
+};
+$hxClasses["msignal.Slot0"] = msignal_Slot0;
+msignal_Slot0.__name__ = ["msignal","Slot0"];
+msignal_Slot0.__super__ = msignal_Slot;
+msignal_Slot0.prototype = $extend(msignal_Slot.prototype,{
+	execute: function() {
+		if(!this.enabled) {
+			return;
+		}
+		if(this.once) {
+			this.remove();
+		}
+		this.listener();
+	}
+	,__class__: msignal_Slot0
+});
+var msignal_Slot1 = function(signal,listener,once,priority) {
+	if(priority == null) {
+		priority = 0;
+	}
+	if(once == null) {
+		once = false;
+	}
+	msignal_Slot.call(this,signal,listener,once,priority);
+};
+$hxClasses["msignal.Slot1"] = msignal_Slot1;
+msignal_Slot1.__name__ = ["msignal","Slot1"];
+msignal_Slot1.__super__ = msignal_Slot;
+msignal_Slot1.prototype = $extend(msignal_Slot.prototype,{
+	param: null
+	,execute: function(value1) {
+		if(!this.enabled) {
+			return;
+		}
+		if(this.once) {
+			this.remove();
+		}
+		if(this.param != null) {
+			value1 = this.param;
+		}
+		this.listener(value1);
+	}
+	,__class__: msignal_Slot1
+});
+var msignal_Slot2 = function(signal,listener,once,priority) {
+	if(priority == null) {
+		priority = 0;
+	}
+	if(once == null) {
+		once = false;
+	}
+	msignal_Slot.call(this,signal,listener,once,priority);
+};
+$hxClasses["msignal.Slot2"] = msignal_Slot2;
+msignal_Slot2.__name__ = ["msignal","Slot2"];
+msignal_Slot2.__super__ = msignal_Slot;
+msignal_Slot2.prototype = $extend(msignal_Slot.prototype,{
+	param1: null
+	,param2: null
+	,execute: function(value1,value2) {
+		if(!this.enabled) {
+			return;
+		}
+		if(this.once) {
+			this.remove();
+		}
+		if(this.param1 != null) {
+			value1 = this.param1;
+		}
+		if(this.param2 != null) {
+			value2 = this.param2;
+		}
+		this.listener(value1,value2);
+	}
+	,__class__: msignal_Slot2
+});
+var msignal_SlotList = function(head,tail) {
+	this.nonEmpty = false;
+	if(head == null && tail == null) {
+		this.nonEmpty = false;
+	} else if(head != null) {
+		this.head = head;
+		this.tail = tail == null ? msignal_SlotList.NIL : tail;
+		this.nonEmpty = true;
+	}
+};
+$hxClasses["msignal.SlotList"] = msignal_SlotList;
+msignal_SlotList.__name__ = ["msignal","SlotList"];
+msignal_SlotList.prototype = {
+	head: null
+	,tail: null
+	,nonEmpty: null
+	,length: null
+	,get_length: function() {
+		if(!this.nonEmpty) {
+			return 0;
+		}
+		if(this.tail == msignal_SlotList.NIL) {
+			return 1;
+		}
+		var result = 0;
+		var p = this;
+		while(p.nonEmpty) {
+			++result;
+			p = p.tail;
+		}
+		return result;
+	}
+	,prepend: function(slot) {
+		return new msignal_SlotList(slot,this);
+	}
+	,append: function(slot) {
+		if(slot == null) {
+			return this;
+		}
+		if(!this.nonEmpty) {
+			return new msignal_SlotList(slot);
+		}
+		if(this.tail == msignal_SlotList.NIL) {
+			return new msignal_SlotList(slot).prepend(this.head);
+		}
+		var wholeClone = new msignal_SlotList(this.head);
+		var subClone = wholeClone;
+		var current = this.tail;
+		while(current.nonEmpty) {
+			subClone = subClone.tail = new msignal_SlotList(current.head);
+			current = current.tail;
+		}
+		subClone.tail = new msignal_SlotList(slot);
+		return wholeClone;
+	}
+	,insertWithPriority: function(slot) {
+		if(!this.nonEmpty) {
+			return new msignal_SlotList(slot);
+		}
+		var priority = slot.priority;
+		if(priority >= this.head.priority) {
+			return this.prepend(slot);
+		}
+		var wholeClone = new msignal_SlotList(this.head);
+		var subClone = wholeClone;
+		var current = this.tail;
+		while(current.nonEmpty) {
+			if(priority > current.head.priority) {
+				subClone.tail = current.prepend(slot);
+				return wholeClone;
+			}
+			subClone = subClone.tail = new msignal_SlotList(current.head);
+			current = current.tail;
+		}
+		subClone.tail = new msignal_SlotList(slot);
+		return wholeClone;
+	}
+	,filterNot: function(listener) {
+		if(!this.nonEmpty || listener == null) {
+			return this;
+		}
+		if(Reflect.compareMethods(this.head.listener,listener)) {
+			return this.tail;
+		}
+		var wholeClone = new msignal_SlotList(this.head);
+		var subClone = wholeClone;
+		var current = this.tail;
+		while(current.nonEmpty) {
+			if(Reflect.compareMethods(current.head.listener,listener)) {
+				subClone.tail = current.tail;
+				return wholeClone;
+			}
+			subClone = subClone.tail = new msignal_SlotList(current.head);
+			current = current.tail;
+		}
+		return this;
+	}
+	,contains: function(listener) {
+		if(!this.nonEmpty) {
+			return false;
+		}
+		var p = this;
+		while(p.nonEmpty) {
+			if(Reflect.compareMethods(p.head.listener,listener)) {
+				return true;
+			}
+			p = p.tail;
+		}
+		return false;
+	}
+	,find: function(listener) {
+		if(!this.nonEmpty) {
+			return null;
+		}
+		var p = this;
+		while(p.nonEmpty) {
+			if(Reflect.compareMethods(p.head.listener,listener)) {
+				return p.head;
+			}
+			p = p.tail;
+		}
+		return null;
+	}
+	,__class__: msignal_SlotList
+	,__properties__: {get_length:"get_length"}
+};
 var textifician_mapping_ArcNodeVM = $hx_exports["textifician"]["mapping"]["ArcNodeVM"] = function() {
 };
 $hxClasses["textifician.mapping.ArcNodeVM"] = textifician_mapping_ArcNodeVM;
@@ -10612,6 +11030,7 @@ textifician_mapping_TextificianWorldBase.prototype = {
 	,__class__: textifician_mapping_TextificianWorldBase
 };
 var textifician_mapping_TextificianWorld = $hx_exports["textifician"]["mapping"]["TextificianWorld"] = function() {
+	this.loadedZoneSites = new msignal_Signal2();
 	textifician_mapping_TextificianWorldBase.call(this);
 	this.zones = new haxe_ds_StringMap();
 	this.graph = new de_polygonal_ds_Graph();
@@ -10644,6 +11063,7 @@ textifician_mapping_TextificianWorld.__super__ = textifician_mapping_Textifician
 textifician_mapping_TextificianWorld.prototype = $extend(textifician_mapping_TextificianWorldBase.prototype,{
 	locationDefs: null
 	,editableHash: null
+	,loadedZoneSites: null
 	,registerHashEditable: function(hashable,editableContent) {
 		this.editableHash.h[hashable.key] = editableContent;
 	}
@@ -10711,6 +11131,42 @@ textifician_mapping_TextificianWorld.prototype = $extend(textifician_mapping_Tex
 			locDef.id = "instance" + de_polygonal_ds_HashKey._counter++;
 		}
 		return locDef;
+	}
+	,loadSites: function() {
+		var _gthis = this;
+		var node = this.graph.mNodeList;
+		var zone = null;
+		while(node != null) {
+			if(js_Boot.__instanceof(node.val,textifician_mapping_Zone)) {
+				zone = node.val;
+				break;
+			}
+			node = node.next;
+		}
+		if(zone == null) {
+			console.log("Failed to locate zone for loading sites!");
+			return this.loadedZoneSites;
+		}
+		var img = new Image();
+		img.onload = function() {
+			_gthis.loadedZoneSites.dispatch(_gthis.getSites(zone,img.naturalWidth,img.naturalHeight),{ width : img.naturalWidth, height : img.naturalHeight, x : zone.x, y : zone.y});
+		};
+		img.src = zone.imageURL;
+		return this.loadedZoneSites;
+	}
+	,getSites: function(zone,zw,zh) {
+		var node = this.graph.mNodeList;
+		var ox = zone.x - zw * .5;
+		var oy = zone.y - zh * .5;
+		var arr = [];
+		while(node != null) {
+			if(js_Boot.__instanceof(node.val,textifician_mapping_LocationPacket)) {
+				var locPacket = node.val;
+				arr.push({ x : locPacket.x - ox, y : locPacket.y - oy, value : locPacket.defOverwrites != null && locPacket.defOverwrites.size != null ? locPacket.defOverwrites.size : locPacket.def.size});
+			}
+			node = node.next;
+		}
+		return { children : arr};
 	}
 	,getGOGraphData: function(goTypeSizes,defaultPictureOpacity) {
 		if(defaultPictureOpacity == null) {
@@ -11720,6 +12176,7 @@ if(ArrayBuffer.prototype.slice == null) {
 	ArrayBuffer.prototype.slice = js_html_compat_ArrayBuffer.sliceImpl;
 }
 var Uint8Array = $global.Uint8Array || js_html_compat_Uint8Array._new;
+msignal_SlotList.NIL = new msignal_SlotList(null,null);
 Xml.Element = 0;
 Xml.PCData = 1;
 Xml.CData = 2;

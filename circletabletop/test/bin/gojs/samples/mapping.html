@@ -1,0 +1,120 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<title>HTML Interaction</title>
+<meta name="description" content="Show a GoJS Palette in a floating window and use an Inspector for changing the appearance of the selected node." />
+<!-- Copyright 1998-2016 by Northwoods Software Corporation. -->
+<meta charset="UTF-8">
+<script src="go.js"></script>
+
+<link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.3/themes/smoothness/jquery-ui.css" />
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.3/jquery-ui.min.js"></script>
+
+<!-- Spectrum color picker, pre-requisitie for the inspector -->
+<link href="assets/spectrum.css" rel="stylesheet" type="text/css"/>
+<script src="assets/spectrum.js"></script>
+
+<link rel='stylesheet' href='../extensions/Inspector.css' />
+<script src="../extensions/Inspector.js"></script>
+<script src="../extensions/ExtendedBrush.js"></script>
+<script src="../../dat.gui.js"></script>
+<script src="../../guiGlue.js"></script>
+<script src="../../vue.min.js"></script>
+<script src="../../voronoi.min.js"></script>
+<script src="../../index.js"></script>
+<script src="mapping.js"></script>
+<link href="mapping.css" rel="stylesheet" type="text/css"/>
+</head>
+<body onload="init()" style="margin:0;padding:0">
+<div id="sample">
+
+    <div id="paletteDraggable" class="draggable" style="height: 300px;">
+      <div id="paletteDraggableHandle" class="handle">Palette</div>
+      <div id="paletteContainer">
+        <div id="myPaletteDiv"></div>
+      </div>
+	 <button id="btn_addToPal" class="paletteBtn" v-on:click="addToPalette()" v-show="vueData.gotLocation">+</button>
+	  <button id="btn_removeFromPal" class="paletteBtn" v-on:click="removeFromPalette()" v-show="gotNonProtoSelection">-</button>
+    </div>
+
+    <div style="display: block; z-index:0; vertical-align:top; padding:0;margin:0;width:100%; height:100%;position:absolute; top:0; left:0;">
+      <div id="myDiagramDiv" style="outline:none;background-color:whitesmoke;  margin:0 auto;	  width:100%; height: 100%"></div>
+    </div>
+
+    <div id="infoDraggable" v-bind:class="{'in-playing':viewOptions.viewMode == 2}" style="position:relative; display: inline-block; vertical-align: top; padding: 5px; z-index:1">
+      <div id="myInfo" style="visibility:visible; margin-bottom:10px;"><h1>Textifician Mapper</h1></div>
+	  <div id="infoDraggableInstruct" style="position:absolute;bottom:0;left:0;padding:5px;">
+		 <h4>TEXT <span>prefix</span> legend:</h4>
+		 <p>
+		<span>(no prefix)</span> <i>Create overwrite label</i> <hr/>
+		<span>~</span>  <i>Write label into existing location definition</i><hr/>
+		<span>#</span>   <i>Load location definition by id</i><hr/>
+		<span>*</span> <i>Save into New location definition label and auto-generated id</i><br/>
+		<span>*#</span> <i>Save into New location definition id</i><br/>
+		<span>^#</span> <i>Rename to New location definition id</i><hr/>
+		<i>NOTE: When saving, if text is an empty string, will save all existing overwrites over current location definition id. If renaming and text is empty, will perform deletion.</i>
+</p>
+	  </div>
+    </div>
+
+  
+
+</div>
+
+<div id="dashboard-app">
+<div id="dashboard" v-show="isShowingDashboard" style="display:block">
+	<div id="available-maps">
+		<h2>Available Maps:</h2>
+
+		<label>Domain: </label><input type="text" v-model="mapDomain"></input>
+		<button v-on:click="reloadMapDomain()" :disabled="mapDomainLoading">Refresh</button>
+
+		<div class="loading" v-show="mapDomainLoading">Loading...</div>
+		<div class="error" v-show="mapLoadingError">Oops, load error!</div>
+
+		<ul>
+			<li v-for="(index, item) in loadedMaps"><span v-if="this.currentMapIndex == index">(current) </span><button v-on:click="openLoadedMap(index)">{{ item.name }}</button>&nbsp;&nbsp;<a class="credit" v-if="item.credit" href="{{ item.credit }}" target="_blank">{{ item.credit }}</a></li>
+		</ul>
+	</div>
+
+	<hr/>
+
+	<button v-show="queryParams.current == null || !mapDomainLoading" v-on:click="returnToCurrentMap()" v-html="this.currentMapIndex < 0 ? '&lt; Return to current map' : 'Proceed to current map &gt;'"></button>
+
+
+	<h2>Basic Controls</h2>
+	<h3>Panning:</h3>
+	Without clicking on any token on the map, click+hold and drag on the map canvas.
+
+	<h3>Zooming in/out:</h3>
+	Hold CTRL + roll the Mouse Wheel over the map. Or use the "+" or "-" keys.
+
+	<h3>Selecting tokens and other stuffs:</h3>
+	Single click to select a single token. SHIFT + Click to select multiple tokens.
+	Or click and hold for a few seconds, then drag to create a selection box to select multiple tokens within box. 
+
+	<h3>Deleting/Copying/Pasting selection:</h3>
+	Press Delete, CTRL+C, or CTRL+V for deleting/copying/pasting of selection respectively. During Play View Mode, you can only delete/copy/paste Play tokens/connections only.
+
+	<h3>Add a reusable token to palette:</h3>
+	With a single token selected on the map, press the "+"" button found at bottom of palette window to add a duplicable token that you can easily drag and drop from the palette.
+
+	<h3>Adding connections:</h3>
+	While holding the Shift key, hold a click on a token and drag to another token to make a directional connection between them. During Play View Mode, you can only make connections from/to Play tokens only.
+
+	<h3>Adding information overwrites to specific token</h3>
+	With a particular token on the map selected, click on the `+` at a given info parameter field area to add any additional overwriting data unique to that token/connection.
+
+	<h3>Some visual text-size artifacts?</h3>
+	If the text label sizes appears unusually big for certain elements being re-rendered, try to zoom in/out a bit to refresh/fix the display.
+
+	<h3>How to host my own loadable domain of maps?</h3>
+	Refer to <a href="https://gingkoapp.com/i8x43c" target="_blank">here</a> for more info.
+</div>
+</div>
+
+
+
+</body>
+</html>

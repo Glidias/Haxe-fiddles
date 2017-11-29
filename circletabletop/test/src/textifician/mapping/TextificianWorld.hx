@@ -13,6 +13,10 @@ import haxe.io.Error;
 import haxe.rtti.Meta;
 import haxe.Serializer;
 import haxe.Unserializer;
+import js.html.Image;
+import msignal.Signal.Signal0;
+import msignal.Signal.Signal1;
+import msignal.Signal.Signal2;
 import textifician.rpg.ICharacter;
 import textifician.rpg.IFixture;
 import textifician.rpg.IItem;
@@ -47,6 +51,8 @@ class TextificianWorld extends TextificianWorldBase
 	
 	//IntMap<Dynamic>; // 
 	public var editableHash:IntMap<Dynamic>; // IntHashTable<Dynamic>;
+	
+	public var loadedZoneSites:Signal2<Array<Dynamic>, Dynamic> = new Signal2<Array<Dynamic>, Dynamic>();
 	
 
 	public function new() 
@@ -168,11 +174,74 @@ class TextificianWorld extends TextificianWorldBase
 		return locDef;
 	}
 	
+
+	
+	public function loadSites():Signal2<Array<Dynamic>, Dynamic> {
+		var node = graph.getNodeList();
+		var zone:Zone = null;
+	
+		while (node != null) {
+			if (Std.is(node.val, Zone)) {
+				zone = node.val;
+				break;
+			}
+			node = node.next;
+		}
+		if (zone == null) {
+			trace("Failed to locate zone for loading sites!");
+			return loadedZoneSites;
+		}
+		
+
+		var img = new Image();
+		
+		img.onload = function() {
+			loadedZoneSites.dispatch( getSites(zone, img.naturalWidth, img.naturalHeight), { width:img.naturalWidth, height:img.naturalHeight, x:zone.x, y:zone.y } );
+		};
+		img.src = zone.imageURL;
+		
+		/*
+		var arr:Array<Dynamic>  = [];
+		var nodeArr:Array<GraphNode<Dynamic>> = [];
+		
+		node = h;
+		while (node != null) {
+			if (Std.is(node.val, LocationPacket)) {
+				var locPacket:LocationPacket = node.val;
+				arr.push({x:locPacket.x, y:locPacket.y, value: (locPacket.defOverwrites != null && locPacket.defOverwrites.size != null ?  locPacket.defOverwrites.size : locPacket.def.size) });
+			}
+			node = node.next;
+		}
+		*/
+		
+		return loadedZoneSites;
+	}
+	
+	public function getSites(zone:Zone, zw:Int, zh:Int):Dynamic {
+		var node = graph.getNodeList();
+		var ox = zone.x - zw * .5;
+		var oy = zone.y - zh * .5;
+		var arr = [];
+		while (node != null) {
+			if (Std.is(node.val, LocationPacket)) {
+				var locPacket:LocationPacket = node.val;
+				arr.push({x:(locPacket.x-ox), y:(locPacket.y-oy), value: (locPacket.defOverwrites != null && locPacket.defOverwrites.size != null ?  locPacket.defOverwrites.size : locPacket.def.size) });
+			}
+			node = node.next;
+		}
+		return {
+			children: arr
+		};
+	}
+	
+	
 	
 	public function getGOGraphData(goTypeSizes:Array<Dynamic>, defaultPictureOpacity:Float=.5):GoGraphData {
 		var obj:Dynamic;
 		var dataGraph:Dynamic = graph.serialize(returnSelf);
 		var goGraphData:GoGraphData = { nodes:[], links:[] };
+		
+		
 		
 		var node = graph.getNodeList();
 		var count:Int = 0;
