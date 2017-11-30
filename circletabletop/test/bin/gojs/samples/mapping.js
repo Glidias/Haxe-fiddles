@@ -202,6 +202,7 @@
 				console.log(testData);
 				console.log(zoneInfo);
 		
+				/*
 				var treemap = new Voronoi.Treemap(testData,  [{"x":W,"y":H},{"x":0,"y":H},{"x":0,"y":0},{"x":W,"y":0}] , W, H);
 				
 				
@@ -218,18 +219,36 @@
 						gStrAtr.push( "L"+p[b].x + " "+p[b].y  + (b==p.length -1? "z" : "") );
 					}
 				}
+				*/
 				
-				
+				var i;
+				var gStrAtr = [];
+				var weightedVoronoi = d3.weightedVoronoi().weight(function(d){ return d.value; }).clip( [[0,0], [0,H], [W, H], [W,0]]);
+				var data = testData.children;
+				var ADJUST_FACTOR = 148;
+				for (i=0; i< data.length; i++) {
+					data[i].value *= ADJUST_FACTOR;  // adjustment 
+				}
+				var cells = weightedVoronoi(data);    
+				for (i=0; i< cells.length; i++) {
+					var p = cells[i];
+					
+					gStrAtr.push( "M"+p[0][0] +" " + p[0][1]);
+					for (b = 0; b < p.length; b++) {
+						gStrAtr.push( "L"+p[b][0] + " "+p[b][1]  + (b==p.length -1? "z" : "") );
+					}
+				}
 				
 					
 					myDiagram.add(
-				  GO(go.Node,
+				  GO(go.Node, { position: new go.Point(zoneInfo.x-zoneInfo.width*.5,zoneInfo.y-zoneInfo.height*.5), selectable:false, movable:false },
 					GO(go.Shape,
-					  { geometryString: "F "+gStrAtr.join(" "),
+					  { geometryString: "F "+gStrAtr.join(" "), 
 						fill: "transparent" })));
 				
 				
 			});
+			
 				
 			
 		}
